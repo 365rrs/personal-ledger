@@ -1,0 +1,28 @@
+package com.gaoyan.personalledger.service;
+
+import com.gaoyan.personalledger.entity.CmbBillInfo;
+import com.gaoyan.personalledger.entity.CmbBillRecordReal;
+import org.springframework.web.multipart.MultipartFile;
+
+import javax.servlet.ServletOutputStream;
+import java.util.List;
+
+/**
+ * 招商银行账单服务接口
+ */
+public interface CmbBillService {
+    
+    /**
+     * 解析招商银行真实格式的账单CSV文件（完整信息）
+     * @param file CSV文件
+     * @return 完整账单信息
+     */
+    CmbBillInfo parseCmbBillInfo(MultipartFile file);
+    
+    /**
+     * 导出招商银行账单为Excel文件
+     * @param billInfo 账单信息
+     * @param outputStream 输出流
+     */
+    void exportCmbBill(CmbBillInfo billInfo, ServletOutputStream outputStream);
+}
