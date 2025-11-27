@@ -17,9 +17,9 @@
           <el-icon><House /></el-icon>
           <span>仪表盘</span>
         </el-menu-item>
-        <el-menu-item index="/cmb-bill">
-          <el-icon><Document /></el-icon>
-          <span>招商银行账单</span>
+        <el-menu-item index="/bill-import">
+          <el-icon><Upload /></el-icon>
+          <span>账单导入</span>
         </el-menu-item>
       </el-menu>
     </el-aside>
@@ -39,7 +39,7 @@
 </template>
 
 <script setup>
-import { House, Document } from '@element-plus/icons-vue'
+import { House, Upload } from '@element-plus/icons-vue'
 </script>
 
 <style scoped>

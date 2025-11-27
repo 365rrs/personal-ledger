@@ -20,6 +20,13 @@ public interface CmbBillService {
     CmbBillInfo parseCmbBillInfo(MultipartFile file);
     
     /**
+     * 解析招商银行Excel账单文件
+     * @param file Excel文件
+     * @return 完整账单信息
+     */
+    CmbBillInfo parseExcelBillInfo(MultipartFile file);
+    
+    /**
      * 导出招商银行账单为Excel文件
      * @param billInfo 账单信息
      * @param outputStream 输出流

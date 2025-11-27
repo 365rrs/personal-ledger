@@ -68,10 +68,11 @@ public class CmbBillServiceImpl implements CmbBillService {
                     .excelType(ExcelTypeEnum.CSV)
                     .head(CmbBillRecordReal.class)
                     .headRowNumber(8)  // 跳过前8行注释（包括空行）
-                    .doReadAllSync();
+                    .sheet()
+                    .doReadSync();
 
-            // 数据清洗
-            records = dataCleaningService.cleanBillRecords(records);
+            // 只进行基础数据处理，不进行清洗
+            records = processRawData(records);
             billInfo.setRecords(records);
 
             // 继续读取文件以获取统计信息
@@ -207,6 +208,225 @@ public class CmbBillServiceImpl implements CmbBillService {
         return summaryInfo;
     }
 
+    /**
+     * 处理原始数据（仅进行基础格式化）
+     *
+     * @param records 原始账单记录列表
+     * @return 处理后的账单记录列表
+     */
+    private List<CmbBillRecordReal> processRawData(List<CmbBillRecordReal> records) {
+        if (records == null || records.isEmpty()) {
+            return records;
+        }
+
+        log.info("开始处理原始数据，记录数: {}", records.size());
+
+        for (CmbBillRecordReal record : records) {
+            // 格式化交易日期
+            if (record.getTradeDate() != null && !record.getTradeDate().trim().isEmpty()) {
+                record.setFormattedTradeDate(formatDate(record.getTradeDate()));
+            }
+
+            // 格式化交易时间
+            if (record.getTradeTime() != null && !record.getTradeTime().trim().isEmpty()) {
+                record.setTradeTime(formatTime(record.getTradeTime()));
+            }
+
+            // 设置默认值
+            if (record.getExcludeFromMonthly() == null) {
+                record.setExcludeFromMonthly(true); // 默认计入统计
+            }
+
+            // 初始化空字段
+            if (record.getUserRemark() == null) {
+                record.setUserRemark("");
+            }
+            if (record.getPaymentChannel() == null) {
+                record.setPaymentChannel("");
+            }
+            if (record.getTransactionType() == null) {
+                record.setTransactionType("");
+            }
+            if (record.getCategory() == null) {
+                record.setCategory("");
+            }
+        }
+
+        log.info("原始数据处理完成，记录数: {}", records.size());
+        return records;
+    }
+
+    /**
+     * 格式化日期
+     *
+     * @param dateStr 原始日期字符串
+     * @return 格式化后的日期字符串
+     */
+    private String formatDate(String dateStr) {
+        if (dateStr == null || dateStr.trim().isEmpty()) {
+            return dateStr;
+        }
+
+        String date = dateStr.trim().replaceAll("^[\\s\\t]*", "");
+        if (date.length() == 8) {
+            return date.substring(0, 4) + "-" + date.substring(4, 6) + "-" + date.substring(6, 8);
+        }
+        return dateStr;
+    }
+
+    /**
+     * 格式化时间
+     *
+     * @param timeStr 原始时间字符串
+     * @return 格式化后的时间字符串
+     */
+    private String formatTime(String timeStr) {
+        if (timeStr == null || timeStr.trim().isEmpty()) {
+            return timeStr;
+        }
+
+        String time = timeStr.trim().replaceAll("^[\\s\\t]*", "");
+        if (time.length() == 6) {
+            return time.substring(0, 2) + ":" + time.substring(2, 4) + ":" + time.substring(4, 6);
+        }
+        return timeStr;
+    }
+
+    /**
+     * 解析招商银行Excel账单文件
+     *
+     * @param file Excel文件
+     * @return 完整账单信息
+     */
+    @Override
+    public CmbBillInfo parseExcelBillInfo(MultipartFile file) {
+        try {
+            log.info("开始解析Excel账单文件: {}", file.getOriginalFilename());
+            
+            // 使用EasyExcel读取Excel文件
+            List<CmbBillRecordExport> exportRecords = EasyExcel.read(file.getInputStream())
+                    .head(CmbBillRecordExport.class)
+                    .sheet()
+                    .doReadSync();
+            
+            if (exportRecords == null || exportRecords.isEmpty()) {
+                throw new BusinessException("Excel文件中没有找到有效数据");
+            }
+            
+            // 将导出格式记录转换为内部格式记录
+            List<CmbBillRecordReal> records = exportRecords.stream()
+                    .map(this::convertExportToReal)
+                    .collect(Collectors.toList());
+            
+            // 创建账单信息
+            CmbBillInfo billInfo = new CmbBillInfo();
+            
+            // 设置导出信息，尝试从数据中推断账号信息
+            CmbExportInfo exportInfo = new CmbExportInfo();
+            exportInfo.setExportTime(new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new java.util.Date()));
+            
+            // 尝试从文件名中推断账号信息
+            String inferredAccount = inferAccountFromFileName(file.getOriginalFilename());
+            exportInfo.setAccount(inferredAccount);
+            
+            exportInfo.setCurrency("人民币");
+            exportInfo.setStartDate("");
+            exportInfo.setEndDate("");
+            exportInfo.setFilterSetting("无");
+            billInfo.setExportInfo(exportInfo);
+            
+            // 设置记录
+            billInfo.setRecords(records);
+            
+            // 计算统计信息
+            CmbSummaryInfo summaryInfo = calculateSummaryFromRecords(records);
+            billInfo.setSummaryInfo(summaryInfo);
+            
+            log.info("成功解析Excel账单文件，共{}条记录", records.size());
+            return billInfo;
+            
+        } catch (Exception e) {
+            log.error("解析Excel账单文件失败", e);
+            throw new BusinessException("解析Excel账单文件失败: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * 将导出格式记录转换为内部格式记录
+     */
+    private CmbBillRecordReal convertExportToReal(CmbBillRecordExport export) {
+        CmbBillRecordReal real = new CmbBillRecordReal();
+        real.setTradeDate(export.getTradeDate());
+        real.setFormattedTradeDate(formatDate(export.getTradeDate()));
+        real.setTradeTime(export.getTradeTime());
+        real.setIncome(export.getIncome());
+        real.setExpense(export.getExpense());
+        real.setBalance(export.getBalance());
+        real.setTradeType(export.getTradeType());
+        real.setRemark(export.getRemark());
+        real.setPaymentChannel(export.getPaymentChannel() != null ? export.getPaymentChannel() : "");
+        real.setTransactionType(export.getTransactionType() != null ? export.getTransactionType() : "");
+        real.setCategory(export.getCategory() != null ? export.getCategory() : "");
+        real.setUserRemark(export.getUserRemark() != null ? export.getUserRemark() : "");
+        
+        // 转换是否计入统计标识
+        if ("是".equals(export.getExcludeFromMonthlyText())) {
+            real.setExcludeFromMonthly(true);
+        } else {
+            real.setExcludeFromMonthly(false);
+        }
+        
+        return real;
+    }
+    
+    /**
+     * 从文件名推断账号信息
+     */
+    private String inferAccountFromFileName(String fileName) {
+        if (fileName == null || fileName.trim().isEmpty()) {
+            return "招商银行账户";
+        }
+        
+        // 如果文件名包含账号信息，尝试提取
+        if (fileName.contains("招商银行账单")) {
+            // 对于系统导出的文件，使用通用账号名称
+            return "招商银行账户";
+        }
+        
+        // 其他情况也使用通用账号名称
+        return "招商银行账户";
+    }
+    
+    /**
+     * 从记录中计算统计信息
+     */
+    private CmbSummaryInfo calculateSummaryFromRecords(List<CmbBillRecordReal> records) {
+        CmbSummaryInfo summaryInfo = new CmbSummaryInfo();
+        
+        int incomeCount = 0;
+        int expenseCount = 0;
+        BigDecimal incomeAmount = BigDecimal.ZERO;
+        BigDecimal expenseAmount = BigDecimal.ZERO;
+        
+        for (CmbBillRecordReal record : records) {
+            if (record.getIncome() != null && record.getIncome().compareTo(BigDecimal.ZERO) > 0) {
+                incomeCount++;
+                incomeAmount = incomeAmount.add(record.getIncome());
+            }
+            if (record.getExpense() != null && record.getExpense().compareTo(BigDecimal.ZERO) > 0) {
+                expenseCount++;
+                expenseAmount = expenseAmount.add(record.getExpense());
+            }
+        }
+        
+        summaryInfo.setIncomeCount(incomeCount);
+        summaryInfo.setIncomeAmount(incomeAmount.toString() + "元");
+        summaryInfo.setExpenseCount(expenseCount);
+        summaryInfo.setExpenseAmount(expenseAmount.toString() + "元");
+        
+        return summaryInfo;
+    }
+    
     /**
      * 导出招商银行账单为Excel文件
      *

@@ -67,9 +67,9 @@ public class CmbBillRecordExport {
     private String paymentChannel;
     
     /**
-     * 交易类型（收入/支出）
+     * 收支类型（收入/支出）
      */
-    @ExcelProperty("交易类型")
+    @ExcelProperty("收支类型")
     private String transactionType;
     
     /**

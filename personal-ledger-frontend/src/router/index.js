@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import CmbBillImport from '../views/CmbBillImport.vue'
+import BillImport from '../views/BillImport.vue'
+import BillAnalysis from '../views/BillAnalysis.vue'
 import Dashboard from '../views/Dashboard.vue'
 
 const routes = [
@@ -14,10 +15,16 @@ const routes = [
     meta: { title: '仪表盘' }
   },
   {
-    path: '/cmb-bill',
-    name: 'CmbBill',
-    component: CmbBillImport,
-    meta: { title: '招商银行账单' }
+    path: '/bill-import',
+    name: 'BillImport',
+    component: BillImport,
+    meta: { title: '账单导入' }
+  },
+  {
+    path: '/bill-analysis/:id',
+    name: 'BillAnalysis',
+    component: BillAnalysis,
+    meta: { title: '账单解析' }
   }
 ]
 

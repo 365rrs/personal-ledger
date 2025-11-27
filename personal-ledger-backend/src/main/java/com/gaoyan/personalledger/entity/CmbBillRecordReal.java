@@ -82,10 +82,27 @@ public class CmbBillRecordReal {
     private String userRemark;
     
     /**
+     * 格式化后的交易日期 (yyyy-MM-dd)
+     */
+    private String formattedTradeDate;
+    
+    /**
+     * 设置格式化后的交易日期
+     * @param formattedTradeDate 格式化后的日期
+     */
+    public void setFormattedTradeDate(String formattedTradeDate) {
+        this.formattedTradeDate = formattedTradeDate;
+    }
+    
+    /**
      * 获取格式化后的交易日期 (yyyy-MM-dd)
      * @return 格式化后的日期字符串
      */
     public String getFormattedTradeDate() {
+        if (formattedTradeDate != null) {
+            return formattedTradeDate;
+        }
+        
         if (tradeDate == null || tradeDate.trim().isEmpty()) {
             return tradeDate;
         }

@@ -52,6 +52,17 @@ public class CmbBillController {
     }
     
     /**
+     * 导入招商银行账单Excel文件
+     * @param file Excel文件
+     * @return 完整账单信息
+     */
+    @PostMapping("/import-excel")
+    public CmbBillInfo importCmbBillExcel(@RequestParam("file") MultipartFile file) {
+        log.info("开始导入招商银行Excel账单文件: {}", file.getOriginalFilename());
+        return cmbBillService.parseExcelBillInfo(file);
+    }
+    
+    /**
      * 导出招商银行账单数据为Excel文件
      * @param billInfo 账单信息
      * @param response HTTP响应
