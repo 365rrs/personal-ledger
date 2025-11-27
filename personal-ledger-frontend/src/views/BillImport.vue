@@ -1,90 +1,108 @@
 <template>
   <div class="bill-import">
-    <el-card class="upload-card" shadow="hover">
-      <template #header>
-        <div class="card-header">
-          <el-icon class="header-icon"><Upload /></el-icon>
-          <span>招商银行账单导入</span>
+    <!-- 导入指导卡片 -->
+    <el-card class="guide-card" shadow="never">
+      <div class="guide-content">
+        <div class="guide-icon">
+          <el-icon size="48"><Folder /></el-icon>
         </div>
-      </template>
-      
-      <el-row :gutter="20">
-        <el-col :span="12">
-          <el-form-item label="CSV文件">
-            <el-upload
-              ref="uploadRef"
-              class="upload-demo"
-              :auto-upload="false"
-              :on-change="handleFileChange"
-              :on-exceed="handleExceed"
-              :limit="1"
-              accept=".csv"
-              drag
-            >
-              <el-icon class="el-icon--upload"><UploadFilled /></el-icon>
-              <div class="el-upload__text">
-                将CSV文件拖到此处，或<em>点击上传</em>
-              </div>
-              <template #tip>
-                <div class="el-upload__tip">支持招商银行CSV格式</div>
-              </template>
-            </el-upload>
-          </el-form-item>
-        </el-col>
-        <el-col :span="12">
-          <el-form-item label="Excel文件">
-            <el-upload
-              ref="excelUploadRef"
-              class="upload-demo"
-              :auto-upload="false"
-              :on-change="handleExcelFileChange"
-              :on-exceed="handleExceed"
-              :limit="1"
-              accept=".xlsx,.xls"
-              drag
-            >
-              <el-icon class="el-icon--upload"><UploadFilled /></el-icon>
-              <div class="el-upload__text">
-                导入之前导出的Excel文件
-              </div>
-              <template #tip>
-                <div class="el-upload__tip">支持系统导出Excel文件的重新导入</div>
-              </template>
-            </el-upload>
-          </el-form-item>
-        </el-col>
-      </el-row>
-      
-      <div class="button-container">
-        <el-row :gutter="20">
-          <el-col :span="12">
-            <el-button 
-              type="primary" 
-              @click="importFile"
-              :loading="uploading"
-              :disabled="!selectedFile"
-              :icon="uploading ? Loading : DocumentAdd"
-              style="width: 100%;"
-            >
-              {{ uploading ? '导入中...' : '导入CSV账单' }}
-            </el-button>
-          </el-col>
-          <el-col :span="12">
-            <el-button 
-              type="success" 
-              @click="importExcelFile"
-              :loading="excelUploading"
-              :disabled="!selectedExcelFile"
-              :icon="excelUploading ? Loading : DocumentAdd"
-              style="width: 100%;"
-            >
-              {{ excelUploading ? '导入中...' : '导入Excel账单' }}
-            </el-button>
-          </el-col>
-        </el-row>
-        <div class="clear-button">
-          <el-button @click="clearForm" :icon="Delete">清空所有</el-button>
+        <div class="guide-text">
+          <h2>账单数据导入</h2>
+          <p>支持招商银行CSV原始账单和系统导出Excel文件的导入，实现数据的持续累加和管理</p>
         </div>
+      </div>
+    </el-card>
+
+    <!-- 导入方式选择 -->
+    <el-row :gutter="24" class="import-options">
+      <el-col :span="12">
+        <el-card class="import-card csv-card" :class="{ active: importMode === 'csv' }" shadow="hover" @click="selectImportMode('csv')">
+          <div class="import-card-content">
+            <div class="import-icon">
+              <el-icon size="32"><Document /></el-icon>
+            </div>
+            <div class="import-info">
+              <h3>CSV 原始账单</h3>
+              <p>导入招商银行导出的CSV账单文件</p>
+              <div class="import-features">
+                <el-tag size="small" type="info">原始数据</el-tag>
+                <el-tag size="small" type="warning">需要清洗</el-tag>
+              </div>
+            </div>
+            <div class="import-status">
+              <el-icon v-if="importMode === 'csv'" class="selected-icon"><Check /></el-icon>
+            </div>
+          </div>
+        </el-card>
+      </el-col>
+      
+      <el-col :span="12">
+        <el-card class="import-card excel-card" :class="{ active: importMode === 'excel' }" shadow="hover" @click="selectImportMode('excel')">
+          <div class="import-card-content">
+            <div class="import-icon">
+              <el-icon size="32"><Grid /></el-icon>
+            </div>
+            <div class="import-info">
+              <h3>Excel 数据载体</h3>
+              <p>导入之前导出的Excel文件，保留用户修改</p>
+              <div class="import-features">
+                <el-tag size="small" type="success">保留备注</el-tag>
+                <el-tag size="small" type="primary">数据合并</el-tag>
+              </div>
+            </div>
+            <div class="import-status">
+              <el-icon v-if="importMode === 'excel'" class="selected-icon"><Check /></el-icon>
+            </div>
+          </div>
+        </el-card>
+      </el-col>
+    </el-row>
+
+    <!-- 文件上传区域 -->
+    <el-card v-if="importMode" class="upload-card" shadow="hover">
+      <div class="upload-area">
+        <el-upload
+          ref="uploadRef"
+          class="file-uploader"
+          :class="{ 'has-file': selectedFile }"
+          :auto-upload="false"
+          :on-change="handleFileChange"
+          :on-exceed="handleExceed"
+          :limit="1"
+          :accept="importMode === 'csv' ? '.csv' : '.xlsx,.xls'"
+          drag
+        >
+          <div class="upload-content">
+            <div class="upload-icon">
+              <el-icon v-if="!selectedFile" size="48"><UploadFilled /></el-icon>
+              <el-icon v-else size="48" class="success-icon"><CircleCheck /></el-icon>
+            </div>
+            <div class="upload-text">
+              <h3 v-if="!selectedFile">
+                将{{ importMode === 'csv' ? 'CSV' : 'Excel' }}文件拖到此处，或点击选择文件
+              </h3>
+              <h3 v-else class="file-selected">
+                ✓ 已选择文件：{{ selectedFile.name }}
+              </h3>
+              <p v-if="importMode === 'csv'">支持招商银行CSV格式，文件大小不超过10MB</p>
+              <p v-else>支持系统导出Excel文件，自动保留用户修改</p>
+            </div>
+          </div>
+        </el-upload>
+      </div>
+      
+      <div class="upload-actions">
+        <el-button 
+          type="primary" 
+          size="large"
+          @click="importFile"
+          :loading="uploading"
+          :disabled="!selectedFile"
+          :icon="uploading ? Loading : DocumentAdd"
+        >
+          {{ uploading ? '导入中...' : `开始导入${importMode === 'csv' ? 'CSV' : 'Excel'}账单` }}
+        </el-button>
+        <el-button @click="clearSelection" :icon="Delete">重新选择</el-button>
       </div>
     </el-card>
     
@@ -144,17 +162,16 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 // 设置全局确认对话框
 ElMessage.confirm = ElMessageBox.confirm
 import { 
-  Upload, UploadFilled, Loading, DocumentAdd, Delete, Clock
+  Upload, UploadFilled, Loading, DocumentAdd, Delete, Clock,
+  Folder, Document, Grid, Check, CircleCheck
 } from '@element-plus/icons-vue'
 
 const router = useRouter()
 const form = reactive({})
+const importMode = ref('')
 const selectedFile = ref(null)
-const selectedExcelFile = ref(null)
 const uploading = ref(false)
-const excelUploading = ref(false)
 const uploadRef = ref(null)
-const excelUploadRef = ref(null)
 const importHistory = ref([])
 
 // 从localStorage加载导入历史
@@ -175,12 +192,20 @@ const saveImportHistory = (record) => {
   localStorage.setItem('billImportHistory', JSON.stringify(importHistory.value))
 }
 
+const selectImportMode = (mode) => {
+  importMode.value = mode
+  clearSelection()
+}
+
 const handleFileChange = (file) => {
   selectedFile.value = file.raw
 }
 
-const handleExcelFileChange = (file) => {
-  selectedExcelFile.value = file.raw
+const clearSelection = () => {
+  selectedFile.value = null
+  if (uploadRef.value && uploadRef.value.clearFiles) {
+    uploadRef.value.clearFiles()
+  }
 }
 
 const handleExceed = () => {
@@ -197,8 +222,10 @@ const importFile = async () => {
   const formData = new FormData()
   formData.append('file', selectedFile.value)
 
+  const apiUrl = importMode.value === 'csv' ? '/api/cmb/import-full' : '/api/cmb/import-excel'
+  
   try {
-    const response = await axios.post('/api/cmb/import-full', formData, {
+    const response = await axios.post(apiUrl, formData, {
       headers: {
         'Content-Type': 'multipart/form-data'
       }
@@ -249,8 +276,9 @@ const importFile = async () => {
       status: 'success'
     })
     
-    ElMessage.success('账单导入成功')
-    clearForm()
+    ElMessage.success(`${importMode.value === 'csv' ? 'CSV' : 'Excel'}账单导入成功`)
+    clearSelection()
+    importMode.value = ''
     
     // 跳转到解析页面
     router.push(`/bill-analysis/${importId}`)
@@ -271,102 +299,17 @@ const importFile = async () => {
   }
 }
 
-const importExcelFile = async () => {
-  if (!selectedExcelFile.value) {
-    ElMessage.warning('请选择Excel文件')
-    return
-  }
 
-  excelUploading.value = true
-  const formData = new FormData()
-  formData.append('file', selectedExcelFile.value)
-
-  try {
-    const response = await axios.post('/api/cmb/import-excel', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data'
-      }
-    })
-    
-    // 确保先加载历史记录
-    loadImportHistory()
-    
-    // 检查是否有相同账号的数据需要合并
-    const existingData = findExistingBillData(response.data.exportInfo.account)
-    
-    let importId, billData
-    
-    if (existingData) {
-      // 合并数据
-      importId = existingData.id
-      const mergedRecords = mergeRecords(existingData.data, response.data.records)
-      
-      billData = {
-        ...existingData,
-        fileName: `${existingData.fileName} + ${selectedExcelFile.value.name}`,
-        importTime: `${existingData.importTime} (更新: ${new Date().toLocaleString()})`,
-        data: mergedRecords,
-        exportInfo: response.data.exportInfo,
-        summary: response.data.summaryInfo
-      }
-    } else {
-      // 新建数据
-      importId = Date.now().toString()
-      billData = {
-        id: importId,
-        fileName: selectedExcelFile.value.name,
-        importTime: new Date().toLocaleString(),
-        data: response.data.records,
-        exportInfo: response.data.exportInfo,
-        summary: response.data.summaryInfo
-      }
-    }
-    
-    localStorage.setItem(`billData_${importId}`, JSON.stringify(billData))
-    
-    // 添加到导入历史
-    saveImportHistory({
-      id: importId,
-      fileName: selectedExcelFile.value.name,
-      importTime: new Date().toLocaleString(),
-      recordCount: response.data.records?.length || 0,
-      status: 'success'
-    })
-    
-    ElMessage.success('Excel账单导入成功')
-    clearForm()
-    
-    // 跳转到解析页面
-    router.push(`/bill-analysis/${importId}`)
-    
-  } catch (error) {
-    // 添加失败记录到历史
-    saveImportHistory({
-      id: Date.now().toString(),
-      fileName: selectedExcelFile.value.name,
-      importTime: new Date().toLocaleString(),
-      recordCount: 0,
-      status: 'failed'
-    })
-    
-    ElMessage.error('Excel账单导入失败: ' + (error.response?.data?.message || error.message || '未知错误'))
-  } finally {
-    excelUploading.value = false
-  }
-}
-
-const clearForm = () => {
-  selectedFile.value = null
-  selectedExcelFile.value = null
-  if (uploadRef.value && uploadRef.value.clearFiles) {
-    uploadRef.value.clearFiles()
-  }
-  if (excelUploadRef.value && excelUploadRef.value.clearFiles) {
-    excelUploadRef.value.clearFiles()
-  }
-}
 
 const goToAnalysis = (importId) => {
+  // 检查数据是否存在
+  const billData = localStorage.getItem(`billData_${importId}`)
+  if (!billData) {
+    ElMessage.error('账单数据不存在，可能已被删除')
+    // 清理无效的历史记录
+    cleanInvalidHistory()
+    return
+  }
   router.push(`/bill-analysis/${importId}`)
 }
 
@@ -376,17 +319,41 @@ const deleteImportRecord = (importId, index) => {
     cancelButtonText: '取消',
     type: 'warning'
   }).then(() => {
-    // 从导入历史中删除
-    importHistory.value.splice(index, 1)
+    // 检查是否有其他记录引用相同的数据
+    const targetRecord = importHistory.value[index]
+    const referencingRecords = importHistory.value.filter((record, idx) => 
+      idx !== index && record.id === targetRecord.id && record.status === 'success'
+    )
+    
+    if (referencingRecords.length > 0) {
+      // 有其他记录引用相同数据，只删除历史记录
+      importHistory.value.splice(index, 1)
+      ElMessage.success('删除成功（数据保留，因为有其他记录引用）')
+    } else {
+      // 没有其他记录引用，删除数据和历史记录
+      importHistory.value.splice(index, 1)
+      localStorage.removeItem(`billData_${importId}`)
+      ElMessage.success('删除成功')
+    }
+    
     localStorage.setItem('billImportHistory', JSON.stringify(importHistory.value))
-    
-    // 删除对应的账单数据
-    localStorage.removeItem(`billData_${importId}`)
-    
-    ElMessage.success('删除成功')
   }).catch(() => {
     ElMessage.info('已取消删除')
   })
+}
+
+// 清理无效的历史记录
+const cleanInvalidHistory = () => {
+  const validHistory = importHistory.value.filter(record => {
+    if (record.status !== 'success') return true
+    return localStorage.getItem(`billData_${record.id}`) !== null
+  })
+  
+  if (validHistory.length !== importHistory.value.length) {
+    importHistory.value = validHistory
+    localStorage.setItem('billImportHistory', JSON.stringify(importHistory.value))
+    ElMessage.info('已清理无效的历史记录')
+  }
 }
 
 // 查找现有的账单数据（智能匹配账号）
@@ -475,16 +442,223 @@ const createRecordKey = (record) => {
 
 onMounted(() => {
   loadImportHistory()
+  // 自动清理无效的历史记录
+  cleanInvalidHistory()
 })
 </script>
 
 <style scoped>
 .bill-import {
-  padding: 0;
+  padding: 20px;
+  min-height: 100vh;
+  width: 100%;
+  box-sizing: border-box;
 }
 
-.upload-card, .history-card {
-  margin-bottom: 20px;
+/* 导入指导卡片 */
+.guide-card {
+  margin-bottom: 32px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border: none;
+  border-radius: 16px;
+  color: white;
+}
+
+.guide-content {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  padding: 24px;
+}
+
+.guide-icon {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.guide-text h2 {
+  margin: 0 0 8px 0;
+  font-size: 28px;
+  font-weight: 600;
+}
+
+.guide-text p {
+  margin: 0;
+  font-size: 16px;
+  opacity: 0.9;
+  line-height: 1.5;
+}
+
+/* 导入方式选择 */
+.import-options {
+  margin-bottom: 32px;
+}
+
+.import-card {
+  cursor: pointer;
+  transition: all 0.3s ease;
+  border-radius: 12px;
+  border: 2px solid transparent;
+  height: 160px;
+}
+
+.import-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+}
+
+.import-card.active {
+  border-color: #409eff;
+  box-shadow: 0 4px 20px rgba(64, 158, 255, 0.2);
+}
+
+.import-card-content {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  height: 100%;
+  padding: 20px;
+}
+
+.import-icon {
+  flex-shrink: 0;
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  background: #f5f7fa;
+}
+
+.csv-card .import-icon {
+  color: #e6a23c;
+  background: #fdf6ec;
+}
+
+.excel-card .import-icon {
+  color: #67c23a;
+  background: #f0f9ff;
+}
+
+.import-info {
+  flex: 1;
+}
+
+.import-info h3 {
+  margin: 0 0 8px 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #303133;
+}
+
+.import-info p {
+  margin: 0 0 12px 0;
+  font-size: 14px;
+  color: #606266;
+  line-height: 1.4;
+}
+
+.import-features {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.import-status {
+  flex-shrink: 0;
+}
+
+.selected-icon {
+  color: #409eff;
+  font-size: 24px;
+}
+
+/* 文件上传区域 */
+.upload-card {
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.upload-area {
+  margin-bottom: 24px;
+}
+
+.file-uploader {
+  width: 100%;
+}
+
+.file-uploader :deep(.el-upload-dragger) {
+  width: 100%;
+  height: 200px;
+  border: 2px dashed #dcdfe6;
+  border-radius: 12px;
+  background: #fafbfc;
+  transition: all 0.3s ease;
+}
+
+.file-uploader :deep(.el-upload-dragger:hover) {
+  border-color: #409eff;
+  background: #f0f9ff;
+}
+
+.file-uploader.has-file :deep(.el-upload-dragger) {
+  border-color: #67c23a;
+  background: #f0f9ff;
+}
+
+.upload-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  padding: 24px;
+}
+
+.upload-icon {
+  margin-bottom: 16px;
+  color: #c0c4cc;
+}
+
+.success-icon {
+  color: #67c23a;
+}
+
+.upload-text {
+  text-align: center;
+}
+
+.upload-text h3 {
+  margin: 0 0 8px 0;
+  font-size: 18px;
+  color: #606266;
+  font-weight: 500;
+}
+
+.file-selected {
+  color: #67c23a !important;
+}
+
+.upload-text p {
+  margin: 0;
+  font-size: 14px;
+  color: #909399;
+  line-height: 1.4;
+}
+
+.upload-actions {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  padding: 24px;
+  background: #fafbfc;
+  border-top: 1px solid #ebeef5;
+}
+
+/* 历史记录 */
+.history-card {
+  margin-top: 32px;
+  border-radius: 12px;
 }
 
 .card-header {
@@ -499,18 +673,26 @@ onMounted(() => {
   font-size: 18px;
 }
 
-.el-upload__tip {
-  margin-top: 10px;
-}
-
-.button-container {
-  margin-top: 20px;
-}
-
-.clear-button {
-  text-align: center;
-  margin-top: 15px;
-  padding-top: 15px;
-  border-top: 1px solid #ebeef5;
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .guide-content {
+    flex-direction: column;
+    text-align: center;
+    gap: 16px;
+  }
+  
+  .import-options .el-col {
+    margin-bottom: 16px;
+  }
+  
+  .import-card-content {
+    flex-direction: column;
+    text-align: center;
+    gap: 12px;
+  }
+  
+  .upload-actions {
+    flex-direction: column;
+  }
 }
 </style>
