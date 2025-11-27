@@ -12,21 +12,30 @@ personal-ledger/
 │   │       ├── controller/        # REST API控制器
 │   │       ├── entity/           # 数据实体类
 │   │       ├── service/          # 业务逻辑服务
+│   │       │   └── impl/         # 服务实现类
 │   │       ├── util/             # 工具类
 │   │       ├── exception/        # 异常处理
-│   │       └── listener/         # 事件监听器
+│   │       ├── listener/         # 事件监听器
+│   │       └── demos/            # 演示代码
 │   ├── src/main/resources/        # 配置文件和资源
-│   │   ├── csv/                  # CSV样例文件
 │   │   ├── static/               # 静态资源
-│   │   └── application.yml       # 应用配置
+│   │   ├── application.yml       # 应用配置
+│   │   └── banner.txt            # 启动横幅
 │   └── pom.xml                    # Maven配置
 ├── personal-ledger-frontend/       # 前端应用模块 (Vue 3 + Vite)
 │   ├── src/
 │   │   ├── components/           # Vue组件
+│   │   │   └── Layout.vue        # 布局组件
 │   │   ├── views/                # 页面视图
+│   │   │   ├── CmbBillImport.vue # 招商银行账单导入页面
+│   │   │   └── Dashboard.vue     # 仪表板页面
 │   │   ├── router/               # 路由配置
+│   │   │   └── index.js          # 路由定义
+│   │   ├── App.vue               # 根组件
 │   │   └── main.js               # 应用入口
+│   ├── index.html                # HTML模板
 │   ├── package.json              # 前端依赖配置
+│   ├── package-lock.json         # 依赖锁定文件
 │   └── vite.config.js            # Vite构建配置
 ├── docs/                          # 项目文档
 ├── scripts/                       # 构建和部署脚本
@@ -117,15 +126,19 @@ scripts\build.bat
 - **@element-plus/icons-vue** - 图标库
 
 **开发工具：**
-- **unplugin-auto-import** - 自动导入
-- **unplugin-vue-components** - 组件自动导入
+- **@vitejs/plugin-vue 4.4.0** - Vue单文件组件支持
+- **unplugin-auto-import 0.16.7** - 自动导入
+- **unplugin-vue-components 0.25.2** - 组件自动导入
 
 ## API接口
 
 ### 主要接口
 - `POST /api/cmb/import-full` - 导入招商银行CSV账单文件
 - `POST /api/cmb/clean-records` - 清洗账单记录数据
+- `GET /api/cmb/records` - 获取账单记录列表
 - `POST /api/cmb/export` - 导出账单数据为Excel文件
+- `PUT /api/cmb/records/{id}/remark` - 更新交易记录备注
+- `PUT /api/cmb/records/{id}/include-in-summary` - 设置是否计入统计
 
 ### 接口特性
 - 支持跨域请求（CORS）
@@ -142,10 +155,44 @@ scripts\build.bat
 5. **统计分析**：查看收支统计和分析结果
 6. **导出数据**：将处理后的数据导出为Excel文件
 
+## 项目特色
+
+### 数据处理能力
+- **智能CSV解析** - 自动识别招商银行CSV格式，支持中文字段
+- **数据去重清洗** - 基于交易时间、金额、商户等多维度去重
+- **异常数据处理** - 自动识别和标记异常交易记录
+- **批量数据导入** - 支持大文件批量导入，内存优化处理
+
+### 用户体验
+- **响应式设计** - 适配桌面和移动端设备
+- **实时数据更新** - 前后端数据实时同步
+- **操作反馈** - 完整的成功/错误提示机制
+- **数据可视化** - 直观的收支统计展示
+
 ## 文档
 
 - [开发指南](docs/README.md)
 - 更多文档正在完善中...
+
+## 版本历史
+
+### v1.0.0 (当前版本)
+- ✅ 招商银行CSV账单导入功能
+- ✅ 数据清洗和去重功能
+- ✅ 交易记录管理和筛选
+- ✅ Excel数据导出功能
+- ✅ 用户备注和统计控制
+- ✅ 响应式Web界面
+
+## 贡献指南
+
+欢迎提交Issue和Pull Request来改进项目！
+
+1. Fork 项目
+2. 创建特性分支 (`git checkout -b feature/AmazingFeature`)
+3. 提交更改 (`git commit -m 'Add some AmazingFeature'`)
+4. 推送到分支 (`git push origin feature/AmazingFeature`)
+5. 打开Pull Request
 
 ## 许可证
 
