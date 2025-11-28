@@ -7,3 +7,23 @@ spring:
     multipart:
       max-file-size: 10MB
       max-request-size: 10MB
+  # 数据源配置
+  datasource:
+    driver-class-name: org.sqlite.JDBC
+    url: jdbc:sqlite:./data/personal-ledger.db
+    username: 
+    password:
+
+# MyBatis-Plus配置
+mybatis-plus:
+  mapper-locations: classpath*:/mapper/**/*.xml
+  type-aliases-package: com.gaoyan.personalledger.entity
+  global-config:
+    banner: false
+    db-config:
+      id-type: none
+  configuration:
+    map-underscore-to-camel-case: true
+    log-impl: org.apache.ibatis.logging.slf4j.Slf4jImpl
+    use-generated-keys: false
+    default-executor-type: simple

@@ -49,10 +49,24 @@
             <span>按分类统计</span>
           </el-menu-item>
         </el-sub-menu>
-        <el-menu-item index="/rule-management">
-          <el-icon><Setting /></el-icon>
-          <span>规则管理</span>
-        </el-menu-item>
+        <el-sub-menu index="/settings">
+          <template #title>
+            <el-icon><Setting /></el-icon>
+            <span>系统设置</span>
+          </template>
+          <el-menu-item index="/category-management">
+            <el-icon><Collection /></el-icon>
+            <span>分类管理</span>
+          </el-menu-item>
+          <el-menu-item index="/payment-channel-management">
+            <el-icon><CreditCard /></el-icon>
+            <span>支付渠道</span>
+          </el-menu-item>
+          <el-menu-item index="/rule-management">
+            <el-icon><Tools /></el-icon>
+            <span>规则管理</span>
+          </el-menu-item>
+        </el-sub-menu>
       </el-menu>
     </el-aside>
     
@@ -71,7 +85,7 @@
 </template>
 
 <script setup>
-import { House, Upload, Grid, Lightning, DataAnalysis, Document, TrendCharts, PieChart, Setting } from '@element-plus/icons-vue'
+import { House, Upload, Grid, Lightning, DataAnalysis, Document, TrendCharts, PieChart, Setting, Collection, CreditCard, Tools } from '@element-plus/icons-vue'
 </script>
 
 <style scoped>

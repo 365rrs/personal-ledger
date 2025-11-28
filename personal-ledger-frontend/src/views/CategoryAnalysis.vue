@@ -112,13 +112,17 @@
             <el-input v-model="currentRecord.remark" readonly />
           </el-form-item>
           <el-form-item label="支付渠道">
-            <el-input v-model="currentRecord.paymentChannel" placeholder="请输入支付渠道" />
+            <el-select v-model="currentRecord.paymentChannel" placeholder="请选择支付渠道" clearable filterable>
+              <el-option v-for="channel in paymentChannelOptions" :key="channel" :label="channel" :value="channel" />
+            </el-select>
           </el-form-item>
           <el-form-item label="收支类型">
-            <el-input v-model="currentRecord.transactionType" placeholder="请输入收支类型" />
+            <el-input v-model="currentRecord.transactionType" readonly />
           </el-form-item>
           <el-form-item label="分类">
-            <el-input v-model="currentRecord.category" placeholder="请输入分类" />
+            <el-select v-model="currentRecord.category" placeholder="请选择分类" clearable filterable>
+              <el-option v-for="cat in categoryOptions" :key="cat" :label="cat" :value="cat" />
+            </el-select>
           </el-form-item>
           <el-form-item label="用户备注">
             <el-input 
@@ -151,6 +155,7 @@
 <script setup>
 import { ref, computed, onMounted, watch, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import axios from 'axios'
 import * as echarts from 'echarts'
 import { PieChart, ArrowLeft, Edit } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
@@ -165,6 +170,27 @@ const selectedCategory = ref('')
 const drawerVisible = ref(false)
 const currentRecord = ref(null)
 let pieChartInstance = null
+
+const categoryOptions = ref([])
+const paymentChannelOptions = ref([])
+
+const loadCategories = async () => {
+  try {
+    const response = await axios.get('http://localhost:8080/api/category/list')
+    categoryOptions.value = response.data.map(c => c.name)
+  } catch (error) {
+    console.error('加载分类失败', error)
+  }
+}
+
+const loadPaymentChannels = async () => {
+  try {
+    const response = await axios.get('http://localhost:8080/api/payment-channel/list')
+    paymentChannelOptions.value = response.data.map(c => c.name)
+  } catch (error) {
+    console.error('加载支付渠道失败', error)
+  }
+}
 
 // 加载账单数据
 const loadBillData = () => {
@@ -331,6 +357,8 @@ const handleResize = () => {
 
 onMounted(() => {
   loadBillData()
+  loadCategories()
+  loadPaymentChannels()
   nextTick(() => {
     initPieChart()
   })

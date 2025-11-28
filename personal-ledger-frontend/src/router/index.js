@@ -6,6 +6,8 @@ import DataAnalysis from '../views/DataAnalysis.vue'
 import CategoryAnalysis from '../views/CategoryAnalysis.vue'
 import Dashboard from '../views/Dashboard.vue'
 import RuleManagement from '../views/RuleManagement.vue'
+import CategoryManagement from '../views/CategoryManagement.vue'
+import PaymentChannelManagement from '../views/PaymentChannelManagement.vue'
 
 const routes = [
   {
@@ -71,6 +73,18 @@ const routes = [
     name: 'RuleManagement',
     component: RuleManagement,
     meta: { title: '规则管理' }
+  },
+  {
+    path: '/category-management',
+    name: 'CategoryManagement',
+    component: CategoryManagement,
+    meta: { title: '分类管理' }
+  },
+  {
+    path: '/payment-channel-management',
+    name: 'PaymentChannelManagement',
+    component: PaymentChannelManagement,
+    meta: { title: '支付渠道管理' }
   }
 ]
 

@@ -240,24 +240,22 @@
           </el-col>
           <el-col :xs="12" :sm="6" :lg="4">
             <el-form-item label="支付渠道">
-              <el-select v-model="filterForm.paymentChannel" placeholder="全部" clearable>
-                <el-option label="微信" value="微信" />
-                <el-option label="支付宝" value="支付宝" />
-                <el-option label="京东" value="京东支付" />
+              <el-select v-model="filterForm.paymentChannel" placeholder="全部" clearable filterable>
+                <el-option v-for="channel in paymentChannelOptions" :key="channel" :label="channel" :value="channel" />
                 <el-option label="未知" value="__UNKNOWN__" />
               </el-select>
             </el-form-item>
           </el-col>
           <el-col :xs="12" :sm="6" :lg="4">
             <el-form-item label="交易类型">
-              <el-select v-model="filterForm.tradeType" placeholder="全部" clearable>
+              <el-select v-model="filterForm.tradeType" placeholder="全部" clearable filterable>
                 <el-option v-for="type in tradeTypeOptions" :key="type" :label="type" :value="type" />
               </el-select>
             </el-form-item>
           </el-col>
           <el-col :xs="12" :sm="6" :lg="4">
             <el-form-item label="分类">
-              <el-select v-model="filterForm.category" placeholder="全部" clearable>
+              <el-select v-model="filterForm.category" placeholder="全部" clearable filterable>
                 <el-option label="未分类" value="__UNCATEGORIZED__" />
                 <el-option v-for="cat in categoryOptions" :key="cat" :label="cat" :value="cat" />
               </el-select>
@@ -428,13 +426,17 @@
             <el-input v-model="currentRecord.remark" readonly />
           </el-form-item>
           <el-form-item label="支付渠道">
-            <el-input v-model="currentRecord.paymentChannel" :placeholder="drawerMode === 'edit' ? '请输入支付渠道' : ''" />
+            <el-select v-model="currentRecord.paymentChannel" placeholder="请选择支付渠道" clearable filterable :disabled="drawerMode === 'view'">
+              <el-option v-for="channel in paymentChannelOptions" :key="channel" :label="channel" :value="channel" />
+            </el-select>
           </el-form-item>
           <el-form-item label="收支类型">
-            <el-input v-model="currentRecord.transactionType" :placeholder="drawerMode === 'edit' ? '请输入收支类型' : ''" />
+            <el-input v-model="currentRecord.transactionType" readonly />
           </el-form-item>
           <el-form-item label="分类">
-            <el-input v-model="currentRecord.category" :placeholder="drawerMode === 'edit' ? '请输入分类' : ''" />
+            <el-select v-model="currentRecord.category" placeholder="请选择分类" clearable filterable :disabled="drawerMode === 'view'">
+              <el-option v-for="cat in categoryOptions" :key="cat" :label="cat" :value="cat" />
+            </el-select>
           </el-form-item>
           <el-form-item label="用户备注">
             <el-input 
@@ -524,12 +526,27 @@ const tradeTypeOptions = computed(() => {
   return types.sort()
 })
 
-// 分类选项
-const categoryOptions = computed(() => {
-  if (!billData.value?.data) return []
-  const categories = [...new Set(billData.value.data.map(item => item.category).filter(Boolean))]
-  return categories.sort()
-})
+// 分类选项 - 从API加载
+const categoryOptions = ref([])
+const loadCategories = async () => {
+  try {
+    const response = await axios.get('http://localhost:8080/api/category/list')
+    categoryOptions.value = response.data.map(c => c.name)
+  } catch (error) {
+    console.error('加载分类失败', error)
+  }
+}
+
+// 支付渠道选项 - 从API加载
+const paymentChannelOptions = ref([])
+const loadPaymentChannels = async () => {
+  try {
+    const response = await axios.get('http://localhost:8080/api/payment-channel/list')
+    paymentChannelOptions.value = response.data.map(c => c.name)
+  } catch (error) {
+    console.error('加载支付渠道失败', error)
+  }
+}
 
 // 账单列表
 const billList = ref([])
@@ -946,6 +963,8 @@ const goToCategoryAnalysis = () => {
 
 onMounted(() => {
   loadBillData()
+  loadCategories()
+  loadPaymentChannels()
 })
 
 // 监听路由参数变化
