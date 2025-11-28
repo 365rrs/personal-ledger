@@ -456,7 +456,7 @@ onMounted(() => {
 
 <style scoped>
 .bill-import {
-  padding: 20px;
+  padding: 0;
   min-height: 100vh;
   width: 100%;
   box-sizing: border-box;
