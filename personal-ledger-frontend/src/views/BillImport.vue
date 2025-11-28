@@ -9,6 +9,11 @@
         <div class="guide-text">
           <h2>账单数据导入</h2>
           <p>支持招商银行CSV原始账单和系统导出Excel文件的导入，实现数据的持续累加和管理</p>
+          <div class="guide-actions">
+            <el-button type="info" size="small" @click="switchToSimple" :icon="Lightning">
+              切换到快速导入
+            </el-button>
+          </div>
         </div>
       </div>
     </el-card>
@@ -163,7 +168,7 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 ElMessage.confirm = ElMessageBox.confirm
 import { 
   Upload, UploadFilled, Loading, DocumentAdd, Delete, Clock,
-  Folder, Document, Grid, Check, CircleCheck
+  Folder, Document, Grid, Check, CircleCheck, Lightning
 } from '@element-plus/icons-vue'
 
 const router = useRouter()
@@ -440,6 +445,11 @@ const createRecordKey = (record) => {
   return `${date}_${time}_${income}_${expense}_${type}_${remark}`
 }
 
+// 切换到简化版导入
+const switchToSimple = () => {
+  router.push('/bill-import-simple')
+}
+
 onMounted(() => {
   loadImportHistory()
   // 自动清理无效的历史记录
@@ -482,10 +492,14 @@ onMounted(() => {
 }
 
 .guide-text p {
-  margin: 0;
+  margin: 0 0 16px 0;
   font-size: 16px;
   opacity: 0.9;
   line-height: 1.5;
+}
+
+.guide-actions {
+  margin-top: 8px;
 }
 
 /* 导入方式选择 */

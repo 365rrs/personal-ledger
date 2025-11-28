@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import BillImport from '../views/BillImport.vue'
+import BillImportSimple from '../views/BillImportSimple.vue'
 import BillAnalysis from '../views/BillAnalysis.vue'
 import Dashboard from '../views/Dashboard.vue'
 
@@ -19,6 +20,12 @@ const routes = [
     name: 'BillImport',
     component: BillImport,
     meta: { title: '账单导入' }
+  },
+  {
+    path: '/bill-import-simple',
+    name: 'BillImportSimple',
+    component: BillImportSimple,
+    meta: { title: '快速导入' }
   },
   {
     path: '/bill-analysis/:id',
