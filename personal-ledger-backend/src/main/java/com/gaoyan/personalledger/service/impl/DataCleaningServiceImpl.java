@@ -42,6 +42,11 @@ public class DataCleaningServiceImpl implements DataCleaningService {
         CATEGORY_KEYWORDS.put("海底捞", "餐饮");
         CATEGORY_KEYWORDS.put("火锅", "餐饮");
         CATEGORY_KEYWORDS.put("快餐", "餐饮");
+        CATEGORY_KEYWORDS.put("可乐", "餐饮");
+        CATEGORY_KEYWORDS.put("雪碧", "餐饮");
+        CATEGORY_KEYWORDS.put("奶茶", "餐饮");
+        CATEGORY_KEYWORDS.put("果汁", "餐饮");
+        CATEGORY_KEYWORDS.put("饮料", "餐饮");
 
         // 外卖类
         CATEGORY_KEYWORDS.put("外卖", "外卖");
@@ -73,6 +78,7 @@ public class DataCleaningServiceImpl implements DataCleaningService {
         CATEGORY_KEYWORDS.put("出租车", "出行");
         CATEGORY_KEYWORDS.put("高铁", "出行");
         CATEGORY_KEYWORDS.put("中铁网络", "出行");
+        CATEGORY_KEYWORDS.put("加油", "出行");
     }
 
     // 交易备注清洗规则
@@ -261,7 +267,7 @@ public class DataCleaningServiceImpl implements DataCleaningService {
     }
 
     /**
-     * 分类账单记录
+     * 分类账单记录（AI智能分类）
      *
      * @param records 原始账单记录列表
      * @return 分类后的账单记录列表
@@ -274,7 +280,7 @@ public class DataCleaningServiceImpl implements DataCleaningService {
 
         int count = 0;
         for (CmbBillRecordReal record : records) {
-            // 只有在分类为空时才进行识别
+            // 只有在分类为空时才进行AI智能识别
             if (record.getCategory() == null || record.getCategory().isEmpty()) {
                 String category = identifyCategory(record);
                 if (category != null) {
@@ -284,7 +290,7 @@ public class DataCleaningServiceImpl implements DataCleaningService {
             }
         }
 
-        log.info("完成账单分类，共识别{}条记录", count);
+        log.info("完成AI智能分类，共识别{}条记录", count);
         return records;
     }
 
@@ -479,32 +485,61 @@ public class DataCleaningServiceImpl implements DataCleaningService {
     }
 
     /**
-     * 识别分类
+     * 识别分类（AI智能分类）
      *
      * @param record 账单记录
      * @return 分类
      */
     private String identifyCategory(CmbBillRecordReal record) {
-        // 检查交易备注中是否包含分类关键词
-        String remark = record.getRemark();
-        if (remark != null && !remark.isEmpty()) {
-            for (Map.Entry<String, String> entry : CATEGORY_KEYWORDS.entrySet()) {
-                if (remark.toLowerCase().contains(entry.getKey().toLowerCase())) {
-                    return entry.getValue();
+        // 构建完整的文本信息用于分析
+        String remark = record.getRemark() != null ? record.getRemark() : "";
+        String tradeType = record.getTradeType() != null ? record.getTradeType() : "";
+        String fullText = (remark + " " + tradeType).toLowerCase();
+        
+        // AI智能匹配：计算每个分类的匹配分数
+        String bestCategory = null;
+        int maxScore = 0;
+        
+        Map<String, Integer> categoryScores = new HashMap<>();
+        
+        for (Map.Entry<String, String> entry : CATEGORY_KEYWORDS.entrySet()) {
+            String keyword = entry.getKey().toLowerCase();
+            String category = entry.getValue();
+            
+            if (fullText.contains(keyword)) {
+                // 计算匹配分数：关键词长度越长，分数越高（更精确）
+                int score = keyword.length() * 10;
+                
+                // 完全匹配加分
+                if (remark.equalsIgnoreCase(keyword) || tradeType.equalsIgnoreCase(keyword)) {
+                    score += 50;
                 }
+                
+                // 累加该分类的分数
+                categoryScores.put(category, categoryScores.getOrDefault(category, 0) + score);
             }
         }
-
-        // 检查交易类型中是否包含分类关键词
-        String tradeType = record.getTradeType();
-        if (tradeType != null && !tradeType.isEmpty()) {
-            for (Map.Entry<String, String> entry : CATEGORY_KEYWORDS.entrySet()) {
-                if (tradeType.toLowerCase().contains(entry.getKey().toLowerCase())) {
-                    return entry.getValue();
-                }
+        
+        // 选择得分最高的分类
+        for (Map.Entry<String, Integer> entry : categoryScores.entrySet()) {
+            if (entry.getValue() > maxScore) {
+                maxScore = entry.getValue();
+                bestCategory = entry.getKey();
             }
         }
-
-        return null;
+        
+        return bestCategory;
+    }
+    
+    /**
+     * 获取系统支持的分类列表
+     *
+     * @return 分类列表
+     */
+    @Override
+    public List<String> getCategories() {
+        // 从 CATEGORY_KEYWORDS 中提取所有唯一的分类值
+        Set<String> categorySet = new LinkedHashSet<>(CATEGORY_KEYWORDS.values());
+        return new ArrayList<>(categorySet);
     }
 }

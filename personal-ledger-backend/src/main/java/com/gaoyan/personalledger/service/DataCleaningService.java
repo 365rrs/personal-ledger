@@ -64,4 +64,10 @@ public interface DataCleaningService {
      * @return 交易备注清洗后的账单记录列表
      */
     List<CmbBillRecordReal> cleanRemarks(List<CmbBillRecordReal> records);
+    
+    /**
+     * 获取系统支持的分类列表
+     * @return 分类列表
+     */
+    List<String> getCategories();
 }

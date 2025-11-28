@@ -150,6 +150,7 @@ scripts\build.bat
 - `POST /api/cmb/export` - 导出账单数据为Excel文件
 - `PUT /api/cmb/records/{id}/remark` - 更新交易记录备注
 - `PUT /api/cmb/records/{id}/include-in-summary` - 设置是否计入统计
+- `GET /api/cmb/categories` - 获取系统支持的分类列表
 
 ### 接口特性
 - 支持跨域请求（CORS）
@@ -282,7 +283,12 @@ CSV导入 → 添加备注/分类 → 导出Excel → 保存Excel文件
 
 ## 版本历史
 
-### v1.3.0 (当前版本)
+### v1.4.0 (当前版本)
+- ✅ **前后端分类统一** - 分类从后端统一管理，前端自动同步
+- ✅ **AI智能分类** - 基于评分算法的智能分类识别
+- ✅ **分类API接口** - 新增 GET /api/cmb/categories 接口
+
+### v1.3.0
 - ✅ **按天统计分析** - 柱状图和日历热力图展示每日收支
 - ✅ **按分类统计** - 饼图展示分类占比和明细
 - ✅ **交互式图表** - 点击图表元素查看详细数据

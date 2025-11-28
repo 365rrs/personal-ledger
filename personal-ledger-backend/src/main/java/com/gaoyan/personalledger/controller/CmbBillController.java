@@ -12,7 +12,7 @@ import org.springframework.web.multipart.MultipartFile;
 import javax.servlet.http.HttpServletResponse;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
-import java.util.List;
+import java.util.*;
 
 /**
  * 招商银行账单控制器
@@ -84,5 +84,15 @@ public class CmbBillController {
             log.error("导出招商银行账单数据失败", e);
             throw new RuntimeException("导出招商银行账单数据失败: " + e.getMessage());
         }
+    }
+    
+    /**
+     * 获取系统支持的分类列表
+     * @return 分类列表
+     */
+    @GetMapping("/categories")
+    public List<String> getCategories() {
+        log.info("获取系统支持的分类列表");
+        return dataCleaningService.getCategories();
     }
 }
