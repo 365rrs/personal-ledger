@@ -74,10 +74,77 @@
                 <span>{{ scope.row.userRemark || '-' }}</span>
               </template>
             </el-table-column>
+            <el-table-column label="操作" width="80" align="center" fixed="right">
+              <template #default="scope">
+                <el-button type="warning" size="small" @click="editRecord(scope.row)" :icon="Edit">编辑</el-button>
+              </template>
+            </el-table-column>
           </el-table>
         </div>
       </div>
     </el-card>
+    
+    <!-- 交易记录编辑抽屉 -->
+    <el-drawer
+      v-model="drawerVisible"
+      title="编辑交易记录"
+      direction="rtl"
+      size="500px"
+    >
+      <div v-if="currentRecord" class="record-detail">
+        <el-form :model="currentRecord" label-width="120px">
+          <el-form-item label="交易日期">
+            <el-input v-model="currentRecord.formattedTradeDate" readonly />
+          </el-form-item>
+          <el-form-item label="交易时间">
+            <el-input v-model="currentRecord.tradeTime" readonly />
+          </el-form-item>
+          <el-form-item label="收入">
+            <el-input v-model="currentRecord.income" readonly />
+          </el-form-item>
+          <el-form-item label="支出">
+            <el-input v-model="currentRecord.expense" readonly />
+          </el-form-item>
+          <el-form-item label="交易类型">
+            <el-input v-model="currentRecord.tradeType" readonly />
+          </el-form-item>
+          <el-form-item label="交易备注">
+            <el-input v-model="currentRecord.remark" readonly />
+          </el-form-item>
+          <el-form-item label="支付渠道">
+            <el-input v-model="currentRecord.paymentChannel" placeholder="请输入支付渠道" />
+          </el-form-item>
+          <el-form-item label="收支类型">
+            <el-input v-model="currentRecord.transactionType" placeholder="请输入收支类型" />
+          </el-form-item>
+          <el-form-item label="分类">
+            <el-input v-model="currentRecord.category" placeholder="请输入分类" />
+          </el-form-item>
+          <el-form-item label="用户备注">
+            <el-input 
+              v-model="currentRecord.userRemark" 
+              type="textarea" 
+              :rows="3" 
+              placeholder="请输入用户备注"
+            />
+          </el-form-item>
+          <el-form-item label="计入本月收支">
+            <el-switch
+              v-model="currentRecord.excludeFromMonthly"
+              active-text="是"
+              inactive-text="否"
+            />
+          </el-form-item>
+        </el-form>
+        
+        <div class="drawer-footer">
+          <el-space>
+            <el-button @click="drawerVisible = false">取消</el-button>
+            <el-button type="primary" @click="saveRecord">保存</el-button>
+          </el-space>
+        </div>
+      </div>
+    </el-drawer>
   </div>
 </template>
 
@@ -85,39 +152,24 @@
 import { ref, computed, onMounted, watch, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import * as echarts from 'echarts'
-import { PieChart, ArrowLeft } from '@element-plus/icons-vue'
+import { PieChart, ArrowLeft, Edit } from '@element-plus/icons-vue'
+import { ElMessage } from 'element-plus'
+import billStore from '@/store/billStore'
 
 const route = useRoute()
 const router = useRouter()
-const billData = ref(null)
+const billData = computed(() => billStore.state.currentBillData)
 const transactionType = ref('expense')
 const pieChart = ref(null)
 const selectedCategory = ref('')
+const drawerVisible = ref(false)
+const currentRecord = ref(null)
 let pieChartInstance = null
 
 // 加载账单数据
 const loadBillData = () => {
   const importId = route.params.id
-  if (!importId) {
-    const history = localStorage.getItem('billImportHistory')
-    if (history) {
-      const importHistory = JSON.parse(history)
-      const successfulImports = importHistory.filter(item => item.status === 'success')
-      if (successfulImports.length > 0) {
-        const latestImport = successfulImports[0]
-        const data = localStorage.getItem(`billData_${latestImport.id}`)
-        if (data) {
-          billData.value = JSON.parse(data)
-          return
-        }
-      }
-    }
-  } else {
-    const data = localStorage.getItem(`billData_${importId}`)
-    if (data) {
-      billData.value = JSON.parse(data)
-    }
-  }
+  billStore.loadBillData(importId)
 }
 
 // 按分类统计数据
@@ -244,9 +296,30 @@ const selectCategory = (row) => {
   selectedCategory.value = row.category
 }
 
+// 编辑记录
+const editRecord = (record) => {
+  currentRecord.value = { ...record }
+  drawerVisible.value = true
+}
+
+// 保存记录
+const saveRecord = () => {
+  if (billStore.updateRecord(currentRecord.value)) {
+    ElMessage.success('保存成功')
+    drawerVisible.value = false
+  } else {
+    ElMessage.error('保存失败')
+  }
+}
+
 // 返回
 const goBack = () => {
-  router.push('/bill-analysis')
+  const importId = billStore.getImportId()
+  if (importId) {
+    router.push(`/bill-analysis/${importId}`)
+  } else {
+    router.push('/bill-analysis')
+  }
 }
 
 // 监听收支类型切换
@@ -348,5 +421,16 @@ onBeforeUnmount(() => {
   display: flex;
   align-items: center;
   gap: 10px;
+}
+
+.record-detail {
+  padding: 20px 0;
+}
+
+.drawer-footer {
+  margin-top: 30px;
+  padding-top: 20px;
+  border-top: 1px solid #ebeef5;
+  text-align: right;
 }
 </style>

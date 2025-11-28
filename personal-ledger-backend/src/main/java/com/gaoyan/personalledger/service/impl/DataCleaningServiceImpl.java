@@ -37,11 +37,20 @@ public class DataCleaningServiceImpl implements DataCleaningService {
         CATEGORY_KEYWORDS.put("餐饮", "餐饮");
         CATEGORY_KEYWORDS.put("coffee", "餐饮");
         CATEGORY_KEYWORDS.put("coffeebean", "餐饮");
+        CATEGORY_KEYWORDS.put("星巴克", "餐饮");
+        CATEGORY_KEYWORDS.put("瑞幸", "餐饮");
         CATEGORY_KEYWORDS.put("kfc", "餐饮");
         CATEGORY_KEYWORDS.put("麦当劳", "餐饮");
+        CATEGORY_KEYWORDS.put("肯德基", "餐饮");
         CATEGORY_KEYWORDS.put("海底捞", "餐饮");
         CATEGORY_KEYWORDS.put("火锅", "餐饮");
         CATEGORY_KEYWORDS.put("快餐", "餐饮");
+        CATEGORY_KEYWORDS.put("烧烤", "餐饮");
+        CATEGORY_KEYWORDS.put("奶茶", "餐饮");
+        CATEGORY_KEYWORDS.put("茶饮", "餐饮");
+        CATEGORY_KEYWORDS.put("面馆", "餐饮");
+        CATEGORY_KEYWORDS.put("小吃", "餐饮");
+        CATEGORY_KEYWORDS.put("食堂", "餐饮");
 
         // 外卖类
         CATEGORY_KEYWORDS.put("外卖", "外卖");
@@ -56,10 +65,15 @@ public class DataCleaningServiceImpl implements DataCleaningService {
         CATEGORY_KEYWORDS.put("京东", "购物");
         CATEGORY_KEYWORDS.put("天猫", "购物");
         CATEGORY_KEYWORDS.put("淘宝", "购物");
+        CATEGORY_KEYWORDS.put("拼多多", "购物");
         CATEGORY_KEYWORDS.put("苏宁", "购物");
         CATEGORY_KEYWORDS.put("小米", "购物");
         CATEGORY_KEYWORDS.put("华为", "购物");
         CATEGORY_KEYWORDS.put("苹果", "购物");
+        CATEGORY_KEYWORDS.put("唯品会", "购物");
+        CATEGORY_KEYWORDS.put("便利店", "购物");
+        CATEGORY_KEYWORDS.put("7-11", "购物");
+        CATEGORY_KEYWORDS.put("全家", "购物");
 
         // 出行类
         CATEGORY_KEYWORDS.put("滴滴", "出行");
@@ -73,6 +87,59 @@ public class DataCleaningServiceImpl implements DataCleaningService {
         CATEGORY_KEYWORDS.put("出租车", "出行");
         CATEGORY_KEYWORDS.put("高铁", "出行");
         CATEGORY_KEYWORDS.put("中铁网络", "出行");
+        CATEGORY_KEYWORDS.put("加油", "出行");
+        CATEGORY_KEYWORDS.put("停车", "出行");
+        CATEGORY_KEYWORDS.put("etc", "出行");
+        CATEGORY_KEYWORDS.put("共享单车", "出行");
+        CATEGORY_KEYWORDS.put("哈啰", "出行");
+        CATEGORY_KEYWORDS.put("美团单车", "出行");
+
+        // 娱乐类
+        CATEGORY_KEYWORDS.put("电影", "娱乐");
+        CATEGORY_KEYWORDS.put("影院", "娱乐");
+        CATEGORY_KEYWORDS.put("ktv", "娱乐");
+        CATEGORY_KEYWORDS.put("游戏", "娱乐");
+        CATEGORY_KEYWORDS.put("网吧", "娱乐");
+        CATEGORY_KEYWORDS.put("健身", "娱乐");
+        CATEGORY_KEYWORDS.put("运动", "娱乐");
+        CATEGORY_KEYWORDS.put("旅游", "娱乐");
+        CATEGORY_KEYWORDS.put("酒店", "娱乐");
+
+        // 生活服务类
+        CATEGORY_KEYWORDS.put("理发", "生活服务");
+        CATEGORY_KEYWORDS.put("美容", "生活服务");
+        CATEGORY_KEYWORDS.put("美发", "生活服务");
+        CATEGORY_KEYWORDS.put("洗衣", "生活服务");
+        CATEGORY_KEYWORDS.put("维修", "生活服务");
+        CATEGORY_KEYWORDS.put("快递", "生活服务");
+        CATEGORY_KEYWORDS.put("物业", "生活服务");
+        CATEGORY_KEYWORDS.put("水电费", "生活服务");
+        CATEGORY_KEYWORDS.put("话费", "生活服务");
+        CATEGORY_KEYWORDS.put("充值", "生活服务");
+
+        // 医疗健康类
+        CATEGORY_KEYWORDS.put("医院", "医疗健康");
+        CATEGORY_KEYWORDS.put("药店", "医疗健康");
+        CATEGORY_KEYWORDS.put("体检", "医疗健康");
+        CATEGORY_KEYWORDS.put("挂号", "医疗健康");
+        CATEGORY_KEYWORDS.put("医疗", "医疗健康");
+
+        // 教育类
+        CATEGORY_KEYWORDS.put("培训", "教育");
+        CATEGORY_KEYWORDS.put("课程", "教育");
+        CATEGORY_KEYWORDS.put("书店", "教育");
+        CATEGORY_KEYWORDS.put("教育", "教育");
+
+        // 转账类
+        CATEGORY_KEYWORDS.put("转账", "转账");
+        CATEGORY_KEYWORDS.put("红包", "转账");
+        CATEGORY_KEYWORDS.put("汇款", "转账");
+
+        // 投资理财类
+        CATEGORY_KEYWORDS.put("理财", "投资理财");
+        CATEGORY_KEYWORDS.put("基金", "投资理财");
+        CATEGORY_KEYWORDS.put("股票", "投资理财");
+        CATEGORY_KEYWORDS.put("保险", "投资理财");
     }
 
     // 交易备注清洗规则

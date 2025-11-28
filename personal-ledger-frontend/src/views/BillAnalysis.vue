@@ -140,7 +140,15 @@
           </div>
         </div>
       </template>
-      <el-space>
+      <el-space wrap>
+        <el-button 
+          type="info" 
+          @click="updateCache"
+          :disabled="!billData?.data || billData.data.length === 0"
+          :icon="Refresh"
+        >
+          更新缓存
+        </el-button>
         <el-button 
           type="warning" 
           @click="cleanData"
@@ -186,51 +194,53 @@
           </div>
         </div>
       </template>
-      <el-form :model="filterForm" label-width="70px">
+      <el-form :model="filterForm" label-width="80px" class="filter-form">
         <!-- 快捷日期 -->
-        <el-row :gutter="10" class="quick-date-row">
-          <el-col :span="24">
-            <el-space wrap>
-              <el-button @click="setQuickDate('today')">今天</el-button>
-              <el-button @click="setQuickDate('thisMonth')">本月</el-button>
-              <el-button @click="setQuickDate('lastMonth')">上月</el-button>
-              <el-button @click="setQuickDate('last3Months')">近3月</el-button>
-              <el-button @click="setQuickDate('thisYear')">今年</el-button>
-            </el-space>
-          </el-col>
-        </el-row>
+        <div class="quick-date-section">
+          <label class="section-label">快捷日期：</label>
+          <el-space wrap>
+            <el-button @click="setQuickDate('today')">今天</el-button>
+            <el-button @click="setQuickDate('thisMonth')">本月</el-button>
+            <el-button @click="setQuickDate('lastMonth')">上月</el-button>
+            <el-button @click="setQuickDate('last3Months')">近3月</el-button>
+            <el-button @click="setQuickDate('thisYear')">今年</el-button>
+          </el-space>
+        </div>
         
-        <el-row :gutter="10">
-          <el-col :xs="24" :sm="12" :md="10">
-            <el-form-item label="日期">
-              <el-date-picker
-                v-model="filterForm.startDate"
-                type="date"
-                placeholder="开始"
-                value-format="YYYY-MM-DD"
-                style="width: 140px;"
-              />
-              <span style="margin: 0 8px;">-</span>
-              <el-date-picker
-                v-model="filterForm.endDate"
-                type="date"
-                placeholder="结束"
-                value-format="YYYY-MM-DD"
-                style="width: 140px;"
-              />
+        <!-- 筛选条件 -->
+        <el-row :gutter="16" class="filter-row">
+          <el-col :xs="24" :sm="12" :lg="8">
+            <el-form-item label="日期范围">
+              <div class="date-range-wrapper">
+                <el-date-picker
+                  v-model="filterForm.startDate"
+                  type="date"
+                  placeholder="开始日期"
+                  value-format="YYYY-MM-DD"
+                  style="width: 48%;"
+                />
+                <span class="date-separator">至</span>
+                <el-date-picker
+                  v-model="filterForm.endDate"
+                  type="date"
+                  placeholder="结束日期"
+                  value-format="YYYY-MM-DD"
+                  style="width: 48%;"
+                />
+              </div>
             </el-form-item>
           </el-col>
-          <el-col :xs="12" :sm="6" :md="4">
-            <el-form-item label="收支">
-              <el-select v-model="filterForm.transactionType" placeholder="全部" clearable style="width: 100%;">
+          <el-col :xs="12" :sm="6" :lg="4">
+            <el-form-item label="收支类型">
+              <el-select v-model="filterForm.transactionType" placeholder="全部" clearable>
                 <el-option label="收入" value="收入" />
                 <el-option label="支出" value="支出" />
               </el-select>
             </el-form-item>
           </el-col>
-          <el-col :xs="12" :sm="6" :md="5">
-            <el-form-item label="渠道">
-              <el-select v-model="filterForm.paymentChannel" placeholder="全部" clearable style="width: 100%;">
+          <el-col :xs="12" :sm="6" :lg="4">
+            <el-form-item label="支付渠道">
+              <el-select v-model="filterForm.paymentChannel" placeholder="全部" clearable>
                 <el-option label="微信" value="微信" />
                 <el-option label="支付宝" value="支付宝" />
                 <el-option label="京东" value="京东支付" />
@@ -238,42 +248,54 @@
               </el-select>
             </el-form-item>
           </el-col>
-          <el-col :xs="24" :sm="12" :md="5">
-            <el-form-item label="类型">
-              <el-select v-model="filterForm.tradeType" placeholder="全部" clearable style="width: 100%;">
+          <el-col :xs="12" :sm="6" :lg="4">
+            <el-form-item label="交易类型">
+              <el-select v-model="filterForm.tradeType" placeholder="全部" clearable>
                 <el-option v-for="type in tradeTypeOptions" :key="type" :label="type" :value="type" />
               </el-select>
             </el-form-item>
           </el-col>
+          <el-col :xs="12" :sm="6" :lg="4">
+            <el-form-item label="分类">
+              <el-select v-model="filterForm.category" placeholder="全部" clearable>
+                <el-option label="未分类" value="__UNCATEGORIZED__" />
+                <el-option v-for="cat in categoryOptions" :key="cat" :label="cat" :value="cat" />
+              </el-select>
+            </el-form-item>
+          </el-col>
         </el-row>
-        <el-row :gutter="10">
-          <el-col :xs="12" :sm="8" :md="6">
-            <el-form-item label="金额">
-              <el-input v-model="filterForm.minAmount" placeholder="最小" style="width: 90px;" />
-              <span style="margin: 0 8px;">-</span>
-              <el-input v-model="filterForm.maxAmount" placeholder="最大" style="width: 90px;" />
+        
+        <el-row :gutter="16" class="filter-row">
+          <el-col :xs="24" :sm="12" :lg="8">
+            <el-form-item label="金额范围">
+              <div class="amount-range-wrapper">
+                <el-input v-model="filterForm.minAmount" placeholder="最小金额" style="width: 48%;" />
+                <span class="amount-separator">至</span>
+                <el-input v-model="filterForm.maxAmount" placeholder="最大金额" style="width: 48%;" />
+              </div>
             </el-form-item>
           </el-col>
-          <el-col :xs="12" :sm="8" :md="6">
+          <el-col :xs="12" :sm="6" :lg="4">
             <el-form-item label="关键词">
-              <el-input v-model="filterForm.keyword" placeholder="搜索" clearable style="width: 100%;" />
+              <el-input v-model="filterForm.keyword" placeholder="搜索备注" clearable />
             </el-form-item>
           </el-col>
-          <el-col :xs="12" :sm="8" :md="6">
-            <el-form-item label="统计">
-              <el-select v-model="filterForm.includeInSummary" placeholder="全部" clearable style="width: 100%;">
+          <el-col :xs="12" :sm="6" :lg="4">
+            <el-form-item label="计入统计">
+              <el-select v-model="filterForm.includeInSummary" placeholder="全部" clearable>
                 <el-option label="计入" :value="true" />
                 <el-option label="不计入" :value="false" />
               </el-select>
             </el-form-item>
           </el-col>
-          <el-col :xs="24" :sm="24" :md="6">
-            <el-form-item label=" ">
-              <el-space>
-                <el-button type="primary" @click="applyFilter" :icon="Search">筛选</el-button>
-                <el-button @click="resetFilter" :icon="RefreshRight">重置</el-button>
-              </el-space>
-            </el-form-item>
+        </el-row>
+        
+        <el-row class="action-row">
+          <el-col :span="24">
+            <div class="action-buttons">
+              <el-button type="primary" @click="applyFilter" :icon="Search">应用筛选</el-button>
+              <el-button @click="resetFilter" :icon="RefreshRight">重置</el-button>
+            </div>
           </el-col>
         </el-row>
       </el-form>
@@ -324,9 +346,10 @@
             <span>{{ scope.row.paymentChannel || '-' }}</span>
           </template>
         </el-table-column>
-        <el-table-column v-if="getColumnVisible('category')" prop="category" label="分类" min-width="90">
+        <el-table-column v-if="getColumnVisible('category')" prop="category" label="分类" min-width="100">
           <template #default="scope">
-            <span>{{ scope.row.category || '-' }}</span>
+            <el-tag v-if="scope.row.category" size="small" type="info">{{ scope.row.category }}</el-tag>
+            <span v-else style="color: #c0c4cc;">-</span>
           </template>
         </el-table-column>
         <el-table-column v-if="getColumnVisible('remark')" prop="remark" label="交易备注" min-width="180" show-overflow-tooltip></el-table-column>
@@ -451,10 +474,11 @@ import {
   InfoFilled, Operation, Filter, List, TrendCharts, ArrowLeft,
   Refresh, Download, Search, RefreshRight, View, Edit, Setting, DataAnalysis, PieChart
 } from '@element-plus/icons-vue'
+import billStore from '@/store/billStore'
 
 const route = useRoute()
 const router = useRouter()
-const billData = ref(null)
+const billData = computed(() => billStore.state.currentBillData)
 const drawerVisible = ref(false)
 const drawerMode = ref('view')
 const currentRecord = ref(null)
@@ -473,7 +497,7 @@ const columnConfig = ref([
   { prop: 'expense', label: '支出', visible: true },
   { prop: 'tradeType', label: '交易类型', visible: true },
   { prop: 'paymentChannel', label: '支付渠道', visible: true },
-  { prop: 'category', label: '分类', visible: false },
+  { prop: 'category', label: '分类', visible: true },
   { prop: 'remark', label: '交易备注', visible: true },
   { prop: 'userRemark', label: '用户备注', visible: true },
   { prop: 'excludeFromMonthly', label: '计入统计', visible: true }
@@ -486,6 +510,7 @@ const filterForm = reactive({
   transactionType: '',
   tradeType: '',
   paymentChannel: '',
+  category: '',
   minAmount: '',
   maxAmount: '',
   keyword: '',
@@ -499,58 +524,33 @@ const tradeTypeOptions = computed(() => {
   return types.sort()
 })
 
+// 分类选项
+const categoryOptions = computed(() => {
+  if (!billData.value?.data) return []
+  const categories = [...new Set(billData.value.data.map(item => item.category).filter(Boolean))]
+  return categories.sort()
+})
+
 // 账单列表
 const billList = ref([])
 const showBillList = ref(false)
 
-// 从localStorage加载账单数据
+// 从store加载账单数据
 const loadBillData = () => {
   const importId = route.params.id
-  if (!importId) {
-    // 没有ID参数，自动加载最新的账单数据
-    loadLatestBillData()
-    return
-  }
+  const loaded = billStore.loadBillData(importId)
   
-  const data = localStorage.getItem(`billData_${importId}`)
-  if (data) {
-    billData.value = JSON.parse(data)
+  if (loaded) {
     // 处理数据格式
-    if (billData.value.data) {
-      billData.value.data = processTransactionData(billData.value.data)
+    if (billStore.state.currentBillData?.data) {
+      billStore.state.currentBillData.data = processTransactionData(billStore.state.currentBillData.data)
     }
     showBillList.value = false
   } else {
-    ElMessage.error('未找到账单数据')
-    router.push('/bill-import')
+    // 没有找到任何账单数据
+    showBillList.value = true
+    loadBillList()
   }
-}
-
-// 加载最新的账单数据
-const loadLatestBillData = () => {
-  const history = localStorage.getItem('billImportHistory')
-  if (history) {
-    const importHistory = JSON.parse(history)
-    const successfulImports = importHistory.filter(item => item.status === 'success')
-    
-    if (successfulImports.length > 0) {
-      // 加载最新的成功导入的账单
-      const latestImport = successfulImports[0]
-      const data = localStorage.getItem(`billData_${latestImport.id}`)
-      if (data) {
-        billData.value = JSON.parse(data)
-        if (billData.value.data) {
-          billData.value.data = processTransactionData(billData.value.data)
-        }
-        showBillList.value = false
-        return
-      }
-    }
-  }
-  
-  // 没有找到任何账单数据
-  showBillList.value = true
-  loadBillList()
 }
 
 // 加载账单列表
@@ -675,6 +675,15 @@ const filteredData = computed(() => {
   // 交易类型筛选
   if (filterForm.tradeType) {
     filtered = filtered.filter(item => item.tradeType === filterForm.tradeType)
+  }
+  
+  // 分类筛选
+  if (filterForm.category) {
+    if (filterForm.category === '__UNCATEGORIZED__') {
+      filtered = filtered.filter(item => !item.category || item.category.trim() === '')
+    } else {
+      filtered = filtered.filter(item => item.category === filterForm.category)
+    }
   }
   
   // 支付渠道筛选
@@ -811,9 +820,15 @@ const filteredSummary = computed(() => {
 
 // 保存数据到localStorage
 const saveBillData = () => {
-  if (billData.value) {
-    const importId = route.params.id
-    localStorage.setItem(`billData_${importId}`, JSON.stringify(billData.value))
+  billStore.saveBillData()
+}
+
+// 更新缓存
+const updateCache = () => {
+  if (billStore.saveBillData()) {
+    ElMessage.success('缓存已更新')
+  } else {
+    ElMessage.error('缓存更新失败')
   }
 }
 
@@ -826,8 +841,12 @@ const cleanData = async () => {
 
   try {
     const response = await axios.post('/api/cmb/clean-records', billData.value.data)
-    billData.value.data = processTransactionData(response.data)
-    saveBillData()
+    const cleanedData = processTransactionData(response.data)
+    // 更新整个 billData 对象以触发响应式
+    billStore.updateBillData({
+      ...billStore.state.currentBillData,
+      data: cleanedData
+    })
     ElMessage.success('数据清洗完成')
   } catch (error) {
     ElMessage.error('数据清洗失败: ' + (error.response?.data?.message || error.message || '未知错误'))
@@ -875,6 +894,7 @@ const resetFilter = () => {
   filterForm.transactionType = ''
   filterForm.tradeType = ''
   filterForm.paymentChannel = ''
+  filterForm.category = ''
   filterForm.minAmount = ''
   filterForm.maxAmount = ''
   filterForm.keyword = ''
@@ -899,19 +919,11 @@ const editRecord = (record) => {
 
 // 保存记录
 const saveRecord = () => {
-  // 找到原始记录并更新
-  const index = billData.value.data.findIndex(item => 
-    item.formattedTradeDate === currentRecord.value.formattedTradeDate &&
-    item.tradeTime === currentRecord.value.tradeTime &&
-    item.income === currentRecord.value.income &&
-    item.expense === currentRecord.value.expense
-  )
-  
-  if (index !== -1) {
-    billData.value.data[index] = { ...currentRecord.value }
-    saveBillData()
+  if (billStore.updateRecord(currentRecord.value)) {
     ElMessage.success('保存成功')
     drawerVisible.value = false
+  } else {
+    ElMessage.error('保存失败')
   }
 }
 
@@ -922,7 +934,8 @@ const goBack = () => {
 
 // 跳转到数据分析
 const goToDataAnalysis = () => {
-  const importId = route.params.id
+  saveBillData() // 跳转前保存数据
+  const importId = billStore.getImportId()
   if (importId) {
     router.push(`/data-analysis/${importId}`)
   } else {
@@ -932,7 +945,8 @@ const goToDataAnalysis = () => {
 
 // 跳转到分类统计
 const goToCategoryAnalysis = () => {
-  const importId = route.params.id
+  saveBillData() // 跳转前保存数据
+  const importId = billStore.getImportId()
   if (importId) {
     router.push(`/category-analysis/${importId}`)
   } else {
@@ -1113,10 +1127,80 @@ watch(() => route.params.id, () => {
   gap: 5px;
 }
 
-.quick-date-row {
-  margin-bottom: 15px;
-  padding-bottom: 15px;
+.filter-form {
+  padding: 10px 0;
+}
+
+.quick-date-section {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+  padding-bottom: 20px;
   border-bottom: 1px solid #ebeef5;
+  flex-wrap: wrap;
+}
+
+.section-label {
+  font-size: 14px;
+  font-weight: 500;
+  color: #606266;
+  white-space: nowrap;
+}
+
+.filter-row {
+  margin-bottom: 0;
+}
+
+.filter-row .el-form-item {
+  margin-bottom: 18px;
+}
+
+.date-range-wrapper,
+.amount-range-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+
+.date-separator,
+.amount-separator {
+  color: #909399;
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+.action-row {
+  margin-top: 10px;
+  padding-top: 15px;
+  border-top: 1px solid #f0f0f0;
+}
+
+.action-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+}
+
+@media (max-width: 768px) {
+  .quick-date-section {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .filter-form :deep(.el-form-item__label) {
+    font-size: 13px;
+  }
+  
+  .action-buttons {
+    justify-content: center;
+    width: 100%;
+  }
+  
+  .action-buttons .el-button {
+    flex: 1;
+  }
 }
 
 .pagination-container {
