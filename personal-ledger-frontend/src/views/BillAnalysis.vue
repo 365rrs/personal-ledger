@@ -33,8 +33,10 @@
     <el-card v-if="billData?.exportInfo" class="info-card" shadow="hover">
       <template #header>
         <div class="card-header">
-          <el-icon class="header-icon"><InfoFilled /></el-icon>
-          <span>账单信息</span>
+          <div class="header-left">
+            <el-icon class="header-icon"><InfoFilled /></el-icon>
+            <span>账单信息</span>
+          </div>
           <div class="header-actions">
             <el-button type="primary" size="small" @click="goBack" :icon="ArrowLeft">
               返回导入
@@ -58,56 +60,73 @@
     <el-card v-if="billData?.summary" class="summary-card" shadow="hover">
       <template #header>
         <div class="card-header">
-          <el-icon class="header-icon"><TrendCharts /></el-icon>
-          <span>收支统计</span>
+          <div class="header-left">
+            <el-icon class="header-icon"><TrendCharts /></el-icon>
+            <span>收支统计</span>
+          </div>
         </div>
       </template>
       <el-row :gutter="20" class="summary-content">
-        <el-col :span="8">
+        <el-col :xs="24" :sm="8">
           <div class="summary-item balance">
-            <div class="summary-label">结余</div>
+            <div class="summary-header">
+              <span class="summary-label">结余</span>
+              <el-tag size="small" type="info">{{ filteredSummary.totalCount }}笔</el-tag>
+            </div>
             <div class="summary-value">{{ filteredSummary.balanceAmount }}</div>
-            <div class="summary-formula">{{ filteredSummary.incomeAmount }} - {{ filteredSummary.expenseAmount }}</div>
-            <div class="summary-count">{{ filteredSummary.totalCount }} 笔</div>
-            <div class="summary-exclude">
-              (不计入: {{ filteredSummary.excludeBalanceAmount }}, {{ filteredSummary.excludeTotalCount }} 笔)
-            </div>
-            <div class="summary-original" v-if="billData?.summary?.incomeAmount && billData?.summary?.expenseAmount">
-              原始数据: {{ filteredSummary.originalBalanceAmount }}, {{ filteredSummary.originalTotalCount }} 笔
+            <div class="summary-detail">
+              <div class="detail-row">
+                <span class="detail-label">计入:</span>
+                <span class="detail-value">{{ filteredSummary.balanceAmount }}</span>
+              </div>
+              <div class="detail-row exclude">
+                <span class="detail-label">不计入:</span>
+                <span class="detail-value">{{ filteredSummary.excludeBalanceAmount }} ({{ filteredSummary.excludeTotalCount }}笔)</span>
+              </div>
             </div>
           </div>
         </el-col>
-        <el-col :span="8">
+        <el-col :xs="12" :sm="8">
           <div class="summary-item income">
-            <div class="summary-label">收入</div>
-            <div class="summary-value">{{ filteredSummary.incomeAmount }}</div>
-            <div class="summary-formula summary-placeholder">&nbsp;</div>
-            <div class="summary-count">{{ filteredSummary.incomeCount }} 笔</div>
-            <div class="summary-exclude">
-              (不计入: {{ filteredSummary.excludeIncomeAmount }}, {{ filteredSummary.excludeIncomeCount }} 笔)
+            <div class="summary-header">
+              <span class="summary-label">收入</span>
+              <el-tag size="small" type="success">{{ filteredSummary.incomeCount }}笔</el-tag>
             </div>
-            <div class="summary-original" v-if="billData?.summary?.incomeAmount">
-              原始数据: {{ billData.summary.incomeAmount }}, {{ billData.summary.incomeCount }} 笔
+            <div class="summary-value">{{ filteredSummary.incomeAmount }}</div>
+            <div class="summary-detail">
+              <div class="detail-row">
+                <span class="detail-label">计入:</span>
+                <span class="detail-value">{{ filteredSummary.incomeAmount }}</span>
+              </div>
+              <div class="detail-row exclude">
+                <span class="detail-label">不计入:</span>
+                <span class="detail-value">{{ filteredSummary.excludeIncomeAmount }} ({{ filteredSummary.excludeIncomeCount }}笔)</span>
+              </div>
             </div>
           </div>
         </el-col>
-        <el-col :span="8">
+        <el-col :xs="12" :sm="8">
           <div class="summary-item expense">
-            <div class="summary-label">支出</div>
-            <div class="summary-value">{{ filteredSummary.expenseAmount }}</div>
-            <div class="summary-formula summary-placeholder">&nbsp;</div>
-            <div class="summary-count">{{ filteredSummary.expenseCount }} 笔</div>
-            <div class="summary-exclude">
-              (不计入: {{ filteredSummary.excludeExpenseAmount }}, {{ filteredSummary.excludeExpenseCount }} 笔)
+            <div class="summary-header">
+              <span class="summary-label">支出</span>
+              <el-tag size="small" type="danger">{{ filteredSummary.expenseCount }}笔</el-tag>
             </div>
-            <div class="summary-original" v-if="billData?.summary?.expenseAmount">
-              原始数据: {{ billData.summary.expenseAmount }}, {{ billData.summary.expenseCount }} 笔
+            <div class="summary-value">{{ filteredSummary.expenseAmount }}</div>
+            <div class="summary-detail">
+              <div class="detail-row">
+                <span class="detail-label">计入:</span>
+                <span class="detail-value">{{ filteredSummary.expenseAmount }}</span>
+              </div>
+              <div class="detail-row exclude">
+                <span class="detail-label">不计入:</span>
+                <span class="detail-value">{{ filteredSummary.excludeExpenseAmount }} ({{ filteredSummary.excludeExpenseCount }}笔)</span>
+              </div>
             </div>
           </div>
         </el-col>
       </el-row>
       <div class="summary-note" v-if="filterForm.startDate || filterForm.endDate">
-        * 以上统计基于当前筛选条件
+        <el-icon><InfoFilled /></el-icon> 当前统计基于筛选条件
       </div>
     </el-card>
     
@@ -115,8 +134,10 @@
     <el-card class="toolbar-card" shadow="hover">
       <template #header>
         <div class="card-header">
-          <el-icon class="header-icon"><Operation /></el-icon>
-          <span>数据操作</span>
+          <div class="header-left">
+            <el-icon class="header-icon"><Operation /></el-icon>
+            <span>数据操作</span>
+          </div>
         </div>
       </template>
       <el-space>
@@ -143,93 +164,98 @@
     <el-card class="filter-card" shadow="hover">
       <template #header>
         <div class="card-header">
-          <el-icon class="header-icon"><Filter /></el-icon>
-          <span>筛选条件</span>
+          <div class="header-left">
+            <el-icon class="header-icon"><Filter /></el-icon>
+            <span>筛选条件</span>
+          </div>
         </div>
       </template>
-      <el-form :model="filterForm" label-width="100px">
-        <el-row :gutter="20">
-          <el-col :span="12">
-            <el-form-item label="交易日期">
+      <el-form :model="filterForm" label-width="70px">
+        <!-- 快捷日期 -->
+        <el-row :gutter="10" class="quick-date-row">
+          <el-col :span="24">
+            <el-space wrap>
+              <el-button @click="setQuickDate('today')">今天</el-button>
+              <el-button @click="setQuickDate('thisMonth')">本月</el-button>
+              <el-button @click="setQuickDate('lastMonth')">上月</el-button>
+              <el-button @click="setQuickDate('last3Months')">近3月</el-button>
+              <el-button @click="setQuickDate('thisYear')">今年</el-button>
+            </el-space>
+          </el-col>
+        </el-row>
+        
+        <el-row :gutter="10">
+          <el-col :xs="24" :sm="12" :md="10">
+            <el-form-item label="日期">
               <el-date-picker
                 v-model="filterForm.startDate"
                 type="date"
-                placeholder="开始日期"
+                placeholder="开始"
                 value-format="YYYY-MM-DD"
-                format="YYYY-MM-DD"
                 style="width: 140px;"
               />
-              <span style="margin: 0 10px;">-</span>
+              <span style="margin: 0 8px;">-</span>
               <el-date-picker
                 v-model="filterForm.endDate"
                 type="date"
-                placeholder="结束日期"
+                placeholder="结束"
                 value-format="YYYY-MM-DD"
-                format="YYYY-MM-DD"
                 style="width: 140px;"
               />
             </el-form-item>
           </el-col>
-          <el-col :span="12">
-            <el-form-item label="收支类型">
-              <el-select v-model="filterForm.transactionType" placeholder="请选择" clearable style="width: 120px;">
+          <el-col :xs="12" :sm="6" :md="4">
+            <el-form-item label="收支">
+              <el-select v-model="filterForm.transactionType" placeholder="全部" clearable style="width: 100%;">
                 <el-option label="收入" value="收入" />
                 <el-option label="支出" value="支出" />
               </el-select>
             </el-form-item>
           </el-col>
-        </el-row>
-        <el-row :gutter="20">
-          <el-col :span="12">
-            <el-form-item label="交易类型">
-              <el-select v-model="filterForm.tradeType" placeholder="请选择" clearable style="width: 300px;">
-                <el-option v-for="type in tradeTypeOptions" :key="type" :label="type" :value="type" />
-              </el-select>
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="支付渠道">
-              <el-select v-model="filterForm.paymentChannel" placeholder="请选择" clearable style="width: 120px;">
+          <el-col :xs="12" :sm="6" :md="5">
+            <el-form-item label="渠道">
+              <el-select v-model="filterForm.paymentChannel" placeholder="全部" clearable style="width: 100%;">
                 <el-option label="微信" value="微信" />
                 <el-option label="支付宝" value="支付宝" />
-                <el-option label="京东支付" value="京东支付" />
+                <el-option label="京东" value="京东支付" />
                 <el-option label="未知" value="__UNKNOWN__" />
               </el-select>
             </el-form-item>
           </el-col>
-        </el-row>
-        <el-row :gutter="20">
-          <el-col :span="12">
-            <el-form-item label="金额范围">
-              <el-input v-model="filterForm.minAmount" placeholder="最小金额" style="width: 100px;" />
-              <span style="margin: 0 10px;">-</span>
-              <el-input v-model="filterForm.maxAmount" placeholder="最大金额" style="width: 100px;" />
+          <el-col :xs="24" :sm="12" :md="5">
+            <el-form-item label="类型">
+              <el-select v-model="filterForm.tradeType" placeholder="全部" clearable style="width: 100%;">
+                <el-option v-for="type in tradeTypeOptions" :key="type" :label="type" :value="type" />
+              </el-select>
             </el-form-item>
           </el-col>
-          <el-col :span="12">
+        </el-row>
+        <el-row :gutter="10">
+          <el-col :xs="12" :sm="8" :md="6">
+            <el-form-item label="金额">
+              <el-input v-model="filterForm.minAmount" placeholder="最小" style="width: 90px;" />
+              <span style="margin: 0 8px;">-</span>
+              <el-input v-model="filterForm.maxAmount" placeholder="最大" style="width: 90px;" />
+            </el-form-item>
+          </el-col>
+          <el-col :xs="12" :sm="8" :md="6">
             <el-form-item label="关键词">
-              <el-input v-model="filterForm.keyword" placeholder="交易备注关键词" style="width: 150px;" clearable />
+              <el-input v-model="filterForm.keyword" placeholder="搜索" clearable style="width: 100%;" />
             </el-form-item>
           </el-col>
-        </el-row>
-        <el-row :gutter="20">
-          <el-col :span="12">
-            <el-form-item label="计入统计">
-              <el-select v-model="filterForm.includeInSummary" placeholder="请选择" clearable style="width: 120px;">
+          <el-col :xs="12" :sm="8" :md="6">
+            <el-form-item label="统计">
+              <el-select v-model="filterForm.includeInSummary" placeholder="全部" clearable style="width: 100%;">
                 <el-option label="计入" :value="true" />
                 <el-option label="不计入" :value="false" />
               </el-select>
             </el-form-item>
           </el-col>
-          <el-col :span="12">
-          </el-col>
-        </el-row>
-        <el-row>
-          <el-col :span="24">
-            <el-form-item>
+          <el-col :xs="24" :sm="24" :md="6">
+            <el-form-item label=" ">
               <el-space>
-                <el-button type="primary" @click="applyFilter" :icon="Search" size="small">筛选</el-button>
-                <el-button @click="resetFilter" :icon="RefreshRight" size="small">重置</el-button>
+                <el-button type="primary" @click="applyFilter" :icon="Search">筛选</el-button>
+                <el-button @click="resetFilter" :icon="RefreshRight">重置</el-button>
               </el-space>
             </el-form-item>
           </el-col>
@@ -241,66 +267,88 @@
     <el-card class="table-card" shadow="hover">
       <template #header>
         <div class="card-header">
-          <el-icon class="header-icon"><List /></el-icon>
-          <span>交易记录</span>
-          <div class="record-count">
-            共 {{ billData?.data?.length || 0 }} 条记录，筛选后显示 {{ filteredData.length }} 条记录
+          <div class="header-left">
+            <el-icon class="header-icon"><List /></el-icon>
+            <span>交易记录</span>
+            <div class="record-count">
+              共 {{ billData?.data?.length || 0 }} 条，显示 {{ paginatedData.length }} 条
+            </div>
           </div>
+          <el-popover placement="bottom" :width="200" trigger="click">
+            <template #reference>
+              <el-button size="small" :icon="Setting">列设置</el-button>
+            </template>
+            <div class="column-config">
+              <el-checkbox v-for="col in columnConfig" :key="col.prop" v-model="col.visible" style="display: block; margin: 8px 0;">
+                {{ col.label }}
+              </el-checkbox>
+            </div>
+          </el-popover>
         </div>
       </template>
       
       <el-table 
-        :data="filteredData" 
+        :data="paginatedData" 
         style="width: 100%" 
-        max-height="600" 
+        max-height="600"
         class="transaction-table"
         :default-sort="{prop: 'formattedTradeDate', order: 'ascending'}"
       >
-        <el-table-column prop="formattedTradeDate" label="交易日期" width="120" sortable></el-table-column>
-        <el-table-column prop="tradeTime" label="交易时间" width="120"></el-table-column>
-        <el-table-column prop="income" label="收入" width="100" sortable></el-table-column>
-        <el-table-column prop="expense" label="支出" width="100" sortable></el-table-column>
-        <el-table-column prop="tradeType" label="交易类型" width="150">
+        <el-table-column v-if="getColumnVisible('formattedTradeDate')" prop="formattedTradeDate" label="交易日期" min-width="110" sortable></el-table-column>
+        <el-table-column v-if="getColumnVisible('tradeTime')" prop="tradeTime" label="交易时间" min-width="100"></el-table-column>
+        <el-table-column v-if="getColumnVisible('income')" prop="income" label="收入" min-width="90" sortable></el-table-column>
+        <el-table-column v-if="getColumnVisible('expense')" prop="expense" label="支出" min-width="90" sortable></el-table-column>
+        <el-table-column v-if="getColumnVisible('tradeType')" prop="tradeType" label="交易类型" min-width="140">
           <template #default="scope">
-            <el-tag>{{ scope.row.tradeType }}</el-tag>
+            <el-tag size="small">{{ scope.row.tradeType }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="paymentChannel" label="支付渠道" width="100">
+        <el-table-column v-if="getColumnVisible('paymentChannel')" prop="paymentChannel" label="支付渠道" min-width="100">
           <template #default="scope">
             <span>{{ scope.row.paymentChannel || '-' }}</span>
           </template>
         </el-table-column>
-        <el-table-column prop="category" label="分类" width="100">
+        <el-table-column v-if="getColumnVisible('category')" prop="category" label="分类" min-width="90">
           <template #default="scope">
             <span>{{ scope.row.category || '-' }}</span>
           </template>
         </el-table-column>
-        <el-table-column prop="remark" label="交易备注" width="200" show-overflow-tooltip></el-table-column>
-        <el-table-column prop="userRemark" label="用户备注" width="150">
+        <el-table-column v-if="getColumnVisible('remark')" prop="remark" label="交易备注" min-width="180" show-overflow-tooltip></el-table-column>
+        <el-table-column v-if="getColumnVisible('userRemark')" prop="userRemark" label="用户备注" min-width="140">
           <template #default="scope">
             <span>{{ scope.row.userRemark || '-' }}</span>
           </template>
         </el-table-column>
-        <el-table-column label="是否计入本月收支" width="120" align="center">
+        <el-table-column v-if="getColumnVisible('excludeFromMonthly')" label="计入统计" min-width="90" align="center">
           <template #default="scope">
-            <el-tag :type="scope.row.excludeFromMonthly ? 'success' : 'info'">
+            <el-tag size="small" :type="scope.row.excludeFromMonthly ? 'success' : 'info'">
               {{ scope.row.excludeFromMonthly ? '是' : '否' }}
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="150" align="center" fixed="right">
+        <el-table-column label="操作" width="160" align="center" fixed="right">
           <template #default="scope">
-            <el-space>
-              <el-button type="primary" size="small" @click="viewRecord(scope.row)" :icon="View">
-                查看
-              </el-button>
-              <el-button type="warning" size="small" @click="editRecord(scope.row)" :icon="Edit">
-                编辑
-              </el-button>
+            <el-space :size="5">
+              <el-button type="primary" size="small" @click="viewRecord(scope.row)" :icon="View">查看</el-button>
+              <el-button type="warning" size="small" @click="editRecord(scope.row)" :icon="Edit">编辑</el-button>
             </el-space>
           </template>
         </el-table-column>
       </el-table>
+      
+      <div class="pagination-container">
+        <el-pagination
+          v-model:current-page="pagination.currentPage"
+          v-model:page-size="pagination.pageSize"
+          :page-sizes="[10, 20, 50, 100, 200]"
+          :total="filteredData.length"
+          layout="total, sizes, prev, pager, next, jumper"
+          :prev-text="'上一页'"
+          :next-text="'下一页'"
+          @size-change="handleSizeChange"
+          @current-change="handleCurrentChange"
+        />
+      </div>
     </el-card>
     
     <!-- 数据不存在提示 -->
@@ -385,15 +433,35 @@ import axios from 'axios'
 import { ElMessage } from 'element-plus'
 import { 
   InfoFilled, Operation, Filter, List, TrendCharts, ArrowLeft,
-  Refresh, Download, Search, RefreshRight, View, Edit
+  Refresh, Download, Search, RefreshRight, View, Edit, Setting
 } from '@element-plus/icons-vue'
 
 const route = useRoute()
 const router = useRouter()
 const billData = ref(null)
 const drawerVisible = ref(false)
-const drawerMode = ref('view') // 'view' 或 'edit'
+const drawerMode = ref('view')
 const currentRecord = ref(null)
+
+// 分页配置
+const pagination = reactive({
+  currentPage: 1,
+  pageSize: 20
+})
+
+// 列显示配置
+const columnConfig = ref([
+  { prop: 'formattedTradeDate', label: '交易日期', visible: true },
+  { prop: 'tradeTime', label: '交易时间', visible: true },
+  { prop: 'income', label: '收入', visible: true },
+  { prop: 'expense', label: '支出', visible: true },
+  { prop: 'tradeType', label: '交易类型', visible: true },
+  { prop: 'paymentChannel', label: '支付渠道', visible: true },
+  { prop: 'category', label: '分类', visible: false },
+  { prop: 'remark', label: '交易备注', visible: true },
+  { prop: 'userRemark', label: '用户备注', visible: true },
+  { prop: 'excludeFromMonthly', label: '计入统计', visible: true }
+])
 
 // 筛选表单
 const filterForm = reactive({
@@ -495,6 +563,60 @@ const processTransactionData = (data) => {
   }))
 }
 
+// 快捷日期设置
+const setQuickDate = (type) => {
+  const today = new Date()
+  const year = today.getFullYear()
+  const month = today.getMonth()
+  
+  const formatDate = (date) => {
+    const y = date.getFullYear()
+    const m = String(date.getMonth() + 1).padStart(2, '0')
+    const d = String(date.getDate()).padStart(2, '0')
+    return `${y}-${m}-${d}`
+  }
+  
+  switch(type) {
+    case 'today':
+      filterForm.startDate = filterForm.endDate = formatDate(today)
+      break
+    case 'thisMonth':
+      filterForm.startDate = formatDate(new Date(year, month, 1))
+      filterForm.endDate = formatDate(today)
+      break
+    case 'lastMonth':
+      filterForm.startDate = formatDate(new Date(year, month - 1, 1))
+      filterForm.endDate = formatDate(new Date(year, month, 0))
+      break
+    case 'last3Months':
+      filterForm.startDate = formatDate(new Date(year, month - 2, 1))
+      filterForm.endDate = formatDate(today)
+      break
+    case 'thisYear':
+      filterForm.startDate = formatDate(new Date(year, 0, 1))
+      filterForm.endDate = formatDate(today)
+      break
+  }
+}
+
+// 获取列显示状态
+const getColumnVisible = (prop) => {
+  const col = columnConfig.value.find(c => c.prop === prop)
+  return col ? col.visible : true
+}
+
+
+
+// 分页处理
+const handleSizeChange = (val) => {
+  pagination.pageSize = val
+  pagination.currentPage = 1
+}
+
+const handleCurrentChange = (val) => {
+  pagination.currentPage = val
+}
+
 // 筛选后的数据
 const filteredData = computed(() => {
   if (!billData.value?.data) {
@@ -579,6 +701,13 @@ const filteredData = computed(() => {
   }
   
   return filtered
+})
+
+// 分页后的数据
+const paginatedData = computed(() => {
+  const start = (pagination.currentPage - 1) * pagination.pageSize
+  const end = start + pagination.pageSize
+  return filteredData.value.slice(start, end)
 })
 
 // 计算筛选后的统计信息
@@ -794,6 +923,12 @@ watch(() => route.params.id, () => {
   margin-bottom: 20px;
 }
 
+@media (max-width: 768px) {
+  .info-card, .toolbar-card, .filter-card, .table-card, .summary-card {
+    margin-bottom: 15px;
+  }
+}
+
 .empty-state {
   padding: 40px 0;
 }
@@ -812,6 +947,15 @@ watch(() => route.params.id, () => {
   align-items: center;
   font-size: 16px;
   font-weight: 600;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
 }
 
 .header-icon {
@@ -840,13 +984,23 @@ watch(() => route.params.id, () => {
 }
 
 .summary-item {
-  text-align: center;
-  padding: 20px 0;
-  border-radius: 4px;
-  min-height: 160px;
+  padding: 20px;
+  border-radius: 8px;
+  min-height: 140px;
   display: flex;
   flex-direction: column;
-  justify-content: center;
+  transition: transform 0.2s;
+}
+
+.summary-item:hover {
+  transform: translateY(-2px);
+}
+
+.summary-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
 }
 
 .summary-item.income {
@@ -865,15 +1019,15 @@ watch(() => route.params.id, () => {
 }
 
 .summary-label {
-  font-size: 16px;
-  font-weight: bold;
-  margin-bottom: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #606266;
 }
 
 .summary-value {
-  font-size: 24px;
+  font-size: 28px;
   font-weight: bold;
-  margin-bottom: 5px;
+  margin: 10px 0;
 }
 
 .summary-item.income .summary-value {
@@ -888,40 +1042,72 @@ watch(() => route.params.id, () => {
   color: #409eff;
 }
 
-.summary-count {
-  font-size: 14px;
-  color: #909399;
-  margin-bottom: 5px;
-}
-
-.summary-exclude {
+.summary-detail {
   font-size: 12px;
   color: #909399;
 }
 
-.summary-original {
-  font-size: 11px;
-  color: #606266;
-  margin-top: 3px;
-  font-style: italic;
+.detail-row {
+  display: flex;
+  justify-content: space-between;
+  margin: 4px 0;
 }
 
-.summary-formula {
-  font-size: 12px;
-  color: #909399;
-  margin-bottom: 3px;
-  font-style: italic;
+.detail-row.exclude {
+  color: #c0c4cc;
 }
 
-.summary-placeholder {
-  visibility: hidden;
+.detail-label {
+  font-weight: 500;
+}
+
+.detail-value {
+  font-weight: 600;
 }
 
 .summary-note {
-  margin-top: 10px;
+  margin-top: 15px;
+  padding: 8px 12px;
   font-size: 12px;
-  color: #999;
-  text-align: right;
+  color: #909399;
+  background: #f5f7fa;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.quick-date-row {
+  margin-bottom: 15px;
+  padding-bottom: 15px;
+  border-bottom: 1px solid #ebeef5;
+}
+
+.pagination-container {
+  margin-top: 20px;
+  display: flex;
+  justify-content: center;
+}
+
+@media (max-width: 768px) {
+  .summary-item {
+    min-height: 120px;
+    padding: 15px;
+    margin-bottom: 10px;
+  }
+  
+  .summary-value {
+    font-size: 22px;
+  }
+  
+  .pagination-container {
+    overflow-x: auto;
+  }
+  
+  .pagination-container :deep(.el-pagination) {
+    flex-wrap: wrap;
+    justify-content: center;
+  }
 }
 
 .record-detail {
