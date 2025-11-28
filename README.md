@@ -99,9 +99,12 @@ scripts\build.bat
 - ✅ **Excel数据导入** - 支持导入系统导出的Excel文件，保留用户修改
 - ✅ **智能数据合并** - 自动合并CSV和Excel数据，去重处理，保护用户修改
 - ✅ **Excel数据载体循环** - Excel文件作为数据载体，支持持续累加和数据持久化
-- ✅ **智能数据清洗** - 自动清洗和标准化交易记录数据
+- ✅ **智能数据清洗** - 基于规则引擎的自动数据清洗和标准化
+- ✅ **规则管理系统** - 可视化配置清洗规则，支持支付渠道、分类识别、备注清洗
+- ✅ **分类管理** - 自定义收入/支出分类，支持增删改查
+- ✅ **支付渠道管理** - 自定义支付渠道，支持增删改查
 - ✅ **交易记录管理** - 完整的交易记录展示和管理
-- ✅ **灵活筛选功能** - 支持按日期范围筛选交易记录
+- ✅ **灵活筛选功能** - 支持按日期、分类、渠道等多维度筛选，支持检索
 - ✅ **收支统计分析** - 实时计算收入、支出统计信息
 - ✅ **Excel数据导出** - 支持将处理后的数据导出为Excel文件
 - ✅ **用户备注功能** - 支持为交易记录添加自定义备注
@@ -120,6 +123,8 @@ scripts\build.bat
 
 **后端技术：**
 - **Spring Boot 2.6.13** - 主框架
+- **MyBatis-Plus 3.5.3.1** - ORM框架
+- **SQLite 3.43.0.0** - 嵌入式数据库
 - **Maven** - 项目构建管理
 - **Lombok** - 简化Java代码
 - **Hutool 5.8.16** - Java工具库
@@ -143,13 +148,33 @@ scripts\build.bat
 ## API接口
 
 ### 主要接口
+
+**账单管理**
 - `POST /api/cmb/import-full` - 导入招商银行CSV账单文件
 - `POST /api/cmb/import-excel` - 导入系统导出Excel账单文件
 - `POST /api/cmb/clean-records` - 清洗账单记录数据
-- `GET /api/cmb/records` - 获取账单记录列表
 - `POST /api/cmb/export` - 导出账单数据为Excel文件
-- `PUT /api/cmb/records/{id}/remark` - 更新交易记录备注
-- `PUT /api/cmb/records/{id}/include-in-summary` - 设置是否计入统计
+
+**分类管理**
+- `GET /api/category/list` - 获取所有分类
+- `GET /api/category/list/{type}` - 按类型获取分类
+- `POST /api/category/add` - 添加分类
+- `PUT /api/category/update` - 更新分类
+- `DELETE /api/category/delete/{id}` - 删除分类
+
+**支付渠道管理**
+- `GET /api/payment-channel/list` - 获取所有支付渠道
+- `POST /api/payment-channel/add` - 添加支付渠道
+- `PUT /api/payment-channel/update` - 更新支付渠道
+- `DELETE /api/payment-channel/delete/{id}` - 删除支付渠道
+
+**清洗规则管理**
+- `GET /api/cleaning-rules` - 获取所有规则
+- `GET /api/cleaning-rules/type/{type}` - 按类型获取规则
+- `POST /api/cleaning-rules` - 添加规则
+- `PUT /api/cleaning-rules/{id}` - 更新规则
+- `DELETE /api/cleaning-rules/{id}` - 删除规则
+- `PUT /api/cleaning-rules/{id}/toggle` - 启用/禁用规则
 
 ### 接口特性
 - 支持跨域请求（CORS）
@@ -282,7 +307,15 @@ CSV导入 → 添加备注/分类 → 导出Excel → 保存Excel文件
 
 ## 版本历史
 
-### v1.3.0 (当前版本)
+### v1.4.0 (当前版本)
+- ✅ **规则管理系统** - 可视化配置数据清洗规则，支持三种匹配模式
+- ✅ **分类管理** - 自定义收入/支出分类，支持增删改查
+- ✅ **支付渠道管理** - 自定义支付渠道，支持增删改查
+- ✅ **数据库存储** - 集成SQLite嵌入式数据库，统一管理配置数据
+- ✅ **智能下拉选择** - 所有分类和渠道选择支持检索功能
+- ✅ **规则引擎** - 数据清洗使用数据库规则，支持优先级排序
+
+### v1.3.0
 - ✅ **按天统计分析** - 柱状图和日历热力图展示每日收支
 - ✅ **按分类统计** - 饼图展示分类占比和明细
 - ✅ **交互式图表** - 点击图表元素查看详细数据
