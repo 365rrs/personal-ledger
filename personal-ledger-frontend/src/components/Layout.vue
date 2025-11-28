@@ -49,6 +49,10 @@
             <span>按分类统计</span>
           </el-menu-item>
         </el-sub-menu>
+        <el-menu-item index="/rule-management">
+          <el-icon><Setting /></el-icon>
+          <span>规则管理</span>
+        </el-menu-item>
       </el-menu>
     </el-aside>
     
@@ -67,7 +71,7 @@
 </template>
 
 <script setup>
-import { House, Upload, Grid, Lightning, DataAnalysis, Document, TrendCharts, PieChart } from '@element-plus/icons-vue'
+import { House, Upload, Grid, Lightning, DataAnalysis, Document, TrendCharts, PieChart, Setting } from '@element-plus/icons-vue'
 </script>
 
 <style scoped>

@@ -552,6 +552,16 @@ public class DataCleaningServiceImpl implements DataCleaningService {
      * @return 分类
      */
     private String identifyCategory(CmbBillRecordReal record) {
+        // 优先检查用户备注中是否包含分类关键词
+        String userRemark = record.getUserRemark();
+        if (userRemark != null && !userRemark.isEmpty()) {
+            for (Map.Entry<String, String> entry : CATEGORY_KEYWORDS.entrySet()) {
+                if (userRemark.toLowerCase().contains(entry.getKey().toLowerCase())) {
+                    return entry.getValue();
+                }
+            }
+        }
+        
         // 检查交易备注中是否包含分类关键词
         String remark = record.getRemark();
         if (remark != null && !remark.isEmpty()) {

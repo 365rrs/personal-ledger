@@ -5,6 +5,7 @@ import BillAnalysis from '../views/BillAnalysis.vue'
 import DataAnalysis from '../views/DataAnalysis.vue'
 import CategoryAnalysis from '../views/CategoryAnalysis.vue'
 import Dashboard from '../views/Dashboard.vue'
+import RuleManagement from '../views/RuleManagement.vue'
 
 const routes = [
   {
@@ -64,6 +65,12 @@ const routes = [
     name: 'CategoryAnalysisList',
     component: CategoryAnalysis,
     meta: { title: '分类统计' }
+  },
+  {
+    path: '/rule-management',
+    name: 'RuleManagement',
+    component: RuleManagement,
+    meta: { title: '规则管理' }
   }
 ]
 
