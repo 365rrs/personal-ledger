@@ -537,7 +537,7 @@ onMounted(() => {
 /* 头部样式 */
 .header-card {
   margin-bottom: 20px;
-  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   border: none;
   border-radius: 12px;
   color: white;

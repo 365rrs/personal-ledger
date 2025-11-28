@@ -3,17 +3,14 @@
     <!-- 导入指导卡片 -->
     <el-card class="guide-card" shadow="never">
       <div class="guide-content">
-        <div class="guide-icon">
-          <el-icon size="48"><Folder /></el-icon>
-        </div>
         <div class="guide-text">
-          <h2>账单数据导入</h2>
-          <p>支持招商银行CSV原始账单和系统导出Excel文件的导入，实现数据的持续累加和管理</p>
-          <div class="guide-actions">
-            <el-button type="info" size="small" @click="switchToSimple" :icon="Lightning">
-              切换到快速导入
-            </el-button>
-          </div>
+          <h2>标准导入</h2>
+          <p>引导式账单导入，支持招商银行CSV原始账单和系统导出Excel文件的导入，实现数据的持续累加和管理</p>
+        </div>
+        <div class="guide-actions">
+          <el-button type="info" @click="switchToSimple" :icon="Lightning">
+            切换到快速导入
+          </el-button>
         </div>
       </div>
     </el-card>
@@ -168,7 +165,7 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 ElMessage.confirm = ElMessageBox.confirm
 import { 
   Upload, UploadFilled, Loading, DocumentAdd, Delete, Clock,
-  Folder, Document, Grid, Check, CircleCheck, Lightning
+  Document, Grid, Check, CircleCheck, Lightning
 } from '@element-plus/icons-vue'
 
 const router = useRouter()
@@ -476,30 +473,21 @@ onMounted(() => {
 
 .guide-content {
   display: flex;
+  justify-content: space-between;
   align-items: center;
-  gap: 24px;
-  padding: 24px;
-}
-
-.guide-icon {
-  color: rgba(255, 255, 255, 0.9);
+  padding: 20px;
 }
 
 .guide-text h2 {
   margin: 0 0 8px 0;
-  font-size: 28px;
+  font-size: 24px;
   font-weight: 600;
 }
 
 .guide-text p {
-  margin: 0 0 16px 0;
-  font-size: 16px;
+  margin: 0;
+  font-size: 14px;
   opacity: 0.9;
-  line-height: 1.5;
-}
-
-.guide-actions {
-  margin-top: 8px;
 }
 
 /* 导入方式选择 */
@@ -691,8 +679,8 @@ onMounted(() => {
 @media (max-width: 768px) {
   .guide-content {
     flex-direction: column;
-    text-align: center;
     gap: 16px;
+    text-align: center;
   }
   
   .import-options .el-col {
