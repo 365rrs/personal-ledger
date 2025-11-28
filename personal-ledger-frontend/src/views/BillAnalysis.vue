@@ -157,6 +157,22 @@
         >
           导出数据
         </el-button>
+        <el-button 
+          type="primary" 
+          @click="goToDataAnalysis"
+          :disabled="!billData?.data || billData.data.length === 0"
+          :icon="DataAnalysis"
+        >
+          按天统计
+        </el-button>
+        <el-button 
+          type="primary" 
+          @click="goToCategoryAnalysis"
+          :disabled="!billData?.data || billData.data.length === 0"
+          :icon="PieChart"
+        >
+          按分类统计
+        </el-button>
       </el-space>
     </el-card>
     
@@ -433,7 +449,7 @@ import axios from 'axios'
 import { ElMessage } from 'element-plus'
 import { 
   InfoFilled, Operation, Filter, List, TrendCharts, ArrowLeft,
-  Refresh, Download, Search, RefreshRight, View, Edit, Setting
+  Refresh, Download, Search, RefreshRight, View, Edit, Setting, DataAnalysis, PieChart
 } from '@element-plus/icons-vue'
 
 const route = useRoute()
@@ -902,6 +918,26 @@ const saveRecord = () => {
 // 返回导入页面
 const goBack = () => {
   router.push('/bill-import')
+}
+
+// 跳转到数据分析
+const goToDataAnalysis = () => {
+  const importId = route.params.id
+  if (importId) {
+    router.push(`/data-analysis/${importId}`)
+  } else {
+    router.push('/data-analysis')
+  }
+}
+
+// 跳转到分类统计
+const goToCategoryAnalysis = () => {
+  const importId = route.params.id
+  if (importId) {
+    router.push(`/category-analysis/${importId}`)
+  } else {
+    router.push('/category-analysis')
+  }
 }
 
 onMounted(() => {

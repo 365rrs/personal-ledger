@@ -2,6 +2,8 @@ import { createRouter, createWebHistory } from 'vue-router'
 import BillImport from '../views/BillImport.vue'
 import BillImportSimple from '../views/BillImportSimple.vue'
 import BillAnalysis from '../views/BillAnalysis.vue'
+import DataAnalysis from '../views/DataAnalysis.vue'
+import CategoryAnalysis from '../views/CategoryAnalysis.vue'
 import Dashboard from '../views/Dashboard.vue'
 
 const routes = [
@@ -38,6 +40,30 @@ const routes = [
     name: 'BillAnalysisList',
     component: BillAnalysis,
     meta: { title: '账单解析' }
+  },
+  {
+    path: '/data-analysis/:id',
+    name: 'DataAnalysis',
+    component: DataAnalysis,
+    meta: { title: '数据分析' }
+  },
+  {
+    path: '/data-analysis',
+    name: 'DataAnalysisList',
+    component: DataAnalysis,
+    meta: { title: '数据分析' }
+  },
+  {
+    path: '/category-analysis/:id',
+    name: 'CategoryAnalysis',
+    component: CategoryAnalysis,
+    meta: { title: '分类统计' }
+  },
+  {
+    path: '/category-analysis',
+    name: 'CategoryAnalysisList',
+    component: CategoryAnalysis,
+    meta: { title: '分类统计' }
   }
 ]
 
