@@ -32,9 +32,23 @@
           </el-menu-item>
         </el-sub-menu>
         <el-menu-item index="/bill-analysis">
-          <el-icon><DataAnalysis /></el-icon>
+          <el-icon><Document /></el-icon>
           <span>账单解析</span>
         </el-menu-item>
+        <el-sub-menu index="/data-analysis">
+          <template #title>
+            <el-icon><DataAnalysis /></el-icon>
+            <span>数据分析</span>
+          </template>
+          <el-menu-item index="/data-analysis">
+            <el-icon><TrendCharts /></el-icon>
+            <span>按天统计</span>
+          </el-menu-item>
+          <el-menu-item index="/category-analysis">
+            <el-icon><PieChart /></el-icon>
+            <span>按分类统计</span>
+          </el-menu-item>
+        </el-sub-menu>
       </el-menu>
     </el-aside>
     
@@ -53,7 +67,7 @@
 </template>
 
 <script setup>
-import { House, Upload, Grid, Lightning, DataAnalysis } from '@element-plus/icons-vue'
+import { House, Upload, Grid, Lightning, DataAnalysis, Document, TrendCharts, PieChart } from '@element-plus/icons-vue'
 </script>
 
 <style scoped>

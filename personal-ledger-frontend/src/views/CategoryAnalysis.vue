@@ -314,12 +314,7 @@ const saveRecord = () => {
 
 // 返回
 const goBack = () => {
-  const importId = billStore.getImportId()
-  if (importId) {
-    router.push(`/bill-analysis/${importId}`)
-  } else {
-    router.push('/bill-analysis')
-  }
+  router.push('/bill-analysis')
 }
 
 // 监听收支类型切换

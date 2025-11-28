@@ -935,23 +935,13 @@ const goBack = () => {
 // 跳转到数据分析
 const goToDataAnalysis = () => {
   saveBillData() // 跳转前保存数据
-  const importId = billStore.getImportId()
-  if (importId) {
-    router.push(`/data-analysis/${importId}`)
-  } else {
-    router.push('/data-analysis')
-  }
+  router.push('/data-analysis')
 }
 
 // 跳转到分类统计
 const goToCategoryAnalysis = () => {
   saveBillData() // 跳转前保存数据
-  const importId = billStore.getImportId()
-  if (importId) {
-    router.push(`/category-analysis/${importId}`)
-  } else {
-    router.push('/category-analysis')
-  }
+  router.push('/category-analysis')
 }
 
 onMounted(() => {

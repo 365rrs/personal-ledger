@@ -57,7 +57,7 @@
         <div v-if="selectedDate" class="selected-date-info">
           <el-tag type="primary" closable @close="selectedDate = ''">已选择: {{ selectedDate }}</el-tag>
         </div>
-        <el-table :data="displayStats" class="stats-table" max-height="400">
+        <el-table :data="displayStats" class="stats-table" max-height="400" @row-click="handleStatRowClick">
           <el-table-column prop="date" label="日期" width="120" sortable></el-table-column>
           <el-table-column prop="income" label="收入" width="120" sortable>
             <template #default="scope">
@@ -258,6 +258,11 @@ const selectDate = (date) => {
   selectedDate.value = date
 }
 
+// 处理统计表格行点击
+const handleStatRowClick = (row) => {
+  selectedDate.value = row.date
+}
+
 // 编辑记录
 const editRecord = (record) => {
   currentRecord.value = { ...record }
@@ -441,12 +446,7 @@ const formatValue = (value) => {
 
 // 返回
 const goBack = () => {
-  const importId = billStore.getImportId()
-  if (importId) {
-    router.push(`/bill-analysis/${importId}`)
-  } else {
-    router.push('/bill-analysis')
-  }
+  router.push('/bill-analysis')
 }
 
 // 监听视图模式切换
@@ -619,6 +619,14 @@ onBeforeUnmount(() => {
 
 .stats-table {
   margin-top: 20px;
+}
+
+.stats-table :deep(.el-table__row) {
+  cursor: pointer;
+}
+
+.stats-table :deep(.el-table__row:hover) {
+  background-color: #f5f7fa;
 }
 
 .income-text {
