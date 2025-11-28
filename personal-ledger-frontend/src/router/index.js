@@ -32,6 +32,12 @@ const routes = [
     name: 'BillAnalysis',
     component: BillAnalysis,
     meta: { title: '账单解析' }
+  },
+  {
+    path: '/bill-analysis',
+    name: 'BillAnalysisList',
+    component: BillAnalysis,
+    meta: { title: '账单解析' }
   }
 ]
 

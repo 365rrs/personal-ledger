@@ -31,6 +31,10 @@
             <span>快速导入</span>
           </el-menu-item>
         </el-sub-menu>
+        <el-menu-item index="/bill-analysis">
+          <el-icon><DataAnalysis /></el-icon>
+          <span>账单解析</span>
+        </el-menu-item>
       </el-menu>
     </el-aside>
     
@@ -49,7 +53,7 @@
 </template>
 
 <script setup>
-import { House, Upload, Grid, Lightning } from '@element-plus/icons-vue'
+import { House, Upload, Grid, Lightning, DataAnalysis } from '@element-plus/icons-vue'
 </script>
 
 <style scoped>

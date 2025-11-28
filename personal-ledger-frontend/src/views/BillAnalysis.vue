@@ -1,5 +1,34 @@
 <template>
   <div class="bill-analysis">
+    <!-- 账单选择列表 -->
+    <el-card v-if="showBillList" class="bill-list-card" shadow="hover">
+      <template #header>
+        <div class="card-header">
+          <el-icon class="header-icon"><List /></el-icon>
+          <span>选择要查看的账单</span>
+        </div>
+      </template>
+      
+      <div v-if="billList.length === 0" class="empty-state">
+        <el-empty description="暂无可查看的账单数据">
+          <el-button type="primary" @click="router.push('/bill-import')">去导入账单</el-button>
+        </el-empty>
+      </div>
+      
+      <el-table v-else :data="billList" style="width: 100%" @row-click="selectBill">
+        <el-table-column prop="fileName" label="文件名" width="300"></el-table-column>
+        <el-table-column prop="importTime" label="导入时间" width="200"></el-table-column>
+        <el-table-column prop="recordCount" label="记录数" width="100"></el-table-column>
+        <el-table-column label="操作" width="120">
+          <template #default="scope">
+            <el-button type="primary" size="small" @click.stop="selectBill(scope.row.id)">
+              查看解析
+            </el-button>
+          </template>
+        </el-table-column>
+      </el-table>
+    </el-card>
+    
     <!-- 账单信息展示 -->
     <el-card v-if="billData?.exportInfo" class="info-card" shadow="hover">
       <template #header>
@@ -275,7 +304,7 @@
     </el-card>
     
     <!-- 数据不存在提示 -->
-    <el-card v-if="!billData" class="empty-card" shadow="hover">
+    <el-card v-if="!billData && !showBillList" class="empty-card" shadow="hover">
       <el-empty description="未找到账单数据">
         <el-button type="primary" @click="goBack">返回导入页面</el-button>
       </el-empty>
@@ -350,7 +379,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import axios from 'axios'
 import { ElMessage } from 'element-plus'
@@ -386,12 +415,16 @@ const tradeTypeOptions = computed(() => {
   return types.sort()
 })
 
+// 账单列表
+const billList = ref([])
+const showBillList = ref(false)
+
 // 从localStorage加载账单数据
 const loadBillData = () => {
   const importId = route.params.id
   if (!importId) {
-    ElMessage.error('缺少账单ID')
-    router.push('/bill-import')
+    // 没有ID参数，自动加载最新的账单数据
+    loadLatestBillData()
     return
   }
   
@@ -402,10 +435,52 @@ const loadBillData = () => {
     if (billData.value.data) {
       billData.value.data = processTransactionData(billData.value.data)
     }
+    showBillList.value = false
   } else {
     ElMessage.error('未找到账单数据')
     router.push('/bill-import')
   }
+}
+
+// 加载最新的账单数据
+const loadLatestBillData = () => {
+  const history = localStorage.getItem('billImportHistory')
+  if (history) {
+    const importHistory = JSON.parse(history)
+    const successfulImports = importHistory.filter(item => item.status === 'success')
+    
+    if (successfulImports.length > 0) {
+      // 加载最新的成功导入的账单
+      const latestImport = successfulImports[0]
+      const data = localStorage.getItem(`billData_${latestImport.id}`)
+      if (data) {
+        billData.value = JSON.parse(data)
+        if (billData.value.data) {
+          billData.value.data = processTransactionData(billData.value.data)
+        }
+        showBillList.value = false
+        return
+      }
+    }
+  }
+  
+  // 没有找到任何账单数据
+  showBillList.value = true
+  loadBillList()
+}
+
+// 加载账单列表
+const loadBillList = () => {
+  const history = localStorage.getItem('billImportHistory')
+  if (history) {
+    const importHistory = JSON.parse(history)
+    billList.value = importHistory.filter(item => item.status === 'success')
+  }
+}
+
+// 选择账单
+const selectBill = (billId) => {
+  router.push(`/bill-analysis/${billId}`)
 }
 
 // 为交易记录添加格式化日期属性
@@ -703,6 +778,11 @@ const goBack = () => {
 onMounted(() => {
   loadBillData()
 })
+
+// 监听路由参数变化
+watch(() => route.params.id, () => {
+  loadBillData()
+})
 </script>
 
 <style scoped>
@@ -710,8 +790,20 @@ onMounted(() => {
   padding: 0;
 }
 
-.info-card, .toolbar-card, .filter-card, .table-card, .summary-card, .empty-card {
+.info-card, .toolbar-card, .filter-card, .table-card, .summary-card, .empty-card, .bill-list-card {
   margin-bottom: 20px;
+}
+
+.empty-state {
+  padding: 40px 0;
+}
+
+.bill-list-card :deep(.el-table__row) {
+  cursor: pointer;
+}
+
+.bill-list-card :deep(.el-table__row:hover) {
+  background-color: #f5f7fa;
 }
 
 .card-header {
