@@ -1,608 +1,290 @@
 <template>
   <div class="category-analysis">
-    <el-card class="analysis-card" shadow="hover">
+    <el-card shadow="hover">
       <template #header>
-        <div class="card-header">
-          <div class="header-left">
-            <el-icon class="header-icon"><PieChart /></el-icon>
-            <span>数据分析 - 按分类统计</span>
-          </div>
-          <el-button type="primary" size="small" @click="goBack" :icon="ArrowLeft">返回</el-button>
+        <div class="header">
+          <span>按分类统计</span>
+          <el-space>
+            <el-radio-group v-model="type" @change="loadData">
+              <el-radio-button label="expense">支出</el-radio-button>
+              <el-radio-button label="income">收入</el-radio-button>
+            </el-radio-group>
+            <el-date-picker v-model="dateRange" type="monthrange" value-format="YYYY-MM" @change="loadData" />
+          </el-space>
         </div>
       </template>
 
-      <el-empty v-if="!billData?.data || billData.data.length === 0" description="暂无数据可分析">
-        <el-button type="primary" @click="goBack">返回账单解析</el-button>
-      </el-empty>
+      <el-row :gutter="20">
+        <el-col :span="12">
+          <div ref="chartRef" style="width: 100%; height: 400px;"></div>
+        </el-col>
+        <el-col :span="12">
+          <el-table :data="categoryData" style="width: 100%" @row-click="loadCategoryDetails">
+            <el-table-column prop="category" label="分类" />
+            <el-table-column prop="amount" label="金额" align="right" />
+            <el-table-column prop="count" label="笔数" align="center" width="80" />
+            <el-table-column prop="percent" label="占比" align="right" width="80" />
+          </el-table>
+        </el-col>
+      </el-row>
 
-      <div v-else>
-        <!-- 筛选条件 -->
-        <el-form label-width="80px" class="filter-form">
-          <el-row :gutter="16">
-            <el-col :span="24">
-              <el-form-item label="快捷日期">
-                <el-space wrap>
-                  <el-button @click="setQuickDate('today')">今天</el-button>
-                  <el-button @click="setQuickDate('thisMonth')">本月</el-button>
-                  <el-button @click="setQuickDate('lastMonth')">上月</el-button>
-                  <el-button @click="setQuickDate('last3Months')">近3月</el-button>
-                  <el-button @click="setQuickDate('thisYear')">今年</el-button>
-                </el-space>
-              </el-form-item>
-            </el-col>
-          </el-row>
-          <el-row :gutter="16">
-            <el-col :span="12">
-              <el-form-item label="日期范围">
-                <div style="display: flex; align-items: center; gap: 8px;">
-                  <el-date-picker v-model="filter.startDate" type="date" placeholder="开始日期" value-format="YYYY-MM-DD" style="flex: 1" />
-                  <span>至</span>
-                  <el-date-picker v-model="filter.endDate" type="date" placeholder="结束日期" value-format="YYYY-MM-DD" style="flex: 1" />
-                </div>
-              </el-form-item>
-            </el-col>
-            <el-col :span="6">
-              <el-form-item label="支付渠道">
-                <el-select v-model="filter.paymentChannel" clearable filterable placeholder="全部">
-                  <el-option v-for="ch in paymentChannelOptions" :key="ch" :label="ch" :value="ch" />
-                </el-select>
-              </el-form-item>
-            </el-col>
-            <el-col :span="6">
-              <el-form-item label=" ">
-                <el-button type="primary" @click="applyFilter">应用筛选</el-button>
-                <el-button @click="resetFilter">重置</el-button>
-              </el-form-item>
-            </el-col>
-          </el-row>
-        </el-form>
-        
-        <!-- 收支类型切换 -->
-        <el-radio-group v-model="transactionType" class="type-toggle">
-          <el-radio-button value="expense">支出分类</el-radio-button>
-          <el-radio-button value="income">收入分类</el-radio-button>
-        </el-radio-group>
-
-        <!-- 饼图 -->
-        <div ref="pieChart" class="chart-container"></div>
-
-        <!-- 分类统计表格 -->
-        <el-table :data="categoryStats" class="stats-table" @row-click="selectCategory">
-          <el-table-column prop="category" label="分类" width="200"></el-table-column>
-          <el-table-column prop="amount" label="金额" width="150" sortable>
-            <template #default="scope">
-              <span :class="transactionType === 'income' ? 'income-text' : 'expense-text'">
-                {{ scope.row.amount.toFixed(2) }}
-              </span>
+      <!-- 分类明细 -->
+      <div v-if="selectedCategory" style="margin-top: 20px;">
+        <div style="margin-bottom: 10px;">
+          <el-tag type="primary" closable @close="selectedCategory = ''">{{ selectedCategory }}</el-tag>
+        </div>
+        <el-table :data="categoryDetails" max-height="400">
+          <el-table-column prop="transactionDate" label="交易日期" width="110" />
+          <el-table-column prop="transactionTime" label="交易时间" width="90" />
+          <el-table-column prop="income" label="收入" width="100">
+            <template #default="{ row }">
+              <span style="color: #67c23a;">{{ row.income || '-' }}</span>
             </template>
           </el-table-column>
-          <el-table-column prop="count" label="笔数" width="100" sortable></el-table-column>
-          <el-table-column prop="percentage" label="占比" width="100" sortable>
-            <template #default="scope">
-              {{ scope.row.percentage.toFixed(2) }}%
+          <el-table-column prop="expense" label="支出" width="100">
+            <template #default="{ row }">
+              <span style="color: #f56c6c;">{{ row.expense || '-' }}</span>
             </template>
           </el-table-column>
-          <el-table-column prop="avgAmount" label="平均金额" width="120" sortable>
-            <template #default="scope">
-              {{ scope.row.avgAmount.toFixed(2) }}
+          <el-table-column prop="transactionType" label="交易类型" width="140" />
+          <el-table-column prop="paymentChannel" label="支付渠道" width="120" />
+          <el-table-column prop="category" label="分类" width="100" />
+          <el-table-column prop="description" label="交易备注" min-width="180" show-overflow-tooltip />
+          <el-table-column prop="userNote" label="用户备注" width="150" show-overflow-tooltip />
+          <el-table-column prop="excludeFromStats" label="计入收支" width="100" align="center">
+            <template #default="{ row }">
+              <el-tag :type="row.excludeFromStats ? 'info' : 'success'" size="small">
+                {{ row.excludeFromStats ? '否' : '是' }}
+              </el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column label="操作" width="80" fixed="right">
+            <template #default="{ row }">
+              <el-button type="primary" size="small" @click="editRecord(row)">编辑</el-button>
             </template>
           </el-table-column>
         </el-table>
-
-        <!-- 分类明细 -->
-        <div v-if="selectedCategory && categoryDetails.length > 0" class="category-details">
-          <div class="details-title">
-            <el-tag type="primary" closable @close="selectedCategory = ''">{{ selectedCategory }}</el-tag>
-            分类明细
-          </div>
-          <el-table :data="categoryDetails" max-height="300">
-            <el-table-column prop="formattedTradeDate" label="交易日期" min-width="110"></el-table-column>
-            <el-table-column prop="tradeTime" label="交易时间" min-width="90"></el-table-column>
-            <el-table-column prop="income" label="收入" min-width="90">
-              <template #default="scope">
-                <span class="income-text">{{ scope.row.income || '-' }}</span>
-              </template>
-            </el-table-column>
-            <el-table-column prop="expense" label="支出" min-width="90">
-              <template #default="scope">
-                <span class="expense-text">{{ scope.row.expense || '-' }}</span>
-              </template>
-            </el-table-column>
-            <el-table-column prop="tradeType" label="交易类型" min-width="140"></el-table-column>
-            <el-table-column prop="remark" label="交易备注" min-width="180" show-overflow-tooltip></el-table-column>
-            <el-table-column prop="userRemark" label="用户备注" min-width="150" show-overflow-tooltip>
-              <template #default="scope">
-                <span>{{ scope.row.userRemark || '-' }}</span>
-              </template>
-            </el-table-column>
-            <el-table-column label="操作" width="80" align="center" fixed="right">
-              <template #default="scope">
-                <el-button type="warning" size="small" @click="editRecord(scope.row)" :icon="Edit">编辑</el-button>
-              </template>
-            </el-table-column>
-          </el-table>
-        </div>
       </div>
     </el-card>
-    
-    <!-- 交易记录编辑抽屉 -->
-    <el-drawer
-      v-model="drawerVisible"
-      title="编辑交易记录"
-      direction="rtl"
-      size="500px"
-    >
-      <div v-if="currentRecord" class="record-detail">
-        <el-form :model="currentRecord" label-width="120px">
-          <el-form-item label="交易日期">
-            <el-input v-model="currentRecord.formattedTradeDate" readonly />
-          </el-form-item>
-          <el-form-item label="交易时间">
-            <el-input v-model="currentRecord.tradeTime" readonly />
-          </el-form-item>
-          <el-form-item label="收入">
-            <el-input v-model="currentRecord.income" readonly />
-          </el-form-item>
-          <el-form-item label="支出">
-            <el-input v-model="currentRecord.expense" readonly />
-          </el-form-item>
-          <el-form-item label="交易类型">
-            <el-input v-model="currentRecord.tradeType" readonly />
-          </el-form-item>
-          <el-form-item label="交易备注">
-            <el-input v-model="currentRecord.remark" readonly />
-          </el-form-item>
-          <el-form-item label="支付渠道">
-            <el-select v-model="currentRecord.paymentChannel" placeholder="请选择支付渠道" clearable filterable>
-              <el-option v-for="channel in paymentChannelOptions" :key="channel" :label="channel" :value="channel" />
-            </el-select>
-          </el-form-item>
-          <el-form-item label="收支类型">
-            <el-input v-model="currentRecord.transactionType" readonly />
-          </el-form-item>
-          <el-form-item label="分类">
-            <el-select v-model="currentRecord.category" placeholder="请选择分类" clearable filterable>
-              <el-option v-for="cat in categoryOptions" :key="cat" :label="cat" :value="cat" />
-            </el-select>
-          </el-form-item>
-          <el-form-item label="用户备注">
-            <el-input 
-              v-model="currentRecord.userRemark" 
-              type="textarea" 
-              :rows="3" 
-              placeholder="请输入用户备注"
-            />
-          </el-form-item>
-          <el-form-item label="计入收支">
-            <el-switch
-              v-model="currentRecord.excludeFromMonthly"
-              active-text="是"
-              inactive-text="否"
-            />
-          </el-form-item>
-        </el-form>
-        
-        <div class="drawer-footer">
-          <el-space>
-            <el-button @click="drawerVisible = false">取消</el-button>
-            <el-button type="primary" @click="saveRecord">保存</el-button>
-          </el-space>
-        </div>
-      </div>
+
+    <!-- 编辑抽屉 -->
+    <el-drawer v-model="drawerVisible" title="编辑交易记录" size="500px">
+      <el-form v-if="currentRecord" label-width="100px">
+        <el-form-item label="交易日期">
+          <el-input v-model="currentRecord.transactionDate" readonly />
+        </el-form-item>
+        <el-form-item label="交易时间">
+          <el-input v-model="currentRecord.transactionTime" readonly />
+        </el-form-item>
+        <el-form-item label="收入">
+          <el-input v-model="currentRecord.income" readonly />
+        </el-form-item>
+        <el-form-item label="支出">
+          <el-input v-model="currentRecord.expense" readonly />
+        </el-form-item>
+        <el-form-item label="交易类型">
+          <el-input v-model="currentRecord.transactionType" readonly />
+        </el-form-item>
+        <el-form-item label="描述">
+          <el-input v-model="currentRecord.description" readonly />
+        </el-form-item>
+        <el-form-item label="支付渠道">
+          <el-select v-model="currentRecord.paymentChannel" clearable filterable placeholder="请选择">
+            <el-option v-for="ch in channels" :key="ch" :label="ch" :value="ch" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="分类">
+          <el-select v-model="currentRecord.category" clearable filterable placeholder="请选择">
+            <el-option v-for="cat in categories" :key="cat" :label="cat" :value="cat" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="用户备注">
+          <el-input v-model="currentRecord.userNote" type="textarea" :rows="3" placeholder="请输入备注" />
+        </el-form-item>
+        <el-form-item label="计入收支">
+          <el-switch v-model="currentRecord.includeInStats" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="drawerVisible = false">取消</el-button>
+        <el-button type="primary" @click="saveRecord">保存</el-button>
+      </template>
     </el-drawer>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch, nextTick } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { ref, onMounted, nextTick } from 'vue'
 import axios from 'axios'
 import * as echarts from 'echarts'
-import { PieChart, ArrowLeft, Edit } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
-import billStore from '@/store/billStore'
 
-const route = useRoute()
-const router = useRouter()
-const billData = computed(() => billStore.state.currentBillData)
-const transactionType = ref('expense')
-const pieChart = ref(null)
+const chartRef = ref(null)
+const type = ref('expense')
+const dateRange = ref([])
+const categoryData = ref([])
 const selectedCategory = ref('')
+const categoryDetails = ref([])
 const drawerVisible = ref(false)
 const currentRecord = ref(null)
-let pieChartInstance = null
+const categories = ref([])
+const channels = ref([])
+let chart = null
 
-const categoryOptions = ref([])
-const paymentChannelOptions = ref([])
-
-const getThisMonthDates = () => {
-  const today = new Date()
-  const year = today.getFullYear()
-  const month = today.getMonth()
-  const firstDay = new Date(year, month, 1)
-  const formatDate = (date) => {
-    const y = date.getFullYear()
-    const m = String(date.getMonth() + 1).padStart(2, '0')
-    const d = String(date.getDate()).padStart(2, '0')
-    return `${y}-${m}-${d}`
-  }
-  return {
-    startDate: formatDate(firstDay),
-    endDate: formatDate(today)
-  }
-}
-
-const thisMonth = getThisMonthDates()
-const filter = ref({
-  startDate: thisMonth.startDate,
-  endDate: thisMonth.endDate,
-  paymentChannel: ''
-})
-
-const setQuickDate = (type) => {
-  const today = new Date()
-  const formatDate = (date) => {
-    const y = date.getFullYear()
-    const m = String(date.getMonth() + 1).padStart(2, '0')
-    const d = String(date.getDate()).padStart(2, '0')
-    return `${y}-${m}-${d}`
-  }
-  
-  switch(type) {
-    case 'today':
-      filter.value.startDate = filter.value.endDate = formatDate(today)
-      break
-    case 'thisMonth':
-      filter.value.startDate = formatDate(new Date(today.getFullYear(), today.getMonth(), 1))
-      filter.value.endDate = formatDate(today)
-      break
-    case 'lastMonth':
-      filter.value.startDate = formatDate(new Date(today.getFullYear(), today.getMonth() - 1, 1))
-      filter.value.endDate = formatDate(new Date(today.getFullYear(), today.getMonth(), 0))
-      break
-    case 'last3Months':
-      filter.value.startDate = formatDate(new Date(today.getFullYear(), today.getMonth() - 2, 1))
-      filter.value.endDate = formatDate(today)
-      break
-    case 'thisYear':
-      filter.value.startDate = formatDate(new Date(today.getFullYear(), 0, 1))
-      filter.value.endDate = formatDate(today)
-      break
-  }
-}
-
-const applyFilter = () => {
-  loadBillData()
-}
-
-const resetFilter = () => {
-  filter.value = {
-    startDate: thisMonth.startDate,
-    endDate: thisMonth.endDate,
-    paymentChannel: ''
-  }
-  loadBillData()
-}
-
-const loadCategories = async () => {
+const loadData = async () => {
   try {
-    const response = await axios.get('http://localhost:8080/api/category/list')
-    categoryOptions.value = response.data.map(c => c.name)
-  } catch (error) {
-    console.error('加载分类失败', error)
-  }
-}
-
-const loadPaymentChannels = async () => {
-  try {
-    const response = await axios.get('http://localhost:8080/api/payment-channel/list')
-    paymentChannelOptions.value = response.data.map(c => c.name)
-  } catch (error) {
-    console.error('加载支付渠道失败', error)
-  }
-}
-
-// 加载账单数据
-const loadBillData = async () => {
-  try {
-    const params = {
-      size: 10000,
-      startDate: filter.value.startDate,
-      endDate: filter.value.endDate
+    const getMonthEnd = (yearMonth) => {
+      const [year, month] = yearMonth.split('-')
+      return new Date(year, month, 0).getDate()
     }
     
-    if (filter.value.paymentChannel) {
-      params.paymentChannel = filter.value.paymentChannel
+    const params = {
+      startDate: dateRange.value?.[0] ? `${dateRange.value[0]}-01` : undefined,
+      endDate: dateRange.value?.[1] ? `${dateRange.value[1]}-${getMonthEnd(dateRange.value[1])}` : undefined,
+      type: type.value
+    }
+    
+    const res = await axios.get('http://localhost:8080/api/bill/transaction/category-stats', { params })
+    const stats = res.data.data || []
+    
+    categoryData.value = stats.map(s => ({
+      category: s.category,
+      amount: parseFloat(s.amount).toFixed(2),
+      count: s.count,
+      percent: parseFloat(s.percent).toFixed(1) + '%'
+    }))
+    
+    renderChart(categoryData.value)
+  } catch (error) {
+    ElMessage.error('加载数据失败: ' + error.message)
+  }
+}
+
+const renderChart = (data) => {
+  if (!chart) {
+    chart = echarts.init(chartRef.value)
+  }
+
+  const option = {
+    title: { text: type.value === 'expense' ? '支出分类' : '收入分类', left: 'center' },
+    tooltip: { trigger: 'item', formatter: '{b}: {c} ({d}%)' },
+    series: [{
+      type: 'pie',
+      radius: ['40%', '70%'],
+      data: data.map(d => ({ name: d.category, value: parseFloat(d.amount) })),
+      emphasis: { itemStyle: { shadowBlur: 10, shadowOffsetX: 0, shadowColor: 'rgba(0, 0, 0, 0.5)' } }
+    }]
+  }
+
+  chart.setOption(option)
+  
+  // 添加点击事件
+  chart.off('click')
+  chart.on('click', (params) => {
+    if (params.componentType === 'series') {
+      loadCategoryDetails({ category: params.name })
+    }
+  })
+}
+
+const loadCategoryDetails = async (row) => {
+  selectedCategory.value = row.category
+  try {
+    const getMonthEnd = (yearMonth) => {
+      const [year, month] = yearMonth.split('-')
+      return new Date(year, month, 0).getDate()
+    }
+    
+    const params = {
+      size: 10000,
+      startDate: dateRange.value?.[0] ? `${dateRange.value[0]}-01` : undefined,
+      endDate: dateRange.value?.[1] ? `${dateRange.value[1]}-${getMonthEnd(dateRange.value[1])}` : undefined,
+      category: row.category === '未分类' ? '' : row.category,
+      excludeFromStats: false
     }
     
     const res = await axios.get('http://localhost:8080/api/bill/transaction/list', { params })
     const transactions = res.data.data?.records || []
     
-    billStore.state.currentBillData = {
-      data: transactions.map(t => ({
-        ...t,
-        formattedTradeDate: t.transactionDate,
-        tradeTime: t.transactionTime,
-        remark: t.description,
-        userRemark: t.userNote,
-        excludeFromMonthly: !t.excludeFromStats
-      }))
-    }
-  } catch (error) {
-    ElMessage.error('加载数据失败')
-  }
-}
-
-// 按分类统计数据
-const categoryStats = computed(() => {
-  if (!billData.value?.data) return []
-  
-  const statsMap = new Map()
-  let total = 0
-  
-  billData.value.data.forEach(item => {
-    if (item.excludeFromMonthly === false) return
-    
-    const isIncome = item.income && parseFloat(item.income) > 0
-    const isExpense = item.expense && parseFloat(item.expense) > 0
-    
-    if (transactionType.value === 'income' && !isIncome) return
-    if (transactionType.value === 'expense' && !isExpense) return
-    
-    const category = item.category || '未分类'
-    const amount = parseFloat(isIncome ? item.income : item.expense) || 0
-    
-    if (!statsMap.has(category)) {
-      statsMap.set(category, { category, amount: 0, count: 0 })
-    }
-    
-    const stat = statsMap.get(category)
-    stat.amount += amount
-    stat.count++
-    total += amount
-  })
-  
-  const result = Array.from(statsMap.values()).map(stat => ({
-    ...stat,
-    percentage: total > 0 ? (stat.amount / total) * 100 : 0,
-    avgAmount: stat.amount / stat.count
-  }))
-  
-  return result.sort((a, b) => b.amount - a.amount)
-})
-
-// 初始化饼图
-const initPieChart = () => {
-  if (!pieChart.value || categoryStats.value.length === 0) return
-  
-  if (pieChartInstance) {
-    pieChartInstance.dispose()
-  }
-  
-  pieChartInstance = echarts.init(pieChart.value)
-  
-  const data = categoryStats.value.map(stat => ({
-    name: stat.category,
-    value: stat.amount
-  }))
-  
-  const option = {
-    tooltip: {
-      trigger: 'item',
-      formatter: (params) => {
-        return `${params.name}<br/>金额: ${params.value.toFixed(2)}元<br/>占比: ${params.percent.toFixed(2)}%`
+    // 根据类型过滤
+    categoryDetails.value = transactions.filter(t => {
+      if (type.value === 'expense') {
+        return t.expense && parseFloat(t.expense) > 0
+      } else {
+        return t.income && parseFloat(t.income) > 0
       }
-    },
-    legend: {
-      orient: 'vertical',
-      right: 10,
-      top: 'center',
-      type: 'scroll'
-    },
-    series: [{
-      name: transactionType.value === 'income' ? '收入分类' : '支出分类',
-      type: 'pie',
-      radius: ['40%', '70%'],
-      center: ['40%', '50%'],
-      avoidLabelOverlap: true,
-      itemStyle: {
-        borderRadius: 10,
-        borderColor: '#fff',
-        borderWidth: 2
-      },
-      label: {
-        show: true,
-        formatter: '{b}: {d}%'
-      },
-      emphasis: {
-        label: {
-          show: true,
-          fontSize: 16,
-          fontWeight: 'bold'
-        }
-      },
-      data: data
-    }]
+    })
+  } catch (error) {
+    ElMessage.error('加载明细失败')
   }
-  
-  pieChartInstance.setOption(option)
-  
-  pieChartInstance.on('click', (params) => {
-    selectedCategory.value = params.name
-  })
 }
 
-// 选中分类的明细
-const categoryDetails = computed(() => {
-  if (!selectedCategory.value || !billData.value?.data) return []
-  
-  return billData.value.data.filter(item => {
-    if (item.excludeFromMonthly === false) return false
-    
-    const category = item.category || '未分类'
-    if (category !== selectedCategory.value) return false
-    
-    const isIncome = item.income && parseFloat(item.income) > 0
-    const isExpense = item.expense && parseFloat(item.expense) > 0
-    
-    if (transactionType.value === 'income') return isIncome
-    if (transactionType.value === 'expense') return isExpense
-    
-    return false
-  })
-})
-
-// 选择分类
-const selectCategory = (row) => {
-  selectedCategory.value = row.category
-}
-
-// 编辑记录
 const editRecord = (record) => {
-  currentRecord.value = { ...record }
+  currentRecord.value = { 
+    ...record,
+    includeInStats: !record.excludeFromStats
+  }
   drawerVisible.value = true
 }
 
-// 保存记录
 const saveRecord = async () => {
   try {
     await axios.put(`http://localhost:8080/api/bill/transaction/${currentRecord.value.id}`, {
       category: currentRecord.value.category,
       paymentChannel: currentRecord.value.paymentChannel,
-      userNote: currentRecord.value.userRemark,
-      excludeFromStats: !currentRecord.value.excludeFromMonthly
+      userNote: currentRecord.value.userNote,
+      excludeFromStats: !currentRecord.value.includeInStats
     })
     ElMessage.success('保存成功')
     drawerVisible.value = false
-    loadBillData()
+    loadData()
+    if (selectedCategory.value) {
+      loadCategoryDetails({ category: selectedCategory.value })
+    }
   } catch (error) {
     ElMessage.error('保存失败')
   }
 }
 
-// 返回
-const goBack = () => {
-  router.push('/bill-analysis')
+const loadCategories = async () => {
+  try {
+    const res = await axios.get('http://localhost:8080/api/category/list')
+    categories.value = res.data.map(c => c.name)
+  } catch (error) {
+    console.error('加载分类失败', error)
+  }
 }
 
-// 监听收支类型切换
-watch(transactionType, async () => {
-  selectedCategory.value = ''
+const loadChannels = async () => {
+  try {
+    const res = await axios.get('http://localhost:8080/api/payment-channel/list')
+    channels.value = res.data.map(c => c.name)
+  } catch (error) {
+    console.error('加载支付渠道失败', error)
+  }
+}
+
+onMounted(async () => {
   await nextTick()
-  initPieChart()
-})
-
-// 监听窗口大小变化
-const handleResize = () => {
-  pieChartInstance?.resize()
-}
-
-onMounted(() => {
-  loadBillData()
+  const now = new Date()
+  dateRange.value = [
+    `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`,
+    `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
+  ]
   loadCategories()
-  loadPaymentChannels()
-  nextTick(() => {
-    initPieChart()
-  })
-  window.addEventListener('resize', handleResize)
-})
-
-// 清理
-import { onBeforeUnmount } from 'vue'
-onBeforeUnmount(() => {
-  pieChartInstance?.dispose()
-  window.removeEventListener('resize', handleResize)
+  loadChannels()
+  loadData()
 })
 </script>
 
 <style scoped>
 .category-analysis {
-  padding: 0;
+  padding: 20px;
 }
 
-.analysis-card {
-  margin-bottom: 20px;
-}
-
-.card-header {
+.header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  font-size: 16px;
-  font-weight: 600;
-}
-
-.header-left {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.header-icon {
-  font-size: 18px;
-}
-
-.filter-form {
-  margin-bottom: 20px;
-  padding: 16px;
-  background: #fafbfc;
-  border-radius: 8px;
-}
-
-.type-toggle {
-  margin-bottom: 20px;
-}
-
-.chart-container {
-  width: 100%;
-  height: 500px;
-  margin-bottom: 20px;
-}
-
-.stats-table {
-  margin-top: 20px;
-}
-
-.stats-table :deep(.el-table__row) {
-  cursor: pointer;
-}
-
-.stats-table :deep(.el-table__row:hover) {
-  background-color: #f5f7fa;
-}
-
-.income-text {
-  color: #67c23a;
-  font-weight: 600;
-}
-
-.expense-text {
-  color: #f56c6c;
-  font-weight: 600;
-}
-
-.category-details {
-  margin-top: 30px;
-}
-
-.details-title {
-  font-size: 16px;
-  font-weight: 600;
-  margin-bottom: 15px;
-  color: #303133;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.record-detail {
-  padding: 20px 0;
-}
-
-.drawer-footer {
-  margin-top: 30px;
-  padding-top: 20px;
-  border-top: 1px solid #ebeef5;
-  text-align: right;
 }
 </style>

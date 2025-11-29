@@ -10,8 +10,6 @@ import CategoryManagement from '../views/CategoryManagement.vue'
 import PaymentChannelManagement from '../views/PaymentChannelManagement.vue'
 import BillImportHistory from '../views/BillImportHistory.vue'
 import TransactionList from '../views/TransactionList.vue'
-import DataAnalysisSimple from '../views/DataAnalysisSimple.vue'
-import CategoryAnalysisSimple from '../views/CategoryAnalysisSimple.vue'
 
 const routes = [
   {
@@ -48,30 +46,7 @@ const routes = [
     component: BillAnalysis,
     meta: { title: '账单解析' }
   },
-  {
-    path: '/data-analysis/:id',
-    name: 'DataAnalysis',
-    component: DataAnalysis,
-    meta: { title: '数据分析' }
-  },
-  {
-    path: '/data-analysis',
-    name: 'DataAnalysisList',
-    component: DataAnalysis,
-    meta: { title: '数据分析' }
-  },
-  {
-    path: '/category-analysis/:id',
-    name: 'CategoryAnalysis',
-    component: CategoryAnalysis,
-    meta: { title: '分类统计' }
-  },
-  {
-    path: '/category-analysis',
-    name: 'CategoryAnalysisList',
-    component: CategoryAnalysis,
-    meta: { title: '分类统计' }
-  },
+
   {
     path: '/rule-management',
     name: 'RuleManagement',
@@ -103,15 +78,15 @@ const routes = [
     meta: { title: '交易记录' }
   },
   {
-    path: '/data-analysis-simple',
-    name: 'DataAnalysisSimple',
-    component: DataAnalysisSimple,
+    path: '/data-analysis',
+    name: 'DataAnalysis',
+    component: DataAnalysis,
     meta: { title: '按天统计' }
   },
   {
-    path: '/category-analysis-simple',
-    name: 'CategoryAnalysisSimple',
-    component: CategoryAnalysisSimple,
+    path: '/category-analysis',
+    name: 'CategoryAnalysis',
+    component: CategoryAnalysis,
     meta: { title: '按分类统计' }
   }
 ]
