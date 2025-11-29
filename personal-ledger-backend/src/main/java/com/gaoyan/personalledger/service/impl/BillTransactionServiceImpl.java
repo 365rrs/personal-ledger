@@ -91,17 +91,17 @@ public class BillTransactionServiceImpl implements BillTransactionService {
                 if ("transactionDate".equals(sortField)) {
                     wrapper.orderByAsc(BillTransaction::getTransactionDate);
                 } else if ("income".equals(sortField)) {
-                    wrapper.orderByAsc(BillTransaction::getIncome);
+                    wrapper.last("ORDER BY CAST(income AS DECIMAL) ASC");
                 } else if ("expense".equals(sortField)) {
-                    wrapper.orderByAsc(BillTransaction::getExpense);
+                    wrapper.last("ORDER BY CAST(expense AS DECIMAL) ASC");
                 }
             } else {
                 if ("transactionDate".equals(sortField)) {
                     wrapper.orderByDesc(BillTransaction::getTransactionDate);
                 } else if ("income".equals(sortField)) {
-                    wrapper.orderByDesc(BillTransaction::getIncome);
+                    wrapper.last("ORDER BY CAST(income AS DECIMAL) DESC");
                 } else if ("expense".equals(sortField)) {
-                    wrapper.orderByDesc(BillTransaction::getExpense);
+                    wrapper.last("ORDER BY CAST(expense AS DECIMAL) DESC");
                 }
             }
         } else {
