@@ -132,7 +132,7 @@
               placeholder="请输入用户备注"
             />
           </el-form-item>
-          <el-form-item label="计入本月收支">
+          <el-form-item label="计入收支">
             <el-switch
               v-model="currentRecord.excludeFromMonthly"
               active-text="是"

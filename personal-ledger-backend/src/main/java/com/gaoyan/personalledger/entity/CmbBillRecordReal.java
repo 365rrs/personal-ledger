@@ -54,11 +54,11 @@ public class CmbBillRecordReal {
     private String remark;
     
     /**
-     * 是否计入本月收支标识
-     * true: 计入本月收支（默认）
-     * false: 不计入本月收支
+     * 是否计入收支标识
+     * true: 计入收支（默认）
+     * false: 不计入收支
      */
-    @ExcelProperty("是否计入本月收支标识")
+    @ExcelProperty("是否计入收支标识")
     private Boolean excludeFromMonthly = true;
     
     /**

@@ -279,7 +279,7 @@
             </el-form-item>
           </el-col>
           <el-col :xs="12" :sm="6" :lg="4">
-            <el-form-item label="计入统计">
+            <el-form-item label="计入收支">
               <el-select v-model="filterForm.includeInSummary" placeholder="全部" clearable>
                 <el-option label="计入" :value="true" />
                 <el-option label="不计入" :value="false" />
@@ -356,7 +356,7 @@
             <span>{{ scope.row.userRemark || '-' }}</span>
           </template>
         </el-table-column>
-        <el-table-column v-if="getColumnVisible('excludeFromMonthly')" label="计入统计" min-width="90" align="center">
+        <el-table-column v-if="getColumnVisible('excludeFromMonthly')" label="计入收支" min-width="90" align="center">
           <template #default="scope">
             <el-tag size="small" :type="scope.row.excludeFromMonthly ? 'success' : 'info'">
               {{ scope.row.excludeFromMonthly ? '是' : '否' }}
@@ -446,7 +446,7 @@
               :placeholder="drawerMode === 'edit' ? '请输入用户备注' : ''"
             />
           </el-form-item>
-          <el-form-item label="计入本月收支">
+          <el-form-item label="计入收支">
             <el-switch
               v-model="currentRecord.excludeFromMonthly"
               active-text="是"
@@ -502,7 +502,7 @@ const columnConfig = ref([
   { prop: 'category', label: '分类', visible: true },
   { prop: 'remark', label: '交易备注', visible: true },
   { prop: 'userRemark', label: '用户备注', visible: true },
-  { prop: 'excludeFromMonthly', label: '计入统计', visible: true }
+  { prop: 'excludeFromMonthly', label: '计入收支', visible: true }
 ])
 
 // 筛选表单
