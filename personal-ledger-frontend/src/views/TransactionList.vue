@@ -212,7 +212,7 @@
         <el-form-item label="用户备注">
           <el-input v-model="currentRecord.userNote" type="textarea" :rows="3" />
         </el-form-item>
-        <el-form-item label="计入统计">
+        <el-form-item label="计入收支">
           <el-switch v-model="currentRecord.excludeFromStats" :active-value="false" :inactive-value="true" active-text="是" inactive-text="否" />
         </el-form-item>
       </el-form>

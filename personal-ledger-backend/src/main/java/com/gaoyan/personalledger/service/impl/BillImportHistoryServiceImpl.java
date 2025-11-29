@@ -1,5 +1,6 @@
 package com.gaoyan.personalledger.service.impl;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.gaoyan.personalledger.entity.BillImportHistory;
 import com.gaoyan.personalledger.mapper.BillImportHistoryMapper;
@@ -37,7 +38,9 @@ public class BillImportHistoryServiceImpl implements BillImportHistoryService {
     @Override
     public Page<BillImportHistory> pageList(int current, int size) {
         Page<BillImportHistory> page = new Page<>(current, size);
-        return billImportHistoryMapper.selectPage(page, null);
+        LambdaQueryWrapper<BillImportHistory> wrapper = new LambdaQueryWrapper<>();
+        wrapper.orderByDesc(BillImportHistory::getImportTime);
+        return billImportHistoryMapper.selectPage(page, wrapper);
     }
     
     @Override

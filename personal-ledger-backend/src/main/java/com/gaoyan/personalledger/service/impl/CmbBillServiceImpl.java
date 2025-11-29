@@ -234,7 +234,7 @@ public class CmbBillServiceImpl implements CmbBillService {
 
             // 设置默认值
             if (record.getExcludeFromMonthly() == null) {
-                record.setExcludeFromMonthly(true); // 默认计入统计
+                record.setExcludeFromMonthly(true); // 默认计入收支
             }
 
             // 初始化空字段
@@ -369,7 +369,7 @@ public class CmbBillServiceImpl implements CmbBillService {
         real.setCategory(export.getCategory() != null ? export.getCategory() : "");
         real.setUserRemark(export.getUserRemark() != null ? export.getUserRemark() : "");
         
-        // 转换是否计入统计标识
+        // 转换是否计入收支标识
         if ("是".equals(export.getExcludeFromMonthlyText())) {
             real.setExcludeFromMonthly(true);
         } else {
