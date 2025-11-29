@@ -121,4 +121,41 @@ public class BillTransactionController {
         result.put("data", summary);
         return result;
     }
+    
+    /**
+     * 按天统计
+     */
+    @GetMapping("/daily-stats")
+    public Map<String, Object> getDailyStats(
+            @RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM-dd") LocalDate startDate,
+            @RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM-dd") LocalDate endDate,
+            @RequestParam(required = false) String category,
+            @RequestParam(required = false) String paymentChannel) {
+        
+        java.util.List<Map<String, Object>> stats = billTransactionService.getDailyStats(
+                startDate, endDate, category, paymentChannel);
+        
+        Map<String, Object> result = new HashMap<>();
+        result.put("success", true);
+        result.put("data", stats);
+        return result;
+    }
+    
+    /**
+     * 按分类统计
+     */
+    @GetMapping("/category-stats")
+    public Map<String, Object> getCategoryStats(
+            @RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM-dd") LocalDate startDate,
+            @RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM-dd") LocalDate endDate,
+            @RequestParam(required = false) String type) {
+        
+        java.util.List<Map<String, Object>> stats = billTransactionService.getCategoryStats(
+                startDate, endDate, type);
+        
+        Map<String, Object> result = new HashMap<>();
+        result.put("success", true);
+        result.put("data", stats);
+        return result;
+    }
 }

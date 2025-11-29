@@ -8,7 +8,13 @@
         </div>
       </template>
 
-      <el-table :data="channels" style="width: 100%">
+      <el-radio-group v-model="statusFilter" class="status-filter" @change="filterChannels">
+        <el-radio-button value="">全部</el-radio-button>
+        <el-radio-button :value="true">启用</el-radio-button>
+        <el-radio-button :value="false">禁用</el-radio-button>
+      </el-radio-group>
+
+      <el-table :data="filteredChannels" style="width: 100%; margin-top: 20px;">
         <el-table-column prop="name" label="渠道名称" width="200" />
         <el-table-column prop="sortOrder" label="排序" width="100" />
         <el-table-column prop="enabled" label="状态" width="100">
@@ -53,6 +59,8 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import axios from 'axios'
 
 const channels = ref([])
+const statusFilter = ref('')
+const filteredChannels = ref([])
 const dialogVisible = ref(false)
 const dialogTitle = ref('')
 const form = ref({
@@ -66,8 +74,17 @@ const loadChannels = async () => {
   try {
     const response = await axios.get('http://localhost:8080/api/payment-channel/list')
     channels.value = response.data
+    filterChannels()
   } catch (error) {
     ElMessage.error('加载支付渠道失败')
+  }
+}
+
+const filterChannels = () => {
+  if (statusFilter.value === '') {
+    filteredChannels.value = channels.value
+  } else {
+    filteredChannels.value = channels.value.filter(c => c.enabled === statusFilter.value)
   }
 }
 
@@ -133,5 +150,9 @@ onMounted(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
+}
+
+.status-filter {
+  margin-bottom: 20px;
 }
 </style>

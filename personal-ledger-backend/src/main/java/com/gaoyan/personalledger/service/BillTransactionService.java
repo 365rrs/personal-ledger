@@ -57,4 +57,15 @@ public interface BillTransactionService {
                                               String category, String paymentChannel, String transactionType, 
                                               String keyword, String minAmount, String maxAmount, 
                                               String incomeOrExpense, Boolean excludeFromStats, Long firstImportId);
+    
+    /**
+     * 按天统计
+     */
+    List<java.util.Map<String, Object>> getDailyStats(LocalDate startDate, LocalDate endDate, 
+                                                       String category, String paymentChannel);
+    
+    /**
+     * 按分类统计
+     */
+    List<java.util.Map<String, Object>> getCategoryStats(LocalDate startDate, LocalDate endDate, String type);
 }

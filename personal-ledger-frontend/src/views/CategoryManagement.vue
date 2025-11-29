@@ -11,7 +11,13 @@
         </div>
       </template>
 
-      <el-table :data="categories" style="width: 100%;">
+      <el-radio-group v-model="typeFilter" class="type-filter" @change="filterCategories">
+        <el-radio-button value="">全部</el-radio-button>
+        <el-radio-button value="EXPENSE">支出</el-radio-button>
+        <el-radio-button value="INCOME">收入</el-radio-button>
+      </el-radio-group>
+
+      <el-table :data="filteredCategories" style="width: 100%; margin-top: 20px;">
         <el-table-column prop="name" label="分类名称" width="150" />
         <el-table-column prop="type" label="类型" width="100">
           <template #default="{ row }">
@@ -70,6 +76,8 @@ import { Collection, Plus, Edit, Delete } from '@element-plus/icons-vue'
 import axios from 'axios'
 
 const categories = ref([])
+const typeFilter = ref('')
+const filteredCategories = ref([])
 const dialogVisible = ref(false)
 const dialogMode = ref('add')
 const currentCategory = ref({
@@ -83,8 +91,17 @@ const loadCategories = async () => {
   try {
     const response = await axios.get('http://localhost:8080/api/category/list')
     categories.value = response.data
+    filterCategories()
   } catch (error) {
     ElMessage.error('加载分类失败')
+  }
+}
+
+const filterCategories = () => {
+  if (typeFilter.value === '') {
+    filteredCategories.value = categories.value
+  } else {
+    filteredCategories.value = categories.value.filter(c => c.type === typeFilter.value)
   }
 }
 
@@ -167,5 +184,9 @@ onMounted(() => {
 
 .header-icon {
   font-size: 18px;
+}
+
+.type-filter {
+  margin-bottom: 20px;
 }
 </style>

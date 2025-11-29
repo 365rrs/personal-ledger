@@ -19,7 +19,7 @@
           <div ref="chartRef" style="width: 100%; height: 400px;"></div>
         </el-col>
         <el-col :span="12">
-          <el-table :data="categoryData" style="width: 100%">
+          <el-table :data="categoryData" style="width: 100%" @row-click="loadCategoryDetails">
             <el-table-column prop="category" label="分类" />
             <el-table-column prop="amount" label="金额" align="right" />
             <el-table-column prop="count" label="笔数" align="center" width="80" />
@@ -27,7 +27,89 @@
           </el-table>
         </el-col>
       </el-row>
+
+      <!-- 分类明细 -->
+      <div v-if="selectedCategory" style="margin-top: 20px;">
+        <div style="margin-bottom: 10px;">
+          <el-tag type="primary" closable @close="selectedCategory = ''">{{ selectedCategory }}</el-tag>
+        </div>
+        <el-table :data="categoryDetails" max-height="400">
+          <el-table-column prop="transactionDate" label="交易日期" width="110" />
+          <el-table-column prop="transactionTime" label="交易时间" width="90" />
+          <el-table-column prop="income" label="收入" width="100">
+            <template #default="{ row }">
+              <span style="color: #67c23a;">{{ row.income || '-' }}</span>
+            </template>
+          </el-table-column>
+          <el-table-column prop="expense" label="支出" width="100">
+            <template #default="{ row }">
+              <span style="color: #f56c6c;">{{ row.expense || '-' }}</span>
+            </template>
+          </el-table-column>
+          <el-table-column prop="transactionType" label="交易类型" width="140" />
+          <el-table-column prop="paymentChannel" label="支付渠道" width="120" />
+          <el-table-column prop="category" label="分类" width="100" />
+          <el-table-column prop="description" label="交易备注" min-width="180" show-overflow-tooltip />
+          <el-table-column prop="userNote" label="用户备注" width="150" show-overflow-tooltip />
+          <el-table-column prop="excludeFromStats" label="计入收支" width="100" align="center">
+            <template #default="{ row }">
+              <el-tag :type="row.excludeFromStats ? 'info' : 'success'" size="small">
+                {{ row.excludeFromStats ? '否' : '是' }}
+              </el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column label="操作" width="80" fixed="right">
+            <template #default="{ row }">
+              <el-button type="primary" size="small" @click="editRecord(row)">编辑</el-button>
+            </template>
+          </el-table-column>
+        </el-table>
+      </div>
     </el-card>
+
+    <!-- 编辑抽屉 -->
+    <el-drawer v-model="drawerVisible" title="编辑交易记录" size="500px">
+      <el-form v-if="currentRecord" label-width="100px">
+        <el-form-item label="交易日期">
+          <el-input v-model="currentRecord.transactionDate" readonly />
+        </el-form-item>
+        <el-form-item label="交易时间">
+          <el-input v-model="currentRecord.transactionTime" readonly />
+        </el-form-item>
+        <el-form-item label="收入">
+          <el-input v-model="currentRecord.income" readonly />
+        </el-form-item>
+        <el-form-item label="支出">
+          <el-input v-model="currentRecord.expense" readonly />
+        </el-form-item>
+        <el-form-item label="交易类型">
+          <el-input v-model="currentRecord.transactionType" readonly />
+        </el-form-item>
+        <el-form-item label="描述">
+          <el-input v-model="currentRecord.description" readonly />
+        </el-form-item>
+        <el-form-item label="支付渠道">
+          <el-select v-model="currentRecord.paymentChannel" clearable filterable placeholder="请选择">
+            <el-option v-for="ch in channels" :key="ch" :label="ch" :value="ch" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="分类">
+          <el-select v-model="currentRecord.category" clearable filterable placeholder="请选择">
+            <el-option v-for="cat in categories" :key="cat" :label="cat" :value="cat" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="用户备注">
+          <el-input v-model="currentRecord.userNote" type="textarea" :rows="3" placeholder="请输入备注" />
+        </el-form-item>
+        <el-form-item label="计入收支">
+          <el-switch v-model="currentRecord.includeInStats" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="drawerVisible = false">取消</el-button>
+        <el-button type="primary" @click="saveRecord">保存</el-button>
+      </template>
+    </el-drawer>
   </div>
 </template>
 
@@ -41,6 +123,12 @@ const chartRef = ref(null)
 const type = ref('expense')
 const dateRange = ref([])
 const categoryData = ref([])
+const selectedCategory = ref('')
+const categoryDetails = ref([])
+const drawerVisible = ref(false)
+const currentRecord = ref(null)
+const categories = ref([])
+const channels = ref([])
 let chart = null
 
 const loadData = async () => {
@@ -51,46 +139,25 @@ const loadData = async () => {
     }
     
     const params = {
-      current: 1,
-      size: 10000,
       startDate: dateRange.value?.[0] ? `${dateRange.value[0]}-01` : undefined,
-      endDate: dateRange.value?.[1] ? `${dateRange.value[1]}-${getMonthEnd(dateRange.value[1])}` : undefined
+      endDate: dateRange.value?.[1] ? `${dateRange.value[1]}-${getMonthEnd(dateRange.value[1])}` : undefined,
+      type: type.value
     }
-    const res = await axios.get('http://localhost:8080/api/bill/transaction/list', { params })
-    const transactions = res.data.data?.records || []
     
-    processData(transactions)
+    const res = await axios.get('http://localhost:8080/api/bill/transaction/category-stats', { params })
+    const stats = res.data.data || []
+    
+    categoryData.value = stats.map(s => ({
+      category: s.category,
+      amount: parseFloat(s.amount).toFixed(2),
+      count: s.count,
+      percent: parseFloat(s.percent).toFixed(1) + '%'
+    }))
+    
+    renderChart(categoryData.value)
   } catch (error) {
     ElMessage.error('加载数据失败: ' + error.message)
   }
-}
-
-const processData = (transactions) => {
-  const categoryMap = {}
-  let total = 0
-
-  transactions.forEach(t => {
-    const isExpense = type.value === 'expense'
-    const amount = isExpense ? t.expense : t.income
-    if (!amount || amount <= 0) return
-
-    const category = t.category || '未分类'
-    if (!categoryMap[category]) {
-      categoryMap[category] = { amount: 0, count: 0 }
-    }
-    categoryMap[category].amount += parseFloat(amount)
-    categoryMap[category].count++
-    total += parseFloat(amount)
-  })
-
-  categoryData.value = Object.entries(categoryMap).map(([category, data]) => ({
-    category,
-    amount: data.amount.toFixed(2),
-    count: data.count,
-    percent: ((data.amount / total) * 100).toFixed(1) + '%'
-  })).sort((a, b) => parseFloat(b.amount) - parseFloat(a.amount))
-
-  renderChart(categoryData.value)
 }
 
 const renderChart = (data) => {
@@ -110,6 +177,91 @@ const renderChart = (data) => {
   }
 
   chart.setOption(option)
+  
+  // 添加点击事件
+  chart.off('click')
+  chart.on('click', (params) => {
+    if (params.componentType === 'series') {
+      loadCategoryDetails({ category: params.name })
+    }
+  })
+}
+
+const loadCategoryDetails = async (row) => {
+  selectedCategory.value = row.category
+  try {
+    const getMonthEnd = (yearMonth) => {
+      const [year, month] = yearMonth.split('-')
+      return new Date(year, month, 0).getDate()
+    }
+    
+    const params = {
+      size: 10000,
+      startDate: dateRange.value?.[0] ? `${dateRange.value[0]}-01` : undefined,
+      endDate: dateRange.value?.[1] ? `${dateRange.value[1]}-${getMonthEnd(dateRange.value[1])}` : undefined,
+      category: row.category === '未分类' ? '' : row.category,
+      excludeFromStats: false
+    }
+    
+    const res = await axios.get('http://localhost:8080/api/bill/transaction/list', { params })
+    const transactions = res.data.data?.records || []
+    
+    // 根据类型过滤
+    categoryDetails.value = transactions.filter(t => {
+      if (type.value === 'expense') {
+        return t.expense && parseFloat(t.expense) > 0
+      } else {
+        return t.income && parseFloat(t.income) > 0
+      }
+    })
+  } catch (error) {
+    ElMessage.error('加载明细失败')
+  }
+}
+
+const editRecord = (record) => {
+  currentRecord.value = { 
+    ...record,
+    includeInStats: !record.excludeFromStats
+  }
+  drawerVisible.value = true
+}
+
+const saveRecord = async () => {
+  try {
+    await axios.put(`http://localhost:8080/api/bill/transaction/${currentRecord.value.id}`, {
+      category: currentRecord.value.category,
+      paymentChannel: currentRecord.value.paymentChannel,
+      userNote: currentRecord.value.userNote,
+      excludeFromStats: !currentRecord.value.includeInStats
+    })
+    ElMessage.success('保存成功')
+    drawerVisible.value = false
+    loadData()
+    if (selectedCategory.value) {
+      loadCategoryDetails({ category: selectedCategory.value })
+    }
+  } catch (error) {
+    ElMessage.error('保存失败')
+  }
+}
+
+const loadCategories = async () => {
+  try {
+    const res = await axios.get('http://localhost:8080/api/category/list')
+    categories.value = res.data.map(c => c.name)
+  } catch (error) {
+    console.error('加载分类失败', error)
+  }
+}
+
+const loadChannels = async () => {
+  try {
+    const res = await axios.get('http://localhost:8080/api/payment-channel/list')
+    channels.value = res.data.map(c => c.name)
+  } catch (error) {
+    console.error('加载支付渠道失败', error)
+  }
 }
 
 onMounted(async () => {
@@ -119,6 +271,8 @@ onMounted(async () => {
     `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`,
     `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
   ]
+  loadCategories()
+  loadChannels()
   loadData()
 })
 </script>

@@ -16,6 +16,57 @@
       </el-empty>
 
       <div v-else>
+        <!-- 筛选条件 -->
+        <el-form label-width="80px" class="filter-form">
+          <el-row :gutter="16">
+            <el-col :span="24">
+              <el-form-item label="快捷日期">
+                <el-space wrap>
+                  <el-button @click="setQuickDate('today')">今天</el-button>
+                  <el-button @click="setQuickDate('thisMonth')">本月</el-button>
+                  <el-button @click="setQuickDate('lastMonth')">上月</el-button>
+                  <el-button @click="setQuickDate('last3Months')">近3月</el-button>
+                  <el-button @click="setQuickDate('thisYear')">今年</el-button>
+                </el-space>
+              </el-form-item>
+            </el-col>
+          </el-row>
+          <el-row :gutter="16">
+            <el-col :span="12">
+              <el-form-item label="日期范围">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <el-date-picker v-model="filter.startDate" type="date" placeholder="开始日期" value-format="YYYY-MM-DD" style="flex: 1" />
+                  <span>至</span>
+                  <el-date-picker v-model="filter.endDate" type="date" placeholder="结束日期" value-format="YYYY-MM-DD" style="flex: 1" />
+                </div>
+              </el-form-item>
+            </el-col>
+            <el-col :span="6">
+              <el-form-item label="分类">
+                <el-select v-model="filter.category" clearable filterable placeholder="全部">
+                  <el-option label="未分类" value="__UNCATEGORIZED__" />
+                  <el-option v-for="cat in categoryOptions" :key="cat" :label="cat" :value="cat" />
+                </el-select>
+              </el-form-item>
+            </el-col>
+            <el-col :span="6">
+              <el-form-item label="支付渠道">
+                <el-select v-model="filter.paymentChannel" clearable filterable placeholder="全部">
+                  <el-option v-for="ch in paymentChannelOptions" :key="ch" :label="ch" :value="ch" />
+                </el-select>
+              </el-form-item>
+            </el-col>
+          </el-row>
+          <el-row :gutter="16">
+            <el-col :span="24">
+              <el-form-item label=" ">
+                <el-button type="primary" @click="applyFilter">应用筛选</el-button>
+                <el-button @click="resetFilter">重置</el-button>
+              </el-form-item>
+            </el-col>
+          </el-row>
+        </el-form>
+        
         <!-- 视图切换 -->
         <el-radio-group v-model="viewMode" class="view-toggle">
           <el-radio-button value="bar">柱状图</el-radio-button>
@@ -80,7 +131,7 @@
         </el-table>
         
         <!-- 当日明细 -->
-        <div v-if="selectedDate && selectedDayDetails.length > 0" class="day-details">
+        <div v-if="selectedDate && selectedDayDetails && selectedDayDetails.length > 0" class="day-details">
           <div class="details-title">当日交易明细</div>
           <el-table :data="selectedDayDetails" max-height="300">
             <el-table-column prop="formattedTradeDate" label="交易日期" min-width="110"></el-table-column>
@@ -207,6 +258,77 @@ let barChartInstance = null
 const categoryOptions = ref([])
 const paymentChannelOptions = ref([])
 
+const getThisMonthDates = () => {
+  const today = new Date()
+  const year = today.getFullYear()
+  const month = today.getMonth()
+  const firstDay = new Date(year, month, 1)
+  const formatDate = (date) => {
+    const y = date.getFullYear()
+    const m = String(date.getMonth() + 1).padStart(2, '0')
+    const d = String(date.getDate()).padStart(2, '0')
+    return `${y}-${m}-${d}`
+  }
+  return {
+    startDate: formatDate(firstDay),
+    endDate: formatDate(today)
+  }
+}
+
+const thisMonth = getThisMonthDates()
+const filter = ref({
+  startDate: thisMonth.startDate,
+  endDate: thisMonth.endDate,
+  category: '',
+  paymentChannel: ''
+})
+
+const setQuickDate = (type) => {
+  const today = new Date()
+  const formatDate = (date) => {
+    const y = date.getFullYear()
+    const m = String(date.getMonth() + 1).padStart(2, '0')
+    const d = String(date.getDate()).padStart(2, '0')
+    return `${y}-${m}-${d}`
+  }
+  
+  switch(type) {
+    case 'today':
+      filter.value.startDate = filter.value.endDate = formatDate(today)
+      break
+    case 'thisMonth':
+      filter.value.startDate = formatDate(new Date(today.getFullYear(), today.getMonth(), 1))
+      filter.value.endDate = formatDate(today)
+      break
+    case 'lastMonth':
+      filter.value.startDate = formatDate(new Date(today.getFullYear(), today.getMonth() - 1, 1))
+      filter.value.endDate = formatDate(new Date(today.getFullYear(), today.getMonth(), 0))
+      break
+    case 'last3Months':
+      filter.value.startDate = formatDate(new Date(today.getFullYear(), today.getMonth() - 2, 1))
+      filter.value.endDate = formatDate(today)
+      break
+    case 'thisYear':
+      filter.value.startDate = formatDate(new Date(today.getFullYear(), 0, 1))
+      filter.value.endDate = formatDate(today)
+      break
+  }
+}
+
+const applyFilter = () => {
+  loadDailyStats()
+}
+
+const resetFilter = () => {
+  filter.value = {
+    startDate: thisMonth.startDate,
+    endDate: thisMonth.endDate,
+    category: '',
+    paymentChannel: ''
+  }
+  loadDailyStats()
+}
+
 const loadCategories = async () => {
   try {
     const response = await axios.get('http://localhost:8080/api/category/list')
@@ -225,10 +347,58 @@ const loadPaymentChannels = async () => {
   }
 }
 
-// 加载账单数据
+// 加载按天统计数据
+const loadDailyStats = async () => {
+  try {
+    const params = {
+      startDate: filter.value.startDate,
+      endDate: filter.value.endDate
+    }
+    
+    if (filter.value.category) {
+      params.category = filter.value.category === '__UNCATEGORIZED__' ? '' : filter.value.category
+    }
+    if (filter.value.paymentChannel) {
+      params.paymentChannel = filter.value.paymentChannel
+    }
+    
+    const res = await axios.get('http://localhost:8080/api/bill/transaction/daily-stats', { params })
+    const stats = res.data.data || []
+    
+    // 转换数据格式
+    billStore.state.currentBillData = {
+      data: stats.map(s => ({
+        formattedTradeDate: s.date,
+        income: s.income,
+        expense: s.expense,
+        excludeFromMonthly: true
+      }))
+    }
+    
+    // 直接使用后端返回的统计数据
+    dailyStatsData.value = stats
+  } catch (error) {
+    ElMessage.error('加载数据失败')
+  }
+}
+
+// 加载账单明细数据
 const loadBillData = async () => {
   try {
-    const res = await axios.get('http://localhost:8080/api/bill/transaction/list?size=10000')
+    const params = {
+      size: 10000,
+      startDate: filter.value.startDate,
+      endDate: filter.value.endDate
+    }
+    
+    if (filter.value.category) {
+      params.category = filter.value.category === '__UNCATEGORIZED__' ? '' : filter.value.category
+    }
+    if (filter.value.paymentChannel) {
+      params.paymentChannel = filter.value.paymentChannel
+    }
+    
+    const res = await axios.get('http://localhost:8080/api/bill/transaction/list', { params })
     const transactions = res.data.data?.records || []
     
     billStore.state.currentBillData = {
@@ -246,33 +416,17 @@ const loadBillData = async () => {
   }
 }
 
-// 按天统计数据
+// 按天统计数据（从后端获取）
+const dailyStatsData = ref([])
+
 const dailyStats = computed(() => {
-  if (!billData.value?.data) return []
-  
-  const statsMap = new Map()
-  
-  billData.value.data.forEach(item => {
-    if (item.excludeFromMonthly === false) return // 不计入统计
-    
-    const date = item.formattedTradeDate || item.tradeDate
-    if (!date) return
-    
-    if (!statsMap.has(date)) {
-      statsMap.set(date, { date, income: 0, expense: 0, balance: 0, count: 0 })
-    }
-    
-    const stat = statsMap.get(date)
-    const income = parseFloat(item.income) || 0
-    const expense = parseFloat(item.expense) || 0
-    
-    stat.income += income
-    stat.expense += expense
-    stat.balance += (income - expense)
-    stat.count++
-  })
-  
-  return Array.from(statsMap.values()).sort((a, b) => a.date.localeCompare(b.date))
+  return dailyStatsData.value.map(s => ({
+    date: s.date,
+    income: parseFloat(s.income) || 0,
+    expense: parseFloat(s.expense) || 0,
+    balance: parseFloat(s.balance) || 0,
+    count: s.count || 0
+  }))
 })
 
 // 显示的统计数据
@@ -283,25 +437,51 @@ const displayStats = computed(() => {
   return dailyStats.value
 })
 
-// 选中日期的明细
-const selectedDayDetails = computed(() => {
-  if (!selectedDate.value || !billData.value?.data) return []
-  
-  return billData.value.data.filter(item => {
-    if (item.excludeFromMonthly === false) return false
-    const date = item.formattedTradeDate || item.tradeDate
-    return date === selectedDate.value
-  })
-})
+// 选中日期的明细（需要重新加载）
+const selectedDayDetails = ref([])
+
+const loadDayDetails = async (date) => {
+  try {
+    const params = {
+      size: 10000,
+      startDate: date,
+      endDate: date,
+      excludeFromStats: false
+    }
+    
+    if (filter.value.category) {
+      params.category = filter.value.category === '__UNCATEGORIZED__' ? '' : filter.value.category
+    }
+    if (filter.value.paymentChannel) {
+      params.paymentChannel = filter.value.paymentChannel
+    }
+    
+    const res = await axios.get('http://localhost:8080/api/bill/transaction/list', { params })
+    const transactions = res.data.data?.records || []
+    
+    selectedDayDetails.value = transactions.map(t => ({
+      ...t,
+      formattedTradeDate: t.transactionDate,
+      tradeTime: t.transactionTime,
+      remark: t.description,
+      userRemark: t.userNote,
+      excludeFromMonthly: !t.excludeFromStats
+    }))
+  } catch (error) {
+    ElMessage.error('加载明细失败')
+  }
+}
 
 // 选择日期
 const selectDate = (date) => {
   selectedDate.value = date
+  loadDayDetails(date)
 }
 
 // 处理统计表格行点击
 const handleStatRowClick = (row) => {
   selectedDate.value = row.date
+  loadDayDetails(row.date)
 }
 
 // 编辑记录
@@ -321,7 +501,10 @@ const saveRecord = async () => {
     })
     ElMessage.success('保存成功')
     drawerVisible.value = false
-    loadBillData()
+    loadDailyStats()
+    if (selectedDate.value) {
+      loadDayDetails(selectedDate.value)
+    }
   } catch (error) {
     ElMessage.error('保存失败')
   }
@@ -505,13 +688,21 @@ watch(viewMode, async (newMode) => {
   }
 })
 
+// 监听统计数据变化，更新图表
+watch(dailyStats, async () => {
+  await nextTick()
+  if (viewMode.value === 'bar') {
+    initBarChart()
+  }
+})
+
 // 监听窗口大小变化
 const handleResize = () => {
   barChartInstance?.resize()
 }
 
 onMounted(() => {
-  loadBillData()
+  loadDailyStats()
   loadCategories()
   loadPaymentChannels()
   nextTick(() => {
@@ -553,6 +744,13 @@ onBeforeUnmount(() => {
 
 .header-icon {
   font-size: 18px;
+}
+
+.filter-form {
+  margin-bottom: 20px;
+  padding: 16px;
+  background: #fafbfc;
+  border-radius: 8px;
 }
 
 .view-toggle {
