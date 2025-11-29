@@ -49,8 +49,8 @@ CREATE TABLE IF NOT EXISTS payment_channel (
 -- 创建索引
 CREATE INDEX IF NOT EXISTS idx_payment_channel_enabled ON payment_channel(enabled);
 
--- 账单导入记录表
-CREATE TABLE IF NOT EXISTS bill_import (
+-- 账单导入历史记录表
+CREATE TABLE IF NOT EXISTS bill_import_history (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     import_name VARCHAR(200) NOT NULL,
     source_file VARCHAR(200),
@@ -104,7 +104,7 @@ CREATE TABLE IF NOT EXISTS bill_transaction_import (
     is_new BOOLEAN DEFAULT 1,
     create_time DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (transaction_id) REFERENCES bill_transaction(id) ON DELETE CASCADE,
-    FOREIGN KEY (import_id) REFERENCES bill_import(id) ON DELETE CASCADE,
+    FOREIGN KEY (import_id) REFERENCES bill_import_history(id) ON DELETE CASCADE,
     UNIQUE(transaction_id, import_id)
 );
 

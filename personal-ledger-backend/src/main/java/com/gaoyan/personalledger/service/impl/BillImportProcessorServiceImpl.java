@@ -5,7 +5,7 @@ import com.gaoyan.personalledger.entity.*;
 import com.gaoyan.personalledger.mapper.BillTransactionImportMapper;
 import com.gaoyan.personalledger.mapper.BillTransactionMapper;
 import com.gaoyan.personalledger.service.BillImportProcessorService;
-import com.gaoyan.personalledger.service.BillImportService;
+import com.gaoyan.personalledger.service.BillImportHistoryService;
 import com.gaoyan.personalledger.service.CmbBillService;
 import com.gaoyan.personalledger.service.DataCleaningService;
 import lombok.extern.slf4j.Slf4j;
@@ -29,7 +29,7 @@ import java.util.List;
 public class BillImportProcessorServiceImpl implements BillImportProcessorService {
     
     @Autowired
-    private BillImportService billImportService;
+    private BillImportHistoryService billImportHistoryService;
     
     @Autowired
     private BillTransactionMapper billTransactionMapper;
@@ -45,38 +45,38 @@ public class BillImportProcessorServiceImpl implements BillImportProcessorServic
     
     @Override
     @Transactional
-    public BillImport processCsvImport(MultipartFile file) {
+    public BillImportHistory processCsvImport(MultipartFile file) {
         try {
             // 1. 解析CSV文件
             CmbBillInfo billInfo = cmbBillService.parseCmbBillInfo(file);
             List<CmbBillRecordReal> records = dataCleaningService.cleanBillRecords(billInfo.getRecords());
             
             // 2. 创建导入记录
-            BillImport billImport = new BillImport();
-            billImport.setId(System.currentTimeMillis());
-            billImport.setImportName(file.getOriginalFilename());
-            billImport.setSourceFile(file.getOriginalFilename());
-            billImport.setFileType("CSV");
-            billImport.setImportTime(LocalDateTime.now());
-            billImport.setRecordCount(records.size());
-            billImport.setAccountNumber(billInfo.getExportInfo().getAccount());
-            billImport.setPeriodStart(parseDate(billInfo.getExportInfo().getStartDate()));
-            billImport.setPeriodEnd(parseDate(billInfo.getExportInfo().getEndDate()));
-            billImport.setImportStatus("PROCESSING");
-            billImportService.createImport(billImport);
+            BillImportHistory billImportHistory = new BillImportHistory();
+            billImportHistory.setId(System.currentTimeMillis());
+            billImportHistory.setImportName(file.getOriginalFilename());
+            billImportHistory.setSourceFile(file.getOriginalFilename());
+            billImportHistory.setFileType("CSV");
+            billImportHistory.setImportTime(LocalDateTime.now());
+            billImportHistory.setRecordCount(records.size());
+            billImportHistory.setAccountNumber(billInfo.getExportInfo().getAccount());
+            billImportHistory.setPeriodStart(parseDate(billInfo.getExportInfo().getStartDate()));
+            billImportHistory.setPeriodEnd(parseDate(billInfo.getExportInfo().getEndDate()));
+            billImportHistory.setImportStatus("PROCESSING");
+            billImportHistoryService.createImport(billImportHistory);
             
             // 3. 处理记录（去重、保存）
-            ImportResult result = processRecords(records, billImport.getId());
+            ImportResult result = processRecords(records, billImportHistory.getId());
             
             // 4. 更新导入统计
-            billImport.setNewCount(result.newCount);
-            billImport.setDuplicateCount(result.duplicateCount);
-            billImport.setUpdateCount(result.updateCount);
-            billImport.setImportStatus("SUCCESS");
-            billImportService.updateImport(billImport);
+            billImportHistory.setNewCount(result.newCount);
+            billImportHistory.setDuplicateCount(result.duplicateCount);
+            billImportHistory.setUpdateCount(result.updateCount);
+            billImportHistory.setImportStatus("SUCCESS");
+            billImportHistoryService.updateImport(billImportHistory);
             
             log.info("CSV导入完成: 新增={}, 重复={}", result.newCount, result.duplicateCount);
-            return billImport;
+            return billImportHistory;
             
         } catch (Exception e) {
             log.error("CSV导入失败", e);
@@ -86,38 +86,38 @@ public class BillImportProcessorServiceImpl implements BillImportProcessorServic
     
     @Override
     @Transactional
-    public BillImport processExcelImport(MultipartFile file) {
+    public BillImportHistory processExcelImport(MultipartFile file) {
         try {
             // 1. 解析Excel文件
             CmbBillInfo billInfo = cmbBillService.parseExcelBillInfo(file);
             List<CmbBillRecordReal> records = dataCleaningService.cleanBillRecords(billInfo.getRecords());
             
             // 2. 创建导入记录
-            BillImport billImport = new BillImport();
-            billImport.setId(System.currentTimeMillis() + 1);
-            billImport.setImportName(file.getOriginalFilename());
-            billImport.setSourceFile(file.getOriginalFilename());
-            billImport.setFileType("EXCEL");
-            billImport.setImportTime(LocalDateTime.now());
-            billImport.setRecordCount(records.size());
-            billImport.setAccountNumber(billInfo.getExportInfo().getAccount());
-            billImport.setPeriodStart(parseDate(billInfo.getExportInfo().getStartDate()));
-            billImport.setPeriodEnd(parseDate(billInfo.getExportInfo().getEndDate()));
-            billImport.setImportStatus("PROCESSING");
-            billImportService.createImport(billImport);
+            BillImportHistory billImportHistory = new BillImportHistory();
+            billImportHistory.setId(System.currentTimeMillis() + 1);
+            billImportHistory.setImportName(file.getOriginalFilename());
+            billImportHistory.setSourceFile(file.getOriginalFilename());
+            billImportHistory.setFileType("EXCEL");
+            billImportHistory.setImportTime(LocalDateTime.now());
+            billImportHistory.setRecordCount(records.size());
+            billImportHistory.setAccountNumber(billInfo.getExportInfo().getAccount());
+            billImportHistory.setPeriodStart(parseDate(billInfo.getExportInfo().getStartDate()));
+            billImportHistory.setPeriodEnd(parseDate(billInfo.getExportInfo().getEndDate()));
+            billImportHistory.setImportStatus("PROCESSING");
+            billImportHistoryService.createImport(billImportHistory);
             
             // 3. 处理记录（去重、保存）
-            ImportResult result = processRecords(records, billImport.getId());
+            ImportResult result = processRecords(records, billImportHistory.getId());
             
             // 4. 更新导入统计
-            billImport.setNewCount(result.newCount);
-            billImport.setDuplicateCount(result.duplicateCount);
-            billImport.setUpdateCount(result.updateCount);
-            billImport.setImportStatus("SUCCESS");
-            billImportService.updateImport(billImport);
+            billImportHistory.setNewCount(result.newCount);
+            billImportHistory.setDuplicateCount(result.duplicateCount);
+            billImportHistory.setUpdateCount(result.updateCount);
+            billImportHistory.setImportStatus("SUCCESS");
+            billImportHistoryService.updateImport(billImportHistory);
             
             log.info("Excel导入完成: 新增={}, 重复={}", result.newCount, result.duplicateCount);
-            return billImport;
+            return billImportHistory;
             
         } catch (Exception e) {
             log.error("Excel导入失败", e);

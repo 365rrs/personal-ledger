@@ -1,9 +1,9 @@
 package com.gaoyan.personalledger.controller;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.gaoyan.personalledger.entity.BillImport;
+import com.gaoyan.personalledger.entity.BillImportHistory;
 import com.gaoyan.personalledger.service.BillImportProcessorService;
-import com.gaoyan.personalledger.service.BillImportService;
+import com.gaoyan.personalledger.service.BillImportHistoryService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
@@ -22,7 +22,7 @@ import java.util.Map;
 public class BillImportController {
     
     @Autowired
-    private BillImportService billImportService;
+    private BillImportHistoryService billImportHistoryService;
     
     @Autowired
     private BillImportProcessorService billImportProcessorService;
@@ -34,12 +34,12 @@ public class BillImportController {
     public Map<String, Object> importCsv(@RequestParam("file") MultipartFile file) {
         log.info("开始导入CSV文件: {}", file.getOriginalFilename());
         
-        BillImport billImport = billImportProcessorService.processCsvImport(file);
+        BillImportHistory billImportHistory = billImportProcessorService.processCsvImport(file);
         
         Map<String, Object> result = new HashMap<>();
         result.put("success", true);
         result.put("message", "导入成功");
-        result.put("data", billImport);
+        result.put("data", billImportHistory);
         return result;
     }
     
@@ -50,12 +50,12 @@ public class BillImportController {
     public Map<String, Object> importExcel(@RequestParam("file") MultipartFile file) {
         log.info("开始导入Excel文件: {}", file.getOriginalFilename());
         
-        BillImport billImport = billImportProcessorService.processExcelImport(file);
+        BillImportHistory billImportHistory = billImportProcessorService.processExcelImport(file);
         
         Map<String, Object> result = new HashMap<>();
         result.put("success", true);
         result.put("message", "导入成功");
-        result.put("data", billImport);
+        result.put("data", billImportHistory);
         return result;
     }
     
@@ -67,7 +67,7 @@ public class BillImportController {
             @RequestParam(defaultValue = "1") int current,
             @RequestParam(defaultValue = "10") int size) {
         
-        Page<BillImport> page = billImportService.pageList(current, size);
+        Page<BillImportHistory> page = billImportHistoryService.pageList(current, size);
         
         Map<String, Object> result = new HashMap<>();
         result.put("success", true);
@@ -80,11 +80,11 @@ public class BillImportController {
      */
     @GetMapping("/{id}")
     public Map<String, Object> getImportDetail(@PathVariable Long id) {
-        BillImport billImport = billImportService.getById(id);
+        BillImportHistory billImportHistory = billImportHistoryService.getById(id);
         
         Map<String, Object> result = new HashMap<>();
         result.put("success", true);
-        result.put("data", billImport);
+        result.put("data", billImportHistory);
         return result;
     }
     
@@ -93,7 +93,7 @@ public class BillImportController {
      */
     @DeleteMapping("/{id}")
     public Map<String, Object> deleteImport(@PathVariable Long id) {
-        billImportService.deleteById(id);
+        billImportHistoryService.deleteById(id);
         
         Map<String, Object> result = new HashMap<>();
         result.put("success", true);

@@ -9,11 +9,11 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 /**
- * 账单导入记录实体
+ * 账单导入历史记录实体
  */
 @Data
-@TableName("bill_import")
-public class BillImport {
+@TableName("bill_import_history")
+public class BillImportHistory {
     
     @TableId(type = IdType.INPUT)
     private Long id;

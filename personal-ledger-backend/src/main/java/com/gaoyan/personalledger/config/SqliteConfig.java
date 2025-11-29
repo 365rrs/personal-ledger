@@ -96,10 +96,10 @@ public class SqliteConfig {
                 log.info("✅ payment_channel 表已存在，跳过创建");
             }
             
-            // 初始化账单导入记录表 (v1.5.0)
-            if (!existingTables.contains("bill_import")) {
-                log.info("检测到 bill_import 表不存在，开始创建...");
-                stmt.execute("CREATE TABLE bill_import (" +
+            // 初始化账单导入历史记录表 (v1.5.0)
+            if (!existingTables.contains("bill_import_history")) {
+                log.info("检测到 bill_import_history 表不存在，开始创建...");
+                stmt.execute("CREATE TABLE bill_import_history (" +
                     "id INTEGER PRIMARY KEY AUTOINCREMENT," +
                     "import_name VARCHAR(200) NOT NULL," +
                     "source_file VARCHAR(200)," +
@@ -116,9 +116,9 @@ public class SqliteConfig {
                     "error_message TEXT," +
                     "create_time DATETIME DEFAULT CURRENT_TIMESTAMP," +
                     "update_time DATETIME DEFAULT CURRENT_TIMESTAMP)");
-                log.info("✅ bill_import 表创建成功");
+                log.info("✅ bill_import_history 表创建成功");
             } else {
-                log.info("✅ bill_import 表已存在，跳过创建");
+                log.info("✅ bill_import_history 表已存在，跳过创建");
             }
             
             // 初始化账单交易明细表 (v1.5.0)
@@ -160,7 +160,7 @@ public class SqliteConfig {
                     "is_new BOOLEAN DEFAULT 1," +
                     "create_time DATETIME DEFAULT CURRENT_TIMESTAMP," +
                     "FOREIGN KEY (transaction_id) REFERENCES bill_transaction(id) ON DELETE CASCADE," +
-                    "FOREIGN KEY (import_id) REFERENCES bill_import(id) ON DELETE CASCADE," +
+                    "FOREIGN KEY (import_id) REFERENCES bill_import_history(id) ON DELETE CASCADE," +
                     "UNIQUE(transaction_id, import_id))");
                 stmt.execute("CREATE INDEX idx_transaction_import_transaction ON bill_transaction_import(transaction_id)");
                 stmt.execute("CREATE INDEX idx_transaction_import_import ON bill_transaction_import(import_id)");

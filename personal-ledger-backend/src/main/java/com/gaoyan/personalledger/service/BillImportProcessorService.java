@@ -1,6 +1,6 @@
 package com.gaoyan.personalledger.service;
 
-import com.gaoyan.personalledger.entity.BillImport;
+import com.gaoyan.personalledger.entity.BillImportHistory;
 import com.gaoyan.personalledger.entity.CmbBillRecordReal;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -16,14 +16,14 @@ public interface BillImportProcessorService {
      * @param file CSV文件
      * @return 导入记录
      */
-    BillImport processCsvImport(MultipartFile file);
+    BillImportHistory processCsvImport(MultipartFile file);
     
     /**
      * 处理Excel导入
      * @param file Excel文件
      * @return 导入记录
      */
-    BillImport processExcelImport(MultipartFile file);
+    BillImportHistory processExcelImport(MultipartFile file);
     
     /**
      * 处理账单记录列表（核心去重逻辑）
