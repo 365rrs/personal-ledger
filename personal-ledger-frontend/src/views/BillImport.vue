@@ -118,9 +118,20 @@
       </template>
       
       <el-table :data="importHistory" style="width: 100%">
-        <el-table-column prop="fileName" label="文件名" width="200"></el-table-column>
+        <el-table-column prop="fileName" label="导入名称" width="200"></el-table-column>
+        <el-table-column prop="fileType" label="文件类型" width="100"></el-table-column>
         <el-table-column prop="importTime" label="导入时间" width="180"></el-table-column>
-        <el-table-column prop="recordCount" label="记录数" width="100"></el-table-column>
+        <el-table-column prop="recordCount" label="总记录数" width="100" align="center"></el-table-column>
+        <el-table-column prop="newCount" label="新增" width="80" align="center">
+          <template #default="scope">
+            <el-tag type="success" size="small">{{ scope.row.newCount || 0 }}</el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column prop="duplicateCount" label="重复" width="80" align="center">
+          <template #default="scope">
+            <el-tag type="warning" size="small">{{ scope.row.duplicateCount || 0 }}</el-tag>
+          </template>
+        </el-table-column>
         <el-table-column prop="status" label="状态" width="100">
           <template #default="scope">
             <el-tag :type="scope.row.status === 'success' ? 'success' : 'danger'">
@@ -128,28 +139,7 @@
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="180">
-          <template #default="scope">
-            <el-space>
-              <el-button 
-                v-if="scope.row.status === 'success'"
-                type="primary" 
-                size="small"
-                @click="goToAnalysis(scope.row.id)"
-              >
-                查看解析
-              </el-button>
-              <el-button 
-                type="danger" 
-                size="small"
-                @click="deleteImportRecord(scope.row.id, scope.$index)"
-                :icon="Delete"
-              >
-                删除
-              </el-button>
-            </el-space>
-          </template>
-        </el-table-column>
+
       </el-table>
     </el-card>
   </div>
@@ -176,22 +166,30 @@ const uploading = ref(false)
 const uploadRef = ref(null)
 const importHistory = ref([])
 
-// 从localStorage加载导入历史
-const loadImportHistory = () => {
-  const history = localStorage.getItem('billImportHistory')
-  if (history) {
-    importHistory.value = JSON.parse(history)
+// 从API加载导入历史
+const loadImportHistory = async () => {
+  try {
+    const res = await axios.get('http://localhost:8080/api/bill/import/list?size=10')
+    if (res.data.success) {
+      importHistory.value = res.data.data.records.map(item => ({
+        id: item.id,
+        fileName: item.importName,
+        fileType: item.fileType,
+        importTime: item.importTime,
+        recordCount: item.recordCount,
+        newCount: item.newCount,
+        duplicateCount: item.duplicateCount,
+        status: item.importStatus === 'SUCCESS' ? 'success' : 'failed'
+      }))
+    }
+  } catch (error) {
+    console.error('加载导入历史失败', error)
   }
 }
 
-// 保存导入历史到localStorage
-const saveImportHistory = (record) => {
-  importHistory.value.unshift(record)
-  // 只保留最近10条记录
-  if (importHistory.value.length > 10) {
-    importHistory.value = importHistory.value.slice(0, 10)
-  }
-  localStorage.setItem('billImportHistory', JSON.stringify(importHistory.value))
+// 刷新导入历史
+const saveImportHistory = async () => {
+  await loadImportHistory()
 }
 
 const selectImportMode = (mode) => {
@@ -269,32 +267,14 @@ const importFile = async () => {
     
     localStorage.setItem(`billData_${importId}`, JSON.stringify(billData))
     
-    // 添加到导入历史
-    saveImportHistory({
-      id: importId,
-      fileName: selectedFile.value.name,
-      importTime: new Date().toLocaleString(),
-      recordCount: response.data.records?.length || 0,
-      status: 'success'
-    })
+    // 刷新导入历史
+    await saveImportHistory()
     
     ElMessage.success(`${importMode.value === 'csv' ? 'CSV' : 'Excel'}账单导入成功`)
     clearSelection()
     importMode.value = ''
     
-    // 跳转到解析页面
-    router.push(`/bill-analysis/${importId}`)
-    
   } catch (error) {
-    // 添加失败记录到历史
-    saveImportHistory({
-      id: Date.now().toString(),
-      fileName: selectedFile.value.name,
-      importTime: new Date().toLocaleString(),
-      recordCount: 0,
-      status: 'failed'
-    })
-    
     ElMessage.error('账单导入失败: ' + (error.response?.data?.message || error.message || '未知错误'))
   } finally {
     uploading.value = false
@@ -315,48 +295,25 @@ const goToAnalysis = (importId) => {
   router.push(`/bill-analysis/${importId}`)
 }
 
-const deleteImportRecord = (importId, index) => {
-  ElMessage.confirm('确定要删除这条导入记录吗？删除后无法恢复。', '确认删除', {
-    confirmButtonText: '确定',
-    cancelButtonText: '取消',
-    type: 'warning'
-  }).then(() => {
-    // 检查是否有其他记录引用相同的数据
-    const targetRecord = importHistory.value[index]
-    const referencingRecords = importHistory.value.filter((record, idx) => 
-      idx !== index && record.id === targetRecord.id && record.status === 'success'
-    )
+const deleteImportRecord = async (importId, index) => {
+  try {
+    await ElMessageBox.confirm('确定要删除这条导入记录吗？', '确认删除', {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      type: 'warning'
+    })
     
-    if (referencingRecords.length > 0) {
-      // 有其他记录引用相同数据，只删除历史记录
-      importHistory.value.splice(index, 1)
-      ElMessage.success('删除成功（数据保留，因为有其他记录引用）')
-    } else {
-      // 没有其他记录引用，删除数据和历史记录
-      importHistory.value.splice(index, 1)
-      localStorage.removeItem(`billData_${importId}`)
-      ElMessage.success('删除成功')
+    await axios.delete(`http://localhost:8080/api/bill/import/${importId}`)
+    ElMessage.success('删除成功')
+    loadImportHistory()
+  } catch (error) {
+    if (error !== 'cancel') {
+      ElMessage.error('删除失败')
     }
-    
-    localStorage.setItem('billImportHistory', JSON.stringify(importHistory.value))
-  }).catch(() => {
-    ElMessage.info('已取消删除')
-  })
-}
-
-// 清理无效的历史记录
-const cleanInvalidHistory = () => {
-  const validHistory = importHistory.value.filter(record => {
-    if (record.status !== 'success') return true
-    return localStorage.getItem(`billData_${record.id}`) !== null
-  })
-  
-  if (validHistory.length !== importHistory.value.length) {
-    importHistory.value = validHistory
-    localStorage.setItem('billImportHistory', JSON.stringify(importHistory.value))
-    ElMessage.info('已清理无效的历史记录')
   }
 }
+
+
 
 // 查找现有的账单数据（智能匹配账号）
 const findExistingBillData = (account) => {
@@ -449,8 +406,6 @@ const switchToSimple = () => {
 
 onMounted(() => {
   loadImportHistory()
-  // 自动清理无效的历史记录
-  cleanInvalidHistory()
 })
 </script>
 

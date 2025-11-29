@@ -35,10 +35,6 @@
             <span>导入历史</span>
           </el-menu-item>
         </el-sub-menu>
-        <el-menu-item index="/bill-analysis">
-          <el-icon><Document /></el-icon>
-          <span>账单解析</span>
-        </el-menu-item>
         <el-menu-item index="/transaction-list">
           <el-icon><List /></el-icon>
           <span>交易记录</span>

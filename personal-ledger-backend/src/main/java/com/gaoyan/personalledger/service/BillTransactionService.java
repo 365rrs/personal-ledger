@@ -34,7 +34,11 @@ public interface BillTransactionService {
     /**
      * 分页查询交易列表
      */
-    Page<BillTransaction> pageList(int current, int size, LocalDate startDate, LocalDate endDate, String category);
+    Page<BillTransaction> pageList(int current, int size, LocalDate startDate, LocalDate endDate, 
+                                   String category, String paymentChannel, String transactionType, 
+                                   String keyword, String minAmount, String maxAmount, 
+                                   String incomeOrExpense, Boolean excludeFromStats, 
+                                   String sortField, String sortOrder, Long firstImportId);
     
     /**
      * 根据去重key查询交易
@@ -45,4 +49,12 @@ public interface BillTransactionService {
      * 删除交易记录
      */
     void deleteById(Long id);
+    
+    /**
+     * 获取交易汇总
+     */
+    java.util.Map<String, Object> getSummary(LocalDate startDate, LocalDate endDate, 
+                                              String category, String paymentChannel, String transactionType, 
+                                              String keyword, String minAmount, String maxAmount, 
+                                              String incomeOrExpense, Boolean excludeFromStats, Long firstImportId);
 }

@@ -34,6 +34,13 @@ public interface BillImportProcessorService {
     ImportResult processRecords(List<CmbBillRecordReal> records, Long importId);
     
     /**
+     * 更新清洗后的记录到数据库
+     * @param records 清洗后的记录
+     * @return 更新的记录数
+     */
+    int updateCleanedRecords(List<CmbBillRecordReal> records);
+    
+    /**
      * 导入结果统计
      */
     class ImportResult {

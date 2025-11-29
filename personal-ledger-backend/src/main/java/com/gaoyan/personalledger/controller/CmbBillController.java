@@ -50,14 +50,40 @@ public class CmbBillController {
     }
     
     /**
-     * 数据清洗端点 - 清洗账单记录
+     * 数据清洗端点 - 清洗账单记录并保存到数据库
      * @param records 原始账单记录列表
-     * @return 清洗后的账单记录列表
+     * @return 清洗结果
      */
     @PostMapping("/clean-records")
-    public List<CmbBillRecordReal> cleanBillRecords(@RequestBody List<CmbBillRecordReal> records) {
+    public CleanResult cleanBillRecords(@RequestBody List<CmbBillRecordReal> records) {
         log.info("开始清洗账单记录数据，记录数: {}", records.size());
-        return dataCleaningService.cleanBillRecords(records);
+        List<CmbBillRecordReal> cleanedRecords = dataCleaningService.cleanBillRecords(records);
+        int updatedCount = billImportProcessorService.updateCleanedRecords(cleanedRecords);
+        log.info("清洗完成并已保存到数据库，更新记录数: {}", updatedCount);
+        
+        CleanResult result = new CleanResult();
+        result.setTotalCount(records.size());
+        result.setUpdatedCount(updatedCount);
+        result.setRecords(cleanedRecords);
+        return result;
+    }
+    
+    /**
+     * 清洗结果
+     */
+    public static class CleanResult {
+        private int totalCount;
+        private int updatedCount;
+        private List<CmbBillRecordReal> records;
+        
+        public int getTotalCount() { return totalCount; }
+        public void setTotalCount(int totalCount) { this.totalCount = totalCount; }
+        
+        public int getUpdatedCount() { return updatedCount; }
+        public void setUpdatedCount(int updatedCount) { this.updatedCount = updatedCount; }
+        
+        public List<CmbBillRecordReal> getRecords() { return records; }
+        public void setRecords(List<CmbBillRecordReal> records) { this.records = records; }
     }
     
     /**

@@ -3,6 +3,7 @@ package com.gaoyan.personalledger.config;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.annotation.Order;
 
 import javax.annotation.PostConstruct;
 import javax.sql.DataSource;
@@ -17,6 +18,7 @@ import java.util.Set;
  */
 @Slf4j
 @Configuration
+@Order(2) // 在DatabaseMigration之后执行
 public class SqliteConfig {
     
     @Autowired
@@ -126,9 +128,9 @@ public class SqliteConfig {
                     "id INTEGER PRIMARY KEY AUTOINCREMENT," +
                     "transaction_date DATE," +
                     "transaction_time TIME," +
-                    "income DECIMAL(15,2)," +
-                    "expense DECIMAL(15,2)," +
-                    "balance DECIMAL(15,2)," +
+                    "income VARCHAR(20)," +
+                    "expense VARCHAR(20)," +
+                    "balance VARCHAR(20)," +
                     "transaction_type VARCHAR(100)," +
                     "description TEXT," +
                     "payment_channel VARCHAR(50)," +

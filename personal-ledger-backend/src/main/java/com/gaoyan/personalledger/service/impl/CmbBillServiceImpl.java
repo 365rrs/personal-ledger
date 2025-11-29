@@ -420,9 +420,9 @@ public class CmbBillServiceImpl implements CmbBillService {
         }
         
         summaryInfo.setIncomeCount(incomeCount);
-        summaryInfo.setIncomeAmount(incomeAmount.toString() + "元");
+        summaryInfo.setIncomeAmount(incomeAmount.toPlainString() + "元");
         summaryInfo.setExpenseCount(expenseCount);
-        summaryInfo.setExpenseAmount(expenseAmount.toString() + "元");
+        summaryInfo.setExpenseAmount(expenseAmount.toPlainString() + "元");
         
         return summaryInfo;
     }

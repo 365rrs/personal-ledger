@@ -205,9 +205,9 @@ public class BillImportProcessorServiceImpl implements BillImportProcessorServic
         
         transaction.setTransactionDate(parseDate(dateStr));
         transaction.setTransactionTime(parseTime(record.getTradeTime()));
-        transaction.setIncome(record.getIncome());
-        transaction.setExpense(record.getExpense());
-        transaction.setBalance(record.getBalance());
+        transaction.setIncome(record.getIncome() != null ? record.getIncome().setScale(2, java.math.RoundingMode.HALF_UP) : null);
+        transaction.setExpense(record.getExpense() != null ? record.getExpense().setScale(2, java.math.RoundingMode.HALF_UP) : null);
+        transaction.setBalance(record.getBalance() != null ? record.getBalance().setScale(2, java.math.RoundingMode.HALF_UP) : null);
         transaction.setTransactionType(record.getTransactionType());
         transaction.setDescription(record.getRemark());
         transaction.setPaymentChannel(record.getPaymentChannel());
@@ -255,5 +255,30 @@ public class BillImportProcessorServiceImpl implements BillImportProcessorServic
             return null;
         }
         return LocalTime.parse(timeStr, DateTimeFormatter.ofPattern("HH:mm:ss"));
+    }
+    
+    @Override
+    @Transactional
+    public int updateCleanedRecords(List<CmbBillRecordReal> records) {
+        log.info("开始更新清洗后的记录到数据库，记录数: {}", records.size());
+        
+        int updatedCount = 0;
+        for (CmbBillRecordReal record : records) {
+            String deduplicateKey = buildDeduplicateKey(record);
+            BillTransaction existing = findByDeduplicateKey(deduplicateKey, record);
+            
+            if (existing != null) {
+                // 更新清洗后的字段
+                existing.setPaymentChannel(record.getPaymentChannel());
+                existing.setCategory(record.getCategory());
+                existing.setTransactionType(record.getTransactionType());
+                existing.setUpdateTime(LocalDateTime.now());
+                billTransactionMapper.updateById(existing);
+                updatedCount++;
+            }
+        }
+        
+        log.info("清洗记录更新完成，更新数: {}", updatedCount);
+        return updatedCount;
     }
 }

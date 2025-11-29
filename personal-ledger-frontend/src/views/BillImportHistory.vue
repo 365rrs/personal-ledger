@@ -54,8 +54,11 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { billImportApi } from '../api/bill'
+
+const router = useRouter()
 
 const loading = ref(false)
 const importList = ref([])
@@ -95,7 +98,7 @@ const handleCurrentChange = () => {
 }
 
 const viewDetail = (row) => {
-  ElMessage.info('查看详情功能开发中')
+  router.push(`/transaction-list?importId=${row.id}`)
 }
 
 const deleteImport = async (row) => {

@@ -435,6 +435,7 @@
           </el-form-item>
           <el-form-item label="分类">
             <el-select v-model="currentRecord.category" placeholder="请选择分类" clearable filterable :disabled="drawerMode === 'view'">
+              <el-option label="未分类" value="" />
               <el-option v-for="cat in categoryOptions" :key="cat" :label="cat" :value="cat" />
             </el-select>
           </el-form-item>
@@ -552,30 +553,57 @@ const loadPaymentChannels = async () => {
 const billList = ref([])
 const showBillList = ref(false)
 
-// 从store加载账单数据
-const loadBillData = () => {
+// 从API加载账单数据
+const loadBillData = async () => {
   const importId = route.params.id
-  const loaded = billStore.loadBillData(importId)
+  if (!importId) {
+    showBillList.value = true
+    await loadBillList()
+    return
+  }
   
-  if (loaded) {
-    // 处理数据格式
-    if (billStore.state.currentBillData?.data) {
-      billStore.state.currentBillData.data = processTransactionData(billStore.state.currentBillData.data)
+  try {
+    const params = {
+      current: 1,
+      size: 10000,
+      firstImportId: importId,
+      startDate: filterForm.startDate,
+      endDate: filterForm.endDate,
+      category: filterForm.category
+    }
+    const res = await axios.get('http://localhost:8080/api/bill/transaction/list', { params })
+    const transactions = res.data.data?.records || []
+    
+    // 构造billData格式
+    billStore.state.currentBillData = {
+      id: importId,
+      data: processTransactionData(transactions),
+      exportInfo: { account: '数据库', exportTime: new Date().toLocaleString() },
+      summary: {}
     }
     showBillList.value = false
-  } else {
-    // 没有找到任何账单数据
+  } catch (error) {
+    ElMessage.error('加载数据失败')
     showBillList.value = true
-    loadBillList()
+    await loadBillList()
   }
 }
 
 // 加载账单列表
-const loadBillList = () => {
-  const history = localStorage.getItem('billImportHistory')
-  if (history) {
-    const importHistory = JSON.parse(history)
-    billList.value = importHistory.filter(item => item.status === 'success')
+const loadBillList = async () => {
+  try {
+    const res = await axios.get('http://localhost:8080/api/bill/import/list?size=100')
+    if (res.data.success) {
+      billList.value = res.data.data.records.map(item => ({
+        id: item.id,
+        fileName: item.importName,
+        importTime: item.importTime,
+        recordCount: item.recordCount,
+        status: 'success'
+      }))
+    }
+  } catch (error) {
+    ElMessage.error('加载导入列表失败')
   }
 }
 
@@ -590,9 +618,12 @@ const processTransactionData = (data) => {
   
   return data.map(item => ({
     ...item,
-    formattedTradeDate: item.formattedTradeDate || item.tradeDate,
-    excludeFromMonthly: item.excludeFromMonthly !== undefined ? item.excludeFromMonthly : false,
-    userRemark: item.userRemark || ''
+    formattedTradeDate: item.transactionDate || item.formattedTradeDate || item.tradeDate,
+    tradeTime: item.transactionTime || item.tradeTime,
+    remark: item.description || item.remark,
+    userRemark: item.userNote || item.userRemark || '',
+    excludeFromMonthly: !item.excludeFromStats,
+    tradeType: item.transactionType || item.tradeType
   }))
 }
 
@@ -650,7 +681,7 @@ const handleCurrentChange = (val) => {
   pagination.currentPage = val
 }
 
-// 筛选后的数据
+// 筛选后的数据（后端已筛选，前端只做额外过滤）
 const filteredData = computed(() => {
   if (!billData.value?.data) {
     return []
@@ -900,7 +931,8 @@ const exportData = async () => {
 }
 
 // 应用筛选
-const applyFilter = () => {
+const applyFilter = async () => {
+  await loadBillData()
   ElMessage.success('筛选条件已应用')
 }
 
@@ -935,11 +967,18 @@ const editRecord = (record) => {
 }
 
 // 保存记录
-const saveRecord = () => {
-  if (billStore.updateRecord(currentRecord.value)) {
+const saveRecord = async () => {
+  try {
+    await axios.put(`http://localhost:8080/api/bill/transaction/${currentRecord.value.id}`, {
+      category: currentRecord.value.category,
+      paymentChannel: currentRecord.value.paymentChannel,
+      userNote: currentRecord.value.userRemark,
+      excludeFromStats: !currentRecord.value.excludeFromMonthly
+    })
     ElMessage.success('保存成功')
     drawerVisible.value = false
-  } else {
+    loadBillData()
+  } catch (error) {
     ElMessage.error('保存失败')
   }
 }

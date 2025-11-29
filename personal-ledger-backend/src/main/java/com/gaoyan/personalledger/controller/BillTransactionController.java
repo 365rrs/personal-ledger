@@ -33,9 +33,21 @@ public class BillTransactionController {
             @RequestParam(defaultValue = "20") int size,
             @RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM-dd") LocalDate startDate,
             @RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM-dd") LocalDate endDate,
-            @RequestParam(required = false) String category) {
+            @RequestParam(required = false) String category,
+            @RequestParam(required = false) String paymentChannel,
+            @RequestParam(required = false) String transactionType,
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) String minAmount,
+            @RequestParam(required = false) String maxAmount,
+            @RequestParam(required = false) String incomeOrExpense,
+            @RequestParam(required = false) Boolean excludeFromStats,
+            @RequestParam(required = false) String sortField,
+            @RequestParam(required = false) String sortOrder,
+            @RequestParam(required = false) Long firstImportId) {
         
-        Page<BillTransaction> page = billTransactionService.pageList(current, size, startDate, endDate, category);
+        Page<BillTransaction> page = billTransactionService.pageList(current, size, startDate, endDate, 
+                category, paymentChannel, transactionType, keyword, minAmount, maxAmount, 
+                incomeOrExpense, excludeFromStats, sortField, sortOrder, firstImportId);
         
         Map<String, Object> result = new HashMap<>();
         result.put("success", true);
@@ -80,6 +92,33 @@ public class BillTransactionController {
         Map<String, Object> result = new HashMap<>();
         result.put("success", true);
         result.put("message", "删除成功");
+        return result;
+    }
+    
+    /**
+     * 获取交易汇总
+     */
+    @GetMapping("/summary")
+    public Map<String, Object> getTransactionSummary(
+            @RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM-dd") LocalDate startDate,
+            @RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM-dd") LocalDate endDate,
+            @RequestParam(required = false) String category,
+            @RequestParam(required = false) String paymentChannel,
+            @RequestParam(required = false) String transactionType,
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) String minAmount,
+            @RequestParam(required = false) String maxAmount,
+            @RequestParam(required = false) String incomeOrExpense,
+            @RequestParam(required = false) Boolean excludeFromStats,
+            @RequestParam(required = false) Long firstImportId) {
+        
+        Map<String, Object> summary = billTransactionService.getSummary(startDate, endDate, 
+                category, paymentChannel, transactionType, keyword, minAmount, maxAmount, 
+                incomeOrExpense, excludeFromStats, firstImportId);
+        
+        Map<String, Object> result = new HashMap<>();
+        result.put("success", true);
+        result.put("data", summary);
         return result;
     }
 }

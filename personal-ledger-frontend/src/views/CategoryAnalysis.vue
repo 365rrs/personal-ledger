@@ -193,9 +193,24 @@ const loadPaymentChannels = async () => {
 }
 
 // 加载账单数据
-const loadBillData = () => {
-  const importId = route.params.id
-  billStore.loadBillData(importId)
+const loadBillData = async () => {
+  try {
+    const res = await axios.get('http://localhost:8080/api/bill/transaction/list?size=10000')
+    const transactions = res.data.data?.records || []
+    
+    billStore.state.currentBillData = {
+      data: transactions.map(t => ({
+        ...t,
+        formattedTradeDate: t.transactionDate,
+        tradeTime: t.transactionTime,
+        remark: t.description,
+        userRemark: t.userNote,
+        excludeFromMonthly: !t.excludeFromStats
+      }))
+    }
+  } catch (error) {
+    ElMessage.error('加载数据失败')
+  }
 }
 
 // 按分类统计数据
@@ -329,11 +344,18 @@ const editRecord = (record) => {
 }
 
 // 保存记录
-const saveRecord = () => {
-  if (billStore.updateRecord(currentRecord.value)) {
+const saveRecord = async () => {
+  try {
+    await axios.put(`http://localhost:8080/api/bill/transaction/${currentRecord.value.id}`, {
+      category: currentRecord.value.category,
+      paymentChannel: currentRecord.value.paymentChannel,
+      userNote: currentRecord.value.userRemark,
+      excludeFromStats: !currentRecord.value.excludeFromMonthly
+    })
     ElMessage.success('保存成功')
     drawerVisible.value = false
-  } else {
+    loadBillData()
+  } catch (error) {
     ElMessage.error('保存失败')
   }
 }
