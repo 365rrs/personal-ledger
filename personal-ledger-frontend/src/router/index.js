@@ -1,14 +1,13 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import BillImport from '../views/BillImport.vue'
 import BillImportSimple from '../views/BillImportSimple.vue'
-import BillAnalysis from '../views/BillAnalysis.vue'
+import BillImportHistory from '../views/BillImportHistory.vue'
 import DataAnalysis from '../views/DataAnalysis.vue'
 import CategoryAnalysis from '../views/CategoryAnalysis.vue'
 import Dashboard from '../views/Dashboard.vue'
 import RuleManagement from '../views/RuleManagement.vue'
 import CategoryManagement from '../views/CategoryManagement.vue'
 import PaymentChannelManagement from '../views/PaymentChannelManagement.vue'
-import BillImportHistory from '../views/BillImportHistory.vue'
 import TransactionList from '../views/TransactionList.vue'
 
 const routes = [
@@ -35,16 +34,10 @@ const routes = [
     meta: { title: '快速导入' }
   },
   {
-    path: '/bill-analysis/:id',
-    name: 'BillAnalysis',
-    component: BillAnalysis,
-    meta: { title: '账单解析' }
-  },
-  {
-    path: '/bill-analysis',
-    name: 'BillAnalysisList',
-    component: BillAnalysis,
-    meta: { title: '账单解析' }
+    path: '/bill-import-history',
+    name: 'BillImportHistory',
+    component: BillImportHistory,
+    meta: { title: '导入历史' }
   },
 
   {
@@ -65,12 +58,7 @@ const routes = [
     component: PaymentChannelManagement,
     meta: { title: '支付渠道管理' }
   },
-  {
-    path: '/bill-import-history',
-    name: 'BillImportHistory',
-    component: BillImportHistory,
-    meta: { title: '导入历史' }
-  },
+
   {
     path: '/transaction-list',
     name: 'TransactionList',
