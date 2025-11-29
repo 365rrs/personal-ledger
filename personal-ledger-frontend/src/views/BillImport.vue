@@ -411,10 +411,7 @@ onMounted(() => {
 
 <style scoped>
 .bill-import {
-  padding: 0;
-  min-height: 100vh;
-  width: 100%;
-  box-sizing: border-box;
+  padding: 20px;
 }
 
 /* 导入指导卡片 */

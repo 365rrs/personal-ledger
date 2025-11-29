@@ -418,8 +418,5 @@ onMounted(async () => {
 
 .filter-form {
   margin-bottom: 20px;
-  padding: 16px;
-  background: #fafbfc;
-  border-radius: 8px;
 }
 </style>

@@ -165,7 +165,7 @@ onMounted(() => {
 
 <style scoped>
 .category-management {
-  padding: 0;
+  padding: 20px;
 }
 
 .card-header {

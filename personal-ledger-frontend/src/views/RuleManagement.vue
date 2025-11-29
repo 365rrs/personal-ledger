@@ -283,7 +283,7 @@ onMounted(() => {
 
 <style scoped>
 .rule-management {
-  padding: 0;
+  padding: 20px;
 }
 
 .card-header {

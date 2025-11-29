@@ -461,7 +461,7 @@ onMounted(() => {
 
 <style scoped>
 .bill-import {
-  padding: 0;
+  padding: 20px;
 }
 
 .upload-card, .history-card {
