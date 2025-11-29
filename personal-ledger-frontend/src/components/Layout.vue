@@ -30,21 +30,29 @@
             <el-icon><Lightning /></el-icon>
             <span>快速导入</span>
           </el-menu-item>
+          <el-menu-item index="/bill-import-history">
+            <el-icon><Document /></el-icon>
+            <span>导入历史</span>
+          </el-menu-item>
         </el-sub-menu>
         <el-menu-item index="/bill-analysis">
           <el-icon><Document /></el-icon>
           <span>账单解析</span>
+        </el-menu-item>
+        <el-menu-item index="/transaction-list">
+          <el-icon><List /></el-icon>
+          <span>交易记录</span>
         </el-menu-item>
         <el-sub-menu index="/data-analysis">
           <template #title>
             <el-icon><DataAnalysis /></el-icon>
             <span>数据分析</span>
           </template>
-          <el-menu-item index="/data-analysis">
+          <el-menu-item index="/data-analysis-simple">
             <el-icon><TrendCharts /></el-icon>
             <span>按天统计</span>
           </el-menu-item>
-          <el-menu-item index="/category-analysis">
+          <el-menu-item index="/category-analysis-simple">
             <el-icon><PieChart /></el-icon>
             <span>按分类统计</span>
           </el-menu-item>
@@ -85,7 +93,7 @@
 </template>
 
 <script setup>
-import { House, Upload, Grid, Lightning, DataAnalysis, Document, TrendCharts, PieChart, Setting, Collection, CreditCard, Tools } from '@element-plus/icons-vue'
+import { House, Upload, Grid, Lightning, DataAnalysis, Document, TrendCharts, PieChart, Setting, Collection, CreditCard, Tools, List } from '@element-plus/icons-vue'
 </script>
 
 <style scoped>

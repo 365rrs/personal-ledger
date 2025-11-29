@@ -209,11 +209,9 @@ const importFile = async () => {
   }
 
   uploading.value = true
-  const formData = new FormData()
-  formData.append('file', selectedFile.value)
 
   try {
-    const response = await axios.post('/api/cmb/import-full', formData, {
+    const response = await axios.post('/api/cmb/import-full', selectedFile.value, {
       headers: {
         'Content-Type': 'multipart/form-data'
       }
@@ -293,11 +291,9 @@ const importExcelFile = async () => {
   }
 
   excelUploading.value = true
-  const formData = new FormData()
-  formData.append('file', selectedExcelFile.value)
 
   try {
-    const response = await axios.post('/api/cmb/import-excel', formData, {
+    const response = await axios.post('/api/cmb/import-excel', selectedExcelFile.value, {
       headers: {
         'Content-Type': 'multipart/form-data'
       }

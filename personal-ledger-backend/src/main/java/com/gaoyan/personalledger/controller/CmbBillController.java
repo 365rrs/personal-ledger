@@ -2,6 +2,7 @@ package com.gaoyan.personalledger.controller;
 
 import com.gaoyan.personalledger.entity.CmbBillInfo;
 import com.gaoyan.personalledger.entity.CmbBillRecordReal;
+import com.gaoyan.personalledger.service.BillImportProcessorService;
 import com.gaoyan.personalledger.service.CmbBillService;
 import com.gaoyan.personalledger.service.DataCleaningService;
 import lombok.extern.slf4j.Slf4j;
@@ -29,6 +30,9 @@ public class CmbBillController {
     @Autowired
     private DataCleaningService dataCleaningService;
     
+    @Autowired
+    private BillImportProcessorService billImportProcessorService;
+    
     /**
      * 导入招商银行真实格式账单CSV文件（完整信息）
      * @param file CSV文件
@@ -37,6 +41,11 @@ public class CmbBillController {
     @PostMapping("/import-full")
     public CmbBillInfo importCmbBillFull(@RequestParam("file") MultipartFile file) {
         log.info("开始导入招商银行真实格式账单文件（完整信息）: {}", file.getOriginalFilename());
+        try {
+            billImportProcessorService.processCsvImport(file);
+        } catch (Exception e) {
+            log.error("保存导入历史失败，但继续返回解析数据", e);
+        }
         return cmbBillService.parseCmbBillInfo(file);
     }
     
@@ -59,6 +68,11 @@ public class CmbBillController {
     @PostMapping("/import-excel")
     public CmbBillInfo importCmbBillExcel(@RequestParam("file") MultipartFile file) {
         log.info("开始导入招商银行Excel账单文件: {}", file.getOriginalFilename());
+        try {
+            billImportProcessorService.processExcelImport(file);
+        } catch (Exception e) {
+            log.error("保存导入历史失败，但继续返回解析数据", e);
+        }
         return cmbBillService.parseExcelBillInfo(file);
     }
     

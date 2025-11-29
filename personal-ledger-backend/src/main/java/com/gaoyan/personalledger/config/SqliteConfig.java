@@ -94,7 +94,80 @@ public class SqliteConfig {
                 log.info("✅ payment_channel 表已存在，跳过创建");
             }
             
-            log.info("✅ 数据库初始化完成，共检查 3 张表");
+            // 初始化账单导入记录表 (v1.5.0)
+            if (!existingTables.contains("bill_import")) {
+                log.info("检测到 bill_import 表不存在，开始创建...");
+                stmt.execute("CREATE TABLE bill_import (" +
+                    "id INTEGER PRIMARY KEY AUTOINCREMENT," +
+                    "import_name VARCHAR(200) NOT NULL," +
+                    "source_file VARCHAR(200)," +
+                    "file_type VARCHAR(20)," +
+                    "import_time DATETIME," +
+                    "record_count INTEGER DEFAULT 0," +
+                    "new_count INTEGER DEFAULT 0," +
+                    "update_count INTEGER DEFAULT 0," +
+                    "duplicate_count INTEGER DEFAULT 0," +
+                    "account_number VARCHAR(50)," +
+                    "period_start DATE," +
+                    "period_end DATE," +
+                    "import_status VARCHAR(20) DEFAULT 'SUCCESS'," +
+                    "error_message TEXT," +
+                    "create_time DATETIME DEFAULT CURRENT_TIMESTAMP," +
+                    "update_time DATETIME DEFAULT CURRENT_TIMESTAMP)");
+                log.info("✅ bill_import 表创建成功");
+            } else {
+                log.info("✅ bill_import 表已存在，跳过创建");
+            }
+            
+            // 初始化账单交易明细表 (v1.5.0)
+            if (!existingTables.contains("bill_transaction")) {
+                log.info("检测到 bill_transaction 表不存在，开始创建...");
+                stmt.execute("CREATE TABLE bill_transaction (" +
+                    "id INTEGER PRIMARY KEY AUTOINCREMENT," +
+                    "transaction_date DATE," +
+                    "transaction_time TIME," +
+                    "income DECIMAL(15,2)," +
+                    "expense DECIMAL(15,2)," +
+                    "balance DECIMAL(15,2)," +
+                    "transaction_type VARCHAR(100)," +
+                    "description TEXT," +
+                    "payment_channel VARCHAR(50)," +
+                    "category VARCHAR(50)," +
+                    "user_note TEXT," +
+                    "exclude_from_stats BOOLEAN DEFAULT 0," +
+                    "first_import_id INTEGER," +
+                    "last_import_id INTEGER," +
+                    "import_count INTEGER DEFAULT 1," +
+                    "create_time DATETIME DEFAULT CURRENT_TIMESTAMP," +
+                    "update_time DATETIME DEFAULT CURRENT_TIMESTAMP)");
+                stmt.execute("CREATE INDEX idx_bill_transaction_date ON bill_transaction(transaction_date)");
+                stmt.execute("CREATE INDEX idx_bill_transaction_category ON bill_transaction(category)");
+                stmt.execute("CREATE INDEX idx_bill_transaction_first_import ON bill_transaction(first_import_id)");
+                log.info("✅ bill_transaction 表创建成功");
+            } else {
+                log.info("✅ bill_transaction 表已存在，跳过创建");
+            }
+            
+            // 初始化交易导入关联表 (v1.5.0)
+            if (!existingTables.contains("bill_transaction_import")) {
+                log.info("检测到 bill_transaction_import 表不存在，开始创建...");
+                stmt.execute("CREATE TABLE bill_transaction_import (" +
+                    "id INTEGER PRIMARY KEY AUTOINCREMENT," +
+                    "transaction_id INTEGER NOT NULL," +
+                    "import_id INTEGER NOT NULL," +
+                    "is_new BOOLEAN DEFAULT 1," +
+                    "create_time DATETIME DEFAULT CURRENT_TIMESTAMP," +
+                    "FOREIGN KEY (transaction_id) REFERENCES bill_transaction(id) ON DELETE CASCADE," +
+                    "FOREIGN KEY (import_id) REFERENCES bill_import(id) ON DELETE CASCADE," +
+                    "UNIQUE(transaction_id, import_id))");
+                stmt.execute("CREATE INDEX idx_transaction_import_transaction ON bill_transaction_import(transaction_id)");
+                stmt.execute("CREATE INDEX idx_transaction_import_import ON bill_transaction_import(import_id)");
+                log.info("✅ bill_transaction_import 表创建成功");
+            } else {
+                log.info("✅ bill_transaction_import 表已存在，跳过创建");
+            }
+            
+            log.info("✅ 数据库初始化完成，共检查 6 张表");
             
         } catch (Exception e) {
             log.error("❌ 数据库初始化失败", e);

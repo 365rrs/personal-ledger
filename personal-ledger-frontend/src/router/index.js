@@ -8,6 +8,10 @@ import Dashboard from '../views/Dashboard.vue'
 import RuleManagement from '../views/RuleManagement.vue'
 import CategoryManagement from '../views/CategoryManagement.vue'
 import PaymentChannelManagement from '../views/PaymentChannelManagement.vue'
+import BillImportHistory from '../views/BillImportHistory.vue'
+import TransactionList from '../views/TransactionList.vue'
+import DataAnalysisSimple from '../views/DataAnalysisSimple.vue'
+import CategoryAnalysisSimple from '../views/CategoryAnalysisSimple.vue'
 
 const routes = [
   {
@@ -85,6 +89,30 @@ const routes = [
     name: 'PaymentChannelManagement',
     component: PaymentChannelManagement,
     meta: { title: '支付渠道管理' }
+  },
+  {
+    path: '/bill-import-history',
+    name: 'BillImportHistory',
+    component: BillImportHistory,
+    meta: { title: '导入历史' }
+  },
+  {
+    path: '/transaction-list',
+    name: 'TransactionList',
+    component: TransactionList,
+    meta: { title: '交易记录' }
+  },
+  {
+    path: '/data-analysis-simple',
+    name: 'DataAnalysisSimple',
+    component: DataAnalysisSimple,
+    meta: { title: '按天统计' }
+  },
+  {
+    path: '/category-analysis-simple',
+    name: 'CategoryAnalysisSimple',
+    component: CategoryAnalysisSimple,
+    meta: { title: '按分类统计' }
   }
 ]
 

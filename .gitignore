@@ -70,3 +70,4 @@ logs/
 temp/
 uploads/
 /data/personal-ledger.db
+/data/
