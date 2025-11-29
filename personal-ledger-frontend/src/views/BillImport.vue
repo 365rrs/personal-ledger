@@ -378,24 +378,22 @@ const mergeRecords = (existingRecords, newRecords) => {
   
   // 按日期排序
   return merged.sort((a, b) => {
-    const dateA = new Date(a.formattedTradeDate || a.tradeDate)
-    const dateB = new Date(b.formattedTradeDate || b.tradeDate)
+    const dateA = new Date(a.formattedTradeDate || a.transactionDate)
+    const dateB = new Date(b.formattedTradeDate || b.transactionDate)
     return dateA - dateB
   })
 }
 
-
-
 // 创建记录唯一键
 const createRecordKey = (record) => {
   // 使用格式化后的日期，如果没有则使用原始日期
-  const date = record.formattedTradeDate || record.tradeDate
-  const time = record.tradeTime || ''
+  const date = record.formattedTradeDate || record.transactionDate
+  const time = record.transactionTime || ''
   const income = record.income ? parseFloat(record.income).toFixed(2) : '0.00'
   const expense = record.expense ? parseFloat(record.expense).toFixed(2) : '0.00'
-  const type = record.tradeType || ''
-  const remark = record.remark || ''
-  
+  const type = record.transactionType || ''
+  const remark = record.description || ''
+
   return `${date}_${time}_${income}_${expense}_${type}_${remark}`
 }
 

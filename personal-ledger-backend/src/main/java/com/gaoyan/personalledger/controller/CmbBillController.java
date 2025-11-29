@@ -76,6 +76,7 @@ public class CmbBillController {
         private int updatedCount;
         private List<CmbBillRecordReal> records;
         
+        // getters and setters
         public int getTotalCount() { return totalCount; }
         public void setTotalCount(int totalCount) { this.totalCount = totalCount; }
         

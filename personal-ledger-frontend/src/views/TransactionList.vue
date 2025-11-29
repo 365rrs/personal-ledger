@@ -415,9 +415,25 @@ const cleanData = async () => {
     return
   }
   
+  // 转换前端字段到后端期望的字段
+  const convertedData = dataToClean.map(item => ({
+    id: item.id,
+    transactionDate: item.transactionDate,
+    transactionTime: item.transactionTime,
+    income: item.income,
+    expense: item.expense,
+    balance: item.balance,
+    transactionType: item.transactionType,
+    description: item.description,
+    excludeFromStats: item.excludeFromStats,
+    paymentChannel: item.paymentChannel,
+    category: item.category,
+    userNote: item.userNote
+  }))
+  
   cleaning.value = true
   try {
-    const res = await axios.post('http://localhost:8080/api/cmb/clean-records', dataToClean)
+    const res = await axios.post('http://localhost:8080/api/cmb/clean-records', convertedData)
     const result = res.data
     ElMessage.success(`数据清洗完成：总记录 ${result.totalCount} 条，更新 ${result.updatedCount} 条`)
     loadData()

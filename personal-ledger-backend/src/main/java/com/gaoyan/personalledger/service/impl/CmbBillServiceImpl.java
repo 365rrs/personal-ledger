@@ -21,6 +21,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
+import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -223,23 +224,23 @@ public class CmbBillServiceImpl implements CmbBillService {
 
         for (CmbBillRecordReal record : records) {
             // 格式化交易日期
-            if (record.getTradeDate() != null && !record.getTradeDate().trim().isEmpty()) {
-                record.setFormattedTradeDate(formatDate(record.getTradeDate()));
+            if (record.getTransactionDate() != null) {
+                record.setFormattedTradeDate(formatDate(record.getTransactionDate().toString()));
             }
 
             // 格式化交易时间
-            if (record.getTradeTime() != null && !record.getTradeTime().trim().isEmpty()) {
-                record.setTradeTime(formatTime(record.getTradeTime()));
+            if (record.getTransactionTime() != null) {
+                record.setTransactionTime(LocalTime.parse(formatTime(record.getTransactionTime().toString())));
             }
 
             // 设置默认值
-            if (record.getExcludeFromMonthly() == null) {
-                record.setExcludeFromMonthly(true); // 默认计入收支
+            if (record.getExcludeFromStats() == null) {
+                record.setExcludeFromStats(true); // 默认计入收支
             }
 
             // 初始化空字段
-            if (record.getUserRemark() == null) {
-                record.setUserRemark("");
+            if (record.getUserNote() == null) {
+                record.setUserNote("");
             }
             if (record.getPaymentChannel() == null) {
                 record.setPaymentChannel("");
@@ -352,28 +353,26 @@ public class CmbBillServiceImpl implements CmbBillService {
     }
     
     /**
-     * 将导出格式记录转换为内部格式记录
+     * 将导出格式记录转换为真实格式记录
      */
     private CmbBillRecordReal convertExportToReal(CmbBillRecordExport export) {
         CmbBillRecordReal real = new CmbBillRecordReal();
-        real.setTradeDate(export.getTradeDate());
-        real.setFormattedTradeDate(formatDate(export.getTradeDate()));
-        real.setTradeTime(export.getTradeTime());
+        real.setTransactionDate(export.getTransactionDate());
+        real.setTransactionTime(export.getTransactionTime());
         real.setIncome(export.getIncome());
         real.setExpense(export.getExpense());
         real.setBalance(export.getBalance());
-        real.setTradeType(export.getTradeType());
-        real.setRemark(export.getRemark());
+        real.setTransactionType(export.getTransactionType());
+        real.setDescription(export.getDescription());
         real.setPaymentChannel(export.getPaymentChannel() != null ? export.getPaymentChannel() : "");
-        real.setTransactionType(export.getTransactionType() != null ? export.getTransactionType() : "");
         real.setCategory(export.getCategory() != null ? export.getCategory() : "");
-        real.setUserRemark(export.getUserRemark() != null ? export.getUserRemark() : "");
+        real.setUserNote(export.getUserNote() != null ? export.getUserNote() : "");
         
-        // 转换是否计入收支标识
-        if ("是".equals(export.getExcludeFromMonthlyText())) {
-            real.setExcludeFromMonthly(true);
+        // 转换是否排除统计文本为布尔值
+        if ("是".equals(export.getExcludeFromStatsText())) {
+            real.setExcludeFromStats(true);
         } else {
-            real.setExcludeFromMonthly(false);
+            real.setExcludeFromStats(false);
         }
         
         return real;

@@ -168,10 +168,10 @@ public class BillImportProcessorServiceImpl implements BillImportProcessorServic
      */
     private String buildDeduplicateKey(CmbBillRecordReal record) {
         return String.format("%s_%s_%s_%s",
-            record.getFormattedTradeDate(),
-            record.getTradeTime(),
+            record.getTransactionDate(),
+            record.getTransactionTime(),
             record.getExpense() != null ? record.getExpense() : record.getIncome(),
-            record.getRemark());
+            record.getDescription());
     }
     
     /**
@@ -179,9 +179,9 @@ public class BillImportProcessorServiceImpl implements BillImportProcessorServic
      */
     private BillTransaction findByDeduplicateKey(String key, CmbBillRecordReal record) {
         LambdaQueryWrapper<BillTransaction> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(BillTransaction::getTransactionDate, parseDate(record.getFormattedTradeDate()))
-               .eq(BillTransaction::getTransactionTime, parseTime(record.getTradeTime()))
-               .eq(BillTransaction::getDescription, record.getRemark());
+        wrapper.eq(BillTransaction::getTransactionDate, record.getTransactionDate())
+               .eq(BillTransaction::getTransactionTime, record.getTransactionTime())
+               .eq(BillTransaction::getDescription, record.getDescription());
         
         if (record.getExpense() != null) {
             wrapper.eq(BillTransaction::getExpense, record.getExpense());
@@ -198,38 +198,24 @@ public class BillImportProcessorServiceImpl implements BillImportProcessorServic
     private BillTransaction convertToTransaction(CmbBillRecordReal record, Long importId) {
         BillTransaction transaction = new BillTransaction();
         
-        String dateStr = record.getFormattedTradeDate();
-        if (dateStr == null || dateStr.trim().isEmpty()) {
-            dateStr = record.getTradeDate();
-        }
-        
-        transaction.setTransactionDate(parseDate(dateStr));
-        transaction.setTransactionTime(parseTime(record.getTradeTime()));
-        transaction.setIncome(record.getIncome() != null ? record.getIncome().setScale(2, java.math.RoundingMode.HALF_UP) : null);
-        transaction.setExpense(record.getExpense() != null ? record.getExpense().setScale(2, java.math.RoundingMode.HALF_UP) : null);
-        transaction.setBalance(record.getBalance() != null ? record.getBalance().setScale(2, java.math.RoundingMode.HALF_UP) : null);
+        transaction.setTransactionDate(record.getTransactionDate());
+        transaction.setTransactionTime(record.getTransactionTime());
+        transaction.setIncome(record.getIncome());
+        transaction.setExpense(record.getExpense());
+        transaction.setBalance(record.getBalance());
         transaction.setTransactionType(record.getTransactionType());
-        transaction.setDescription(record.getRemark());
+        transaction.setDescription(record.getDescription());
         transaction.setPaymentChannel(record.getPaymentChannel());
         transaction.setCategory(record.getCategory());
-        transaction.setUserNote(record.getUserRemark());
-        transaction.setExcludeFromStats(record.getExcludeFromMonthly() != null ? !record.getExcludeFromMonthly() : false);
+        transaction.setUserNote(record.getUserNote());
+        transaction.setExcludeFromStats(record.getExcludeFromStats());
         transaction.setFirstImportId(importId);
         transaction.setLastImportId(importId);
         transaction.setImportCount(1);
+        transaction.setCreateTime(LocalDateTime.now());
+        transaction.setUpdateTime(LocalDateTime.now());
+        
         return transaction;
-    }
-    
-    /**
-     * 保存交易导入关联
-     */
-    private void saveTransactionImport(Long transactionId, Long importId, boolean isNew) {
-        BillTransactionImport relation = new BillTransactionImport();
-        relation.setId(System.currentTimeMillis() + transactionId); // 生成唯一ID
-        relation.setTransactionId(transactionId);
-        relation.setImportId(importId);
-        relation.setIsNew(isNew);
-        billTransactionImportMapper.insert(relation);
     }
     
     /**
@@ -264,21 +250,63 @@ public class BillImportProcessorServiceImpl implements BillImportProcessorServic
         
         int updatedCount = 0;
         for (CmbBillRecordReal record : records) {
-            String deduplicateKey = buildDeduplicateKey(record);
-            BillTransaction existing = findByDeduplicateKey(deduplicateKey, record);
-            
-            if (existing != null) {
-                // 更新清洗后的字段
-                existing.setPaymentChannel(record.getPaymentChannel());
-                existing.setCategory(record.getCategory());
-                existing.setTransactionType(record.getTransactionType());
-                existing.setUpdateTime(LocalDateTime.now());
-                billTransactionMapper.updateById(existing);
-                updatedCount++;
+            // 如果记录有ID，则直接通过ID更新
+            if (record.getId() != null) {
+                BillTransaction existing = billTransactionMapper.selectById(record.getId());
+                if (existing != null) {
+                    // 更新记录
+                    existing.setPaymentChannel(record.getPaymentChannel());
+                    existing.setTransactionType(record.getTransactionType());
+                    existing.setCategory(record.getCategory());
+                    existing.setUserNote(record.getUserNote());
+                    existing.setExcludeFromStats(record.getExcludeFromStats());
+                    existing.setUpdateTime(LocalDateTime.now());
+                    
+                    billTransactionMapper.updateById(existing);
+                    updatedCount++;
+                }
+            } else {
+                // 没有ID的情况下，使用原有的去重逻辑
+                LambdaQueryWrapper<BillTransaction> wrapper = new LambdaQueryWrapper<>();
+                wrapper.eq(BillTransaction::getTransactionDate, record.getTransactionDate())
+                       .eq(BillTransaction::getTransactionTime, record.getTransactionTime())
+                       .eq(BillTransaction::getDescription, record.getDescription());
+                
+                if (record.getExpense() != null) {
+                    wrapper.eq(BillTransaction::getExpense, record.getExpense());
+                } else {
+                    wrapper.eq(BillTransaction::getIncome, record.getIncome());
+                }
+                
+                BillTransaction existing = billTransactionMapper.selectOne(wrapper);
+                if (existing != null) {
+                    // 更新记录
+                    existing.setPaymentChannel(record.getPaymentChannel());
+                    existing.setTransactionType(record.getTransactionType());
+                    existing.setCategory(record.getCategory());
+                    existing.setUserNote(record.getUserNote());
+                    existing.setExcludeFromStats(record.getExcludeFromStats());
+                    existing.setUpdateTime(LocalDateTime.now());
+                    
+                    billTransactionMapper.updateById(existing);
+                    updatedCount++;
+                }
             }
         }
         
-        log.info("清洗记录更新完成，更新数: {}", updatedCount);
+        log.info("完成更新清洗后的记录到数据库，共更新{}条记录", updatedCount);
         return updatedCount;
+    }
+    
+    /**
+     * 记录交易与导入的关联关系
+     */
+    private void saveTransactionImport(Long transactionId, Long importId, Boolean isNew) {
+        BillTransactionImport relation = new BillTransactionImport();
+        relation.setId(System.currentTimeMillis() + transactionId); // 生成唯一ID
+        relation.setTransactionId(transactionId);
+        relation.setImportId(importId);
+        relation.setIsNew(isNew);
+        billTransactionImportMapper.insert(relation);
     }
 }

@@ -10,6 +10,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -52,11 +54,11 @@ public class DataCleaningServiceImpl implements DataCleaningService {
 
         for (CmbBillRecordReal record : records) {
             String uniqueKey = String.format("%s_%s_%s_%s_%s",
-                    record.getTradeDate(),
-                    record.getTradeTime(),
+                    record.getTransactionDate(),
+                    record.getTransactionTime(),
                     record.getIncome() != null ? record.getIncome().toString() : "",
                     record.getExpense() != null ? record.getExpense().toString() : "",
-                    record.getTradeType());
+                    record.getTransactionType());
 
             if (!uniqueKeys.contains(uniqueKey)) {
                 uniqueKeys.add(uniqueKey);
@@ -75,11 +77,11 @@ public class DataCleaningServiceImpl implements DataCleaningService {
         }
 
         for (CmbBillRecordReal record : records) {
-            if (StringUtils.hasText(record.getTradeDate())) {
-                record.setTradeDate(formatDate(record.getTradeDate()));
+            if (record.getTransactionDate() != null) {
+                record.setTransactionDate(LocalDate.parse(formatDate(record.getTransactionDate().toString())));
             }
-            if (StringUtils.hasText(record.getTradeTime())) {
-                record.setTradeTime(formatTime(record.getTradeTime()));
+            if (record.getTransactionTime() != null) {
+                record.setTransactionTime(LocalTime.parse(formatTime(record.getTransactionTime().toString())));
             }
         }
 
@@ -171,11 +173,11 @@ public class DataCleaningServiceImpl implements DataCleaningService {
         int count = 0;
         
         for (CmbBillRecordReal record : records) {
-            String originalRemark = record.getRemark();
+            String originalRemark = record.getDescription();
             if (originalRemark != null && !originalRemark.isEmpty()) {
                 for (CleaningRule rule : rules) {
                     if (matchText(originalRemark, rule.getKeyword(), rule.getMatchMode())) {
-                        record.setRemark(rule.getTargetValue());
+                        record.setUserNote(rule.getTargetValue());
                         count++;
                         break;
                     }
@@ -189,14 +191,14 @@ public class DataCleaningServiceImpl implements DataCleaningService {
 
     private void processExcludedRecords(List<CmbBillRecordReal> records) {
         for (CmbBillRecordReal record : records) {
-            if ("汇入汇款".equals(record.getTradeType()) && "高明希".equals(record.getRemark())) {
-                record.setExcludeFromMonthly(false);
+            if ("汇入汇款".equals(record.getTransactionType()) && "高明希".equals(record.getDescription())) {
+                record.setExcludeFromStats(false);
             }
         }
     }
 
     private boolean isValidRecord(CmbBillRecordReal record) {
-        if (record.getTradeDate() == null || record.getTradeDate().trim().isEmpty()) {
+        if (record.getTransactionDate() == null) {
             return false;
         }
         if ((record.getIncome() == null || record.getIncome().compareTo(BigDecimal.ZERO) == 0) &&
@@ -207,18 +209,18 @@ public class DataCleaningServiceImpl implements DataCleaningService {
     }
 
     private CmbBillRecordReal normalizeRecord(CmbBillRecordReal record) {
-        if (record.getRemark() != null) {
-            record.setRemark(record.getRemark().trim());
+        if (record.getDescription() != null) {
+            record.setDescription(record.getDescription().trim());
         } else {
-            record.setRemark("");
+            record.setDescription("");
         }
-        if (record.getTradeType() != null) {
-            record.setTradeType(record.getTradeType().trim());
+        if (record.getTransactionType() != null) {
+            record.setTransactionType(record.getTransactionType().trim());
         } else {
-            record.setTradeType("");
+            record.setTransactionType("");
         }
-        if (record.getExcludeFromMonthly() == null) {
-            record.setExcludeFromMonthly(true);
+        if (record.getExcludeFromStats() == null) {
+            record.setExcludeFromStats(true);
         }
         return record;
     }
@@ -265,9 +267,9 @@ public class DataCleaningServiceImpl implements DataCleaningService {
     }
 
     private String applyRules(CmbBillRecordReal record, List<CleaningRule> rules) {
-        String remark = record.getRemark();
-        String tradeType = record.getTradeType();
-        String userRemark = record.getUserRemark();
+        String remark = record.getDescription();
+        String tradeType = record.getTransactionType();
+        String userRemark = record.getUserNote();
 
         for (CleaningRule rule : rules) {
             if (userRemark != null && !userRemark.isEmpty()) {

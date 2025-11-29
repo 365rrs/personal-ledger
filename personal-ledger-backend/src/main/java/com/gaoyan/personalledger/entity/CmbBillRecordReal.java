@@ -4,6 +4,8 @@ import com.alibaba.excel.annotation.ExcelProperty;
 import lombok.Data;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.LocalTime;
 
 /**
  * 招商银行账单记录实体类（真实格式）
@@ -12,16 +14,21 @@ import java.math.BigDecimal;
 public class CmbBillRecordReal {
     
     /**
+     * ID
+     */
+    private Long id;
+    
+    /**
      * 交易日期
      */
     @ExcelProperty("交易日期")
-    private String tradeDate;
+    private LocalDate transactionDate;
     
     /**
      * 交易时间
      */
     @ExcelProperty("交易时间")
-    private String tradeTime;
+    private LocalTime transactionTime;
     
     /**
      * 收入
@@ -45,21 +52,19 @@ public class CmbBillRecordReal {
      * 交易类型
      */
     @ExcelProperty("交易类型")
-    private String tradeType;
+    private String transactionType;
     
     /**
-     * 交易备注
+     * 交易描述
      */
     @ExcelProperty("交易备注")
-    private String remark;
+    private String description;
     
     /**
-     * 是否计入收支标识
-     * true: 计入收支（默认）
-     * false: 不计入收支
+     * 是否排除统计(0-计入 1-排除)
      */
     @ExcelProperty("是否计入收支标识")
-    private Boolean excludeFromMonthly = true;
+    private Boolean excludeFromStats = true;
     
     /**
      * 支付渠道（微信/支付宝/银行卡/京东支付）
@@ -67,19 +72,14 @@ public class CmbBillRecordReal {
     private String paymentChannel;
     
     /**
-     * 交易类型（收入/支出）
-     */
-    private String transactionType;
-    
-    /**
-     * 分类（餐饮/购物/出行）
+     * 交易分类
      */
     private String category;
     
     /**
      * 用户备注
      */
-    private String userRemark;
+    private String userNote;
     
     /**
      * 格式化后的交易日期 (yyyy-MM-dd)
@@ -103,19 +103,10 @@ public class CmbBillRecordReal {
             return formattedTradeDate;
         }
         
-        if (tradeDate == null || tradeDate.trim().isEmpty()) {
-            return tradeDate;
+        if (transactionDate == null) {
+            return null;
         }
         
-        String date = tradeDate.trim();
-        // 移除可能的前导字符（如制表符或空格）
-        date = date.replaceAll("^[\\s\\t]*", "");
-        
-        if (date.length() == 8) {
-            // 将 YYYYMMDD 格式转换为 YYYY-MM-DD 格式
-            return date.substring(0, 4) + "-" + date.substring(4, 6) + "-" + date.substring(6, 8);
-        }
-        
-        return tradeDate;
+        return transactionDate.toString();
     }
 }
