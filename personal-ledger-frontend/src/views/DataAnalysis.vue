@@ -306,13 +306,16 @@ const renderChart = (stats) => {
       {
         name: '累计支出',
         type: 'line',
-        data: cumulativeExpense,
+        data: cumulativeExpense.map((value, index) => ({
+          value: value,
+          label: {
+            show: true,
+            position: index % 2 === 0 ? 'top' : 'bottom',
+            formatter: value.toFixed(2)
+          }
+        })),
         itemStyle: { color: '#409eff' },
-        lineStyle: { width: 2 },
-        label: {
-          show: true,
-          formatter: (params) => params.value.toFixed(2)
-        }
+        lineStyle: { width: 2 }
       }
     ]
   }
