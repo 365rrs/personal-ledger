@@ -253,83 +253,143 @@ public class BillTransactionServiceImpl implements BillTransactionService {
     
     @Override
     public List<java.util.Map<String, Object>> getCategoryStats(LocalDate startDate, LocalDate endDate, String type) {
-        LambdaQueryWrapper<BillTransaction> wrapper = new LambdaQueryWrapper<>();
+        com.baomidou.mybatisplus.core.conditions.query.QueryWrapper<BillTransaction> wrapper = 
+            new com.baomidou.mybatisplus.core.conditions.query.QueryWrapper<>();
         
         // 只统计计入收支的数据
-        wrapper.eq(BillTransaction::getExcludeFromStats, false);
+        wrapper.eq("exclude_from_stats", false);
         
         if (startDate != null) {
-            wrapper.ge(BillTransaction::getTransactionDate, startDate);
+            wrapper.ge("transaction_date", startDate);
         }
         if (endDate != null) {
-            wrapper.le(BillTransaction::getTransactionDate, endDate);
+            wrapper.le("transaction_date", endDate);
         }
         
-        // 根据类型过滤
         if ("expense".equals(type)) {
-            wrapper.isNotNull(BillTransaction::getExpense)
-                   .gt(BillTransaction::getExpense, java.math.BigDecimal.ZERO);
+            wrapper.isNotNull("expense").gt("expense", java.math.BigDecimal.ZERO);
         } else if ("income".equals(type)) {
-            wrapper.isNotNull(BillTransaction::getIncome)
-                   .gt(BillTransaction::getIncome, java.math.BigDecimal.ZERO);
+            wrapper.isNotNull("income").gt("income", java.math.BigDecimal.ZERO);
         }
         
-        List<BillTransaction> list = billTransactionMapper.selectList(wrapper);
+        wrapper.isNotNull("category").ne("category", "");
         
-        // 按分类分组统计
-        java.util.Map<String, java.util.Map<String, Object>> categoryMap = new java.util.LinkedHashMap<>();
-        java.math.BigDecimal total = java.math.BigDecimal.ZERO;
+        wrapper.groupBy("category");
+        wrapper.select("category", "COUNT(*) as count", 
+                      "SUM(CASE WHEN income IS NOT NULL THEN income ELSE expense END) as amount");
+        wrapper.orderByDesc("amount");
         
-        for (BillTransaction t : list) {
-            String category = t.getCategory();
-            if (category == null || category.isEmpty()) {
-                category = "未分类";
+        java.util.List<java.util.Map<String, Object>> list = billTransactionMapper.selectMaps(wrapper);
+        
+        // 计算总数用于百分比计算
+        java.math.BigDecimal totalAmount = java.math.BigDecimal.ZERO;
+        for (java.util.Map<String, Object> item : list) {
+            Object amountObj = item.get("amount");
+            if (amountObj != null) {
+                if (amountObj instanceof java.math.BigDecimal) {
+                    totalAmount = totalAmount.add((java.math.BigDecimal) amountObj);
+                } else {
+                    totalAmount = totalAmount.add(new java.math.BigDecimal(amountObj.toString()));
+                }
             }
-            
-            java.math.BigDecimal amount = "expense".equals(type) ? t.getExpense() : t.getIncome();
-            if (amount == null || amount.compareTo(java.math.BigDecimal.ZERO) <= 0) {
-                continue;
-            }
-            
-            categoryMap.putIfAbsent(category, new java.util.HashMap<>());
-            java.util.Map<String, Object> stat = categoryMap.get(category);
-            
-            if (!stat.containsKey("category")) {
-                stat.put("category", category);
-                stat.put("amount", java.math.BigDecimal.ZERO);
-                stat.put("count", 0);
-            }
-            
-            java.math.BigDecimal currentAmount = (java.math.BigDecimal) stat.get("amount");
-            int count = (int) stat.get("count");
-            
-            stat.put("amount", currentAmount.add(amount));
-            stat.put("count", count + 1);
-            
-            total = total.add(amount);
         }
         
-        // 计算占比
-        List<java.util.Map<String, Object>> result = new java.util.ArrayList<>();
-        for (java.util.Map<String, Object> stat : categoryMap.values()) {
-            java.math.BigDecimal amount = (java.math.BigDecimal) stat.get("amount");
-            if (total.compareTo(java.math.BigDecimal.ZERO) > 0) {
-                java.math.BigDecimal percent = amount.divide(total, 4, java.math.BigDecimal.ROUND_HALF_UP)
-                                                     .multiply(new java.math.BigDecimal(100));
-                stat.put("percent", percent);
+        // 计算每个分类的百分比
+        for (java.util.Map<String, Object> item : list) {
+            Object amountObj = item.get("amount");
+            java.math.BigDecimal amount = java.math.BigDecimal.ZERO;
+            if (amountObj != null) {
+                if (amountObj instanceof java.math.BigDecimal) {
+                    amount = (java.math.BigDecimal) amountObj;
+                } else {
+                    amount = new java.math.BigDecimal(amountObj.toString());
+                }
+            }
+            
+            if (totalAmount.compareTo(java.math.BigDecimal.ZERO) > 0) {
+                java.math.BigDecimal percent = amount.multiply(java.math.BigDecimal.valueOf(100))
+                        .divide(totalAmount, 2, java.math.RoundingMode.HALF_UP);
+                item.put("percent", percent);
             } else {
-                stat.put("percent", java.math.BigDecimal.ZERO);
+                item.put("percent", java.math.BigDecimal.ZERO);
             }
-            result.add(stat);
         }
         
-        // 按金额降序排序
-        result.sort((a, b) -> {
-            java.math.BigDecimal amountA = (java.math.BigDecimal) a.get("amount");
-            java.math.BigDecimal amountB = (java.math.BigDecimal) b.get("amount");
-            return amountB.compareTo(amountA);
-        });
+        // 添加"未分类"统计
+        com.baomidou.mybatisplus.core.conditions.query.QueryWrapper<BillTransaction> unclassifiedWrapper = 
+            new com.baomidou.mybatisplus.core.conditions.query.QueryWrapper<>();
+        unclassifiedWrapper.eq("exclude_from_stats", false);
         
-        return result;
+        if (startDate != null) {
+            unclassifiedWrapper.ge("transaction_date", startDate);
+        }
+        if (endDate != null) {
+            unclassifiedWrapper.le("transaction_date", endDate);
+        }
+        
+        if ("expense".equals(type)) {
+            unclassifiedWrapper.isNotNull("expense").gt("expense", java.math.BigDecimal.ZERO);
+        } else if ("income".equals(type)) {
+            unclassifiedWrapper.isNotNull("income").gt("income", java.math.BigDecimal.ZERO);
+        }
+        
+        unclassifiedWrapper.and(w -> w.isNull("category")
+                                     .or()
+                                     .eq("category", ""));
+        
+        Long unclassifiedCount = billTransactionMapper.selectCount(unclassifiedWrapper);
+        if (unclassifiedCount > 0) {
+            // 计算未分类的金额总和
+            com.baomidou.mybatisplus.core.conditions.query.QueryWrapper<BillTransaction> unclassifiedAmountWrapper = 
+                new com.baomidou.mybatisplus.core.conditions.query.QueryWrapper<>();
+            unclassifiedAmountWrapper.eq("exclude_from_stats", false);
+            
+            if (startDate != null) {
+                unclassifiedAmountWrapper.ge("transaction_date", startDate);
+            }
+            if (endDate != null) {
+                unclassifiedAmountWrapper.le("transaction_date", endDate);
+            }
+            
+            if ("expense".equals(type)) {
+                unclassifiedAmountWrapper.isNotNull("expense").gt("expense", java.math.BigDecimal.ZERO);
+            } else if ("income".equals(type)) {
+                unclassifiedAmountWrapper.isNotNull("income").gt("income", java.math.BigDecimal.ZERO);
+            }
+            
+            unclassifiedAmountWrapper.and(w -> w.isNull("category")
+                                         .or()
+                                         .eq("category", ""));
+            
+            List<BillTransaction> unclassifiedTransactions = billTransactionMapper.selectList(unclassifiedAmountWrapper);
+            java.math.BigDecimal unclassifiedAmount = java.math.BigDecimal.ZERO;
+            for (BillTransaction transaction : unclassifiedTransactions) {
+                if ("expense".equals(type) && transaction.getExpense() != null) {
+                    unclassifiedAmount = unclassifiedAmount.add(transaction.getExpense());
+                } else if ("income".equals(type) && transaction.getIncome() != null) {
+                    unclassifiedAmount = unclassifiedAmount.add(transaction.getIncome());
+                }
+            }
+            
+            java.util.Map<String, Object> unclassifiedItem = new java.util.HashMap<>();
+            unclassifiedItem.put("category", "未分类");
+            unclassifiedItem.put("count", unclassifiedCount);
+            unclassifiedItem.put("amount", unclassifiedAmount);
+            
+            // 将未分类金额加入总计中，以便正确计算百分比
+            totalAmount = totalAmount.add(unclassifiedAmount);
+            
+            if (totalAmount.compareTo(java.math.BigDecimal.ZERO) > 0) {
+                java.math.BigDecimal percent = unclassifiedAmount.multiply(java.math.BigDecimal.valueOf(100))
+                        .divide(totalAmount, 2, java.math.RoundingMode.HALF_UP);
+                unclassifiedItem.put("percent", percent);
+            } else {
+                unclassifiedItem.put("percent", java.math.BigDecimal.ZERO);
+            }
+            
+            list.add(unclassifiedItem);
+        }
+        
+        return list;
     }
 }

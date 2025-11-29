@@ -33,15 +33,19 @@
         <div style="margin-bottom: 10px;">
           <el-tag type="primary" closable @close="selectedCategory = ''">{{ selectedCategory }}</el-tag>
         </div>
-        <el-table :data="categoryDetails" max-height="400">
-          <el-table-column prop="transactionDate" label="交易日期" width="110" />
-          <el-table-column prop="transactionTime" label="交易时间" width="90" />
-          <el-table-column prop="income" label="收入" width="100">
+        <el-table 
+          :data="categoryDetails" 
+          max-height="400"
+          @sort-change="handleSortChange"
+        >
+          <el-table-column prop="transactionDate" label="交易日期" width="110" sortable="custom" />
+          <el-table-column prop="transactionTime" label="交易时间" width="120" sortable="custom" />
+          <el-table-column prop="income" label="收入" width="100" sortable="custom">
             <template #default="{ row }">
               <span style="color: #67c23a;">{{ row.income || '-' }}</span>
             </template>
           </el-table-column>
-          <el-table-column prop="expense" label="支出" width="100">
+          <el-table-column prop="expense" label="支出" width="100" sortable="custom">
             <template #default="{ row }">
               <span style="color: #f56c6c;">{{ row.expense || '-' }}</span>
             </template>
@@ -131,6 +135,10 @@ const categories = ref([])
 const channels = ref([])
 let chart = null
 
+// 排序字段和顺序
+const sortField = ref('')
+const sortOrder = ref('')
+
 const loadData = async () => {
   try {
     const getMonthEnd = (yearMonth) => {
@@ -200,7 +208,9 @@ const loadCategoryDetails = async (row) => {
       startDate: dateRange.value?.[0] ? `${dateRange.value[0]}-01` : undefined,
       endDate: dateRange.value?.[1] ? `${dateRange.value[1]}-${getMonthEnd(dateRange.value[1])}` : undefined,
       category: row.category === '未分类' ? '' : row.category,
-      excludeFromStats: false
+      excludeFromStats: false,
+      sortField: sortField.value,
+      sortOrder: sortOrder.value
     }
     
     const res = await axios.get('http://localhost:8080/api/bill/transaction/list', { params })
@@ -216,6 +226,15 @@ const loadCategoryDetails = async (row) => {
     })
   } catch (error) {
     ElMessage.error('加载明细失败')
+  }
+}
+
+// 处理排序变化
+const handleSortChange = ({ prop, order }) => {
+  sortField.value = prop || ''
+  sortOrder.value = order === 'ascending' ? 'asc' : order === 'descending' ? 'desc' : ''
+  if (selectedCategory.value) {
+    loadCategoryDetails({ category: selectedCategory.value })
   }
 }
 
