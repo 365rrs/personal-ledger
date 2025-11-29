@@ -16,6 +16,47 @@
       </el-empty>
 
       <div v-else>
+        <!-- 筛选条件 -->
+        <el-form label-width="80px" class="filter-form">
+          <el-row :gutter="16">
+            <el-col :span="24">
+              <el-form-item label="快捷日期">
+                <el-space wrap>
+                  <el-button @click="setQuickDate('today')">今天</el-button>
+                  <el-button @click="setQuickDate('thisMonth')">本月</el-button>
+                  <el-button @click="setQuickDate('lastMonth')">上月</el-button>
+                  <el-button @click="setQuickDate('last3Months')">近3月</el-button>
+                  <el-button @click="setQuickDate('thisYear')">今年</el-button>
+                </el-space>
+              </el-form-item>
+            </el-col>
+          </el-row>
+          <el-row :gutter="16">
+            <el-col :span="12">
+              <el-form-item label="日期范围">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <el-date-picker v-model="filter.startDate" type="date" placeholder="开始日期" value-format="YYYY-MM-DD" style="flex: 1" />
+                  <span>至</span>
+                  <el-date-picker v-model="filter.endDate" type="date" placeholder="结束日期" value-format="YYYY-MM-DD" style="flex: 1" />
+                </div>
+              </el-form-item>
+            </el-col>
+            <el-col :span="6">
+              <el-form-item label="支付渠道">
+                <el-select v-model="filter.paymentChannel" clearable filterable placeholder="全部">
+                  <el-option v-for="ch in paymentChannelOptions" :key="ch" :label="ch" :value="ch" />
+                </el-select>
+              </el-form-item>
+            </el-col>
+            <el-col :span="6">
+              <el-form-item label=" ">
+                <el-button type="primary" @click="applyFilter">应用筛选</el-button>
+                <el-button @click="resetFilter">重置</el-button>
+              </el-form-item>
+            </el-col>
+          </el-row>
+        </el-form>
+        
         <!-- 收支类型切换 -->
         <el-radio-group v-model="transactionType" class="type-toggle">
           <el-radio-button value="expense">支出分类</el-radio-button>
@@ -174,6 +215,75 @@ let pieChartInstance = null
 const categoryOptions = ref([])
 const paymentChannelOptions = ref([])
 
+const getThisMonthDates = () => {
+  const today = new Date()
+  const year = today.getFullYear()
+  const month = today.getMonth()
+  const firstDay = new Date(year, month, 1)
+  const formatDate = (date) => {
+    const y = date.getFullYear()
+    const m = String(date.getMonth() + 1).padStart(2, '0')
+    const d = String(date.getDate()).padStart(2, '0')
+    return `${y}-${m}-${d}`
+  }
+  return {
+    startDate: formatDate(firstDay),
+    endDate: formatDate(today)
+  }
+}
+
+const thisMonth = getThisMonthDates()
+const filter = ref({
+  startDate: thisMonth.startDate,
+  endDate: thisMonth.endDate,
+  paymentChannel: ''
+})
+
+const setQuickDate = (type) => {
+  const today = new Date()
+  const formatDate = (date) => {
+    const y = date.getFullYear()
+    const m = String(date.getMonth() + 1).padStart(2, '0')
+    const d = String(date.getDate()).padStart(2, '0')
+    return `${y}-${m}-${d}`
+  }
+  
+  switch(type) {
+    case 'today':
+      filter.value.startDate = filter.value.endDate = formatDate(today)
+      break
+    case 'thisMonth':
+      filter.value.startDate = formatDate(new Date(today.getFullYear(), today.getMonth(), 1))
+      filter.value.endDate = formatDate(today)
+      break
+    case 'lastMonth':
+      filter.value.startDate = formatDate(new Date(today.getFullYear(), today.getMonth() - 1, 1))
+      filter.value.endDate = formatDate(new Date(today.getFullYear(), today.getMonth(), 0))
+      break
+    case 'last3Months':
+      filter.value.startDate = formatDate(new Date(today.getFullYear(), today.getMonth() - 2, 1))
+      filter.value.endDate = formatDate(today)
+      break
+    case 'thisYear':
+      filter.value.startDate = formatDate(new Date(today.getFullYear(), 0, 1))
+      filter.value.endDate = formatDate(today)
+      break
+  }
+}
+
+const applyFilter = () => {
+  loadBillData()
+}
+
+const resetFilter = () => {
+  filter.value = {
+    startDate: thisMonth.startDate,
+    endDate: thisMonth.endDate,
+    paymentChannel: ''
+  }
+  loadBillData()
+}
+
 const loadCategories = async () => {
   try {
     const response = await axios.get('http://localhost:8080/api/category/list')
@@ -195,7 +305,17 @@ const loadPaymentChannels = async () => {
 // 加载账单数据
 const loadBillData = async () => {
   try {
-    const res = await axios.get('http://localhost:8080/api/bill/transaction/list?size=10000')
+    const params = {
+      size: 10000,
+      startDate: filter.value.startDate,
+      endDate: filter.value.endDate
+    }
+    
+    if (filter.value.paymentChannel) {
+      params.paymentChannel = filter.value.paymentChannel
+    }
+    
+    const res = await axios.get('http://localhost:8080/api/bill/transaction/list', { params })
     const transactions = res.data.data?.records || []
     
     billStore.state.currentBillData = {
@@ -420,6 +540,13 @@ onBeforeUnmount(() => {
 
 .header-icon {
   font-size: 18px;
+}
+
+.filter-form {
+  margin-bottom: 20px;
+  padding: 16px;
+  background: #fafbfc;
+  border-radius: 8px;
 }
 
 .type-toggle {
