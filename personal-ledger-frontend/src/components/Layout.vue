@@ -15,12 +15,38 @@
       >
         <el-menu-item index="/dashboard">
           <el-icon><House /></el-icon>
-          <span>仪表盘</span>
+          <span>消费看板</span>
+        </el-menu-item>
+        <el-sub-menu index="/analysis">
+          <template #title>
+            <el-icon><DataAnalysis /></el-icon>
+            <span>消费分析</span>
+          </template>
+          <el-menu-item index="/monthly-comparison">
+            <el-icon><TrendCharts /></el-icon>
+            <span>月度对比</span>
+          </el-menu-item>
+          <el-menu-item index="/consumption-habits">
+            <el-icon><PieChart /></el-icon>
+            <span>消费习惯</span>
+          </el-menu-item>
+          <el-menu-item index="/data-analysis">
+            <el-icon><TrendCharts /></el-icon>
+            <span>按天统计</span>
+          </el-menu-item>
+          <el-menu-item index="/category-analysis">
+            <el-icon><PieChart /></el-icon>
+            <span>按分类统计</span>
+          </el-menu-item>
+        </el-sub-menu>
+        <el-menu-item index="/transaction-list">
+          <el-icon><List /></el-icon>
+          <span>交易记录</span>
         </el-menu-item>
         <el-sub-menu index="/bill-import">
           <template #title>
             <el-icon><Upload /></el-icon>
-            <span>账单导入</span>
+            <span>数据导入</span>
           </template>
           <el-menu-item index="/bill-import">
             <el-icon><Grid /></el-icon>
@@ -33,24 +59,6 @@
           <el-menu-item index="/bill-import-history">
             <el-icon><Document /></el-icon>
             <span>导入历史</span>
-          </el-menu-item>
-        </el-sub-menu>
-        <el-menu-item index="/transaction-list">
-          <el-icon><List /></el-icon>
-          <span>交易记录</span>
-        </el-menu-item>
-        <el-sub-menu index="/data-analysis">
-          <template #title>
-            <el-icon><DataAnalysis /></el-icon>
-            <span>数据分析</span>
-          </template>
-          <el-menu-item index="/data-analysis">
-            <el-icon><TrendCharts /></el-icon>
-            <span>按天统计</span>
-          </el-menu-item>
-          <el-menu-item index="/category-analysis">
-            <el-icon><PieChart /></el-icon>
-            <span>按分类统计</span>
           </el-menu-item>
         </el-sub-menu>
         <el-sub-menu index="/settings">

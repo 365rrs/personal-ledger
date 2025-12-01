@@ -9,6 +9,8 @@ import RuleManagement from '../views/RuleManagement.vue'
 import CategoryManagement from '../views/CategoryManagement.vue'
 import PaymentChannelManagement from '../views/PaymentChannelManagement.vue'
 import TransactionList from '../views/TransactionList.vue'
+import MonthlyComparison from '../views/MonthlyComparison.vue'
+import ConsumptionHabits from '../views/ConsumptionHabits.vue'
 
 const routes = [
   {
@@ -76,6 +78,18 @@ const routes = [
     name: 'CategoryAnalysis',
     component: CategoryAnalysis,
     meta: { title: '按分类统计' }
+  },
+  {
+    path: '/monthly-comparison',
+    name: 'MonthlyComparison',
+    component: MonthlyComparison,
+    meta: { title: '月度对比' }
+  },
+  {
+    path: '/consumption-habits',
+    name: 'ConsumptionHabits',
+    component: ConsumptionHabits,
+    meta: { title: '消费习惯' }
   }
 ]
 
