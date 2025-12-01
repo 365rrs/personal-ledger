@@ -59,9 +59,9 @@ public class BillImportProcessorServiceImpl implements BillImportProcessorServic
             billImportHistory.setFileType("CSV");
             billImportHistory.setImportTime(LocalDateTime.now());
             billImportHistory.setRecordCount(records.size());
-            billImportHistory.setAccountNumber(billInfo.getExportInfo().getAccount());
-            billImportHistory.setPeriodStart(parseDate(billInfo.getExportInfo().getStartDate()));
-            billImportHistory.setPeriodEnd(parseDate(billInfo.getExportInfo().getEndDate()));
+            billImportHistory.setAccountNumber(billInfo.getImportInfo().getAccount());
+            billImportHistory.setPeriodStart(parseDate(billInfo.getImportInfo().getStartDate()));
+            billImportHistory.setPeriodEnd(parseDate(billInfo.getImportInfo().getEndDate()));
             billImportHistory.setImportStatus("PROCESSING");
             billImportHistoryService.createImport(billImportHistory);
             
@@ -100,9 +100,9 @@ public class BillImportProcessorServiceImpl implements BillImportProcessorServic
             billImportHistory.setFileType("EXCEL");
             billImportHistory.setImportTime(LocalDateTime.now());
             billImportHistory.setRecordCount(records.size());
-            billImportHistory.setAccountNumber(billInfo.getExportInfo().getAccount());
-            billImportHistory.setPeriodStart(parseDate(billInfo.getExportInfo().getStartDate()));
-            billImportHistory.setPeriodEnd(parseDate(billInfo.getExportInfo().getEndDate()));
+            billImportHistory.setAccountNumber(billInfo.getImportInfo().getAccount());
+            billImportHistory.setPeriodStart(parseDate(billInfo.getImportInfo().getStartDate()));
+            billImportHistory.setPeriodEnd(parseDate(billInfo.getImportInfo().getEndDate()));
             billImportHistory.setImportStatus("PROCESSING");
             billImportHistoryService.createImport(billImportHistory);
             

@@ -36,19 +36,35 @@ public class CmbBillController {
     private BillImportProcessorService billImportProcessorService;
     
     /**
-     * 导入招商银行真实格式账单CSV文件（完整信息）
+     * 导入招商银行CSV账单文件
      * @param file CSV文件
      * @return 完整账单信息
      */
-    @PostMapping("/import-full")
-    public CmbBillInfo importCmbBillFull(@RequestParam("file") MultipartFile file) {
-        log.info("开始导入招商银行真实格式账单文件（完整信息）: {}", file.getOriginalFilename());
+    @PostMapping("/import-csv")
+    public CmbBillInfo importCmbBillCsv(@RequestParam("file") MultipartFile file) {
+        log.info("开始导入招商银行CSV账单文件: {}", file.getOriginalFilename());
         try {
             billImportProcessorService.processCsvImport(file);
         } catch (Exception e) {
             log.error("保存导入历史失败，但继续返回解析数据", e);
         }
         return cmbBillService.parseCmbBillInfo(file);
+    }
+    
+    /**
+     * 导入招商银行账单Excel文件
+     * @param file Excel文件
+     * @return 完整账单信息
+     */
+    @PostMapping("/import-excel")
+    public CmbBillInfo importCmbBillExcel(@RequestParam("file") MultipartFile file) {
+        log.info("开始导入招商银行Excel账单文件: {}", file.getOriginalFilename());
+        try {
+            billImportProcessorService.processExcelImport(file);
+        } catch (Exception e) {
+            log.error("保存导入历史失败，但继续返回解析数据", e);
+        }
+        return cmbBillService.parseExcelBillInfo(file);
     }
     
     /**
@@ -68,41 +84,6 @@ public class CmbBillController {
         result.setUpdatedCount(updatedCount);
         result.setRecords(cleanedRecords);
         return result;
-    }
-    
-    /**
-     * 清洗结果
-     */
-    public static class CleanResult {
-        private int totalCount;
-        private int updatedCount;
-        private List<CmbBillRecordReal> records;
-        
-        // getters and setters
-        public int getTotalCount() { return totalCount; }
-        public void setTotalCount(int totalCount) { this.totalCount = totalCount; }
-        
-        public int getUpdatedCount() { return updatedCount; }
-        public void setUpdatedCount(int updatedCount) { this.updatedCount = updatedCount; }
-        
-        public List<CmbBillRecordReal> getRecords() { return records; }
-        public void setRecords(List<CmbBillRecordReal> records) { this.records = records; }
-    }
-    
-    /**
-     * 导入招商银行账单Excel文件
-     * @param file Excel文件
-     * @return 完整账单信息
-     */
-    @PostMapping("/import-excel")
-    public CmbBillInfo importCmbBillExcel(@RequestParam("file") MultipartFile file) {
-        log.info("开始导入招商银行Excel账单文件: {}", file.getOriginalFilename());
-        try {
-            billImportProcessorService.processExcelImport(file);
-        } catch (Exception e) {
-            log.error("保存导入历史失败，但继续返回解析数据", e);
-        }
-        return cmbBillService.parseExcelBillInfo(file);
     }
     
     /**
@@ -128,5 +109,24 @@ public class CmbBillController {
             log.error("导出招商银行账单数据失败", e);
             throw new RuntimeException("导出招商银行账单数据失败: " + e.getMessage());
         }
+    }
+    
+    /**
+     * 清洗结果
+     */
+    public static class CleanResult {
+        private int totalCount;
+        private int updatedCount;
+        private List<CmbBillRecordReal> records;
+        
+        // getters and setters
+        public int getTotalCount() { return totalCount; }
+        public void setTotalCount(int totalCount) { this.totalCount = totalCount; }
+        
+        public int getUpdatedCount() { return updatedCount; }
+        public void setUpdatedCount(int updatedCount) { this.updatedCount = updatedCount; }
+        
+        public List<CmbBillRecordReal> getRecords() { return records; }
+        public void setRecords(List<CmbBillRecordReal> records) { this.records = records; }
     }
 }

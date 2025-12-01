@@ -3,13 +3,13 @@ package com.gaoyan.personalledger.entity;
 import lombok.Data;
 
 /**
- * 招商银行账单导出信息实体类
+ * 招商银行账单导入信息实体类
  */
 @Data
-public class CmbExportInfo {
+public class CmbImportInfo {
     
     /**
-     * 导出时间
+     * 导入时间
      */
     private String exportTime;
     

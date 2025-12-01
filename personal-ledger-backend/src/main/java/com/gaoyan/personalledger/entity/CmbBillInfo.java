@@ -10,9 +10,9 @@ import java.util.List;
 public class CmbBillInfo {
     
     /**
-     * 导出信息
+     * 导入信息
      */
-    private CmbExportInfo exportInfo;
+    private CmbImportInfo importInfo;
     
     /**
      * 交易记录列表

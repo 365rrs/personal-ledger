@@ -211,7 +211,7 @@ const importFile = async () => {
   formData.append('file', selectedFile.value)
 
   try {
-    const response = await axios.post('/api/cmb/import-full', formData, {
+    const response = await axios.post('/api/cmb/import-csv', formData, {
       headers: {
         'Content-Type': 'multipart/form-data'
       }

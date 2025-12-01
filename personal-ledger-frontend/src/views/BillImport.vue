@@ -222,7 +222,7 @@ const importFile = async () => {
   const formData = new FormData()
   formData.append('file', selectedFile.value)
 
-  const apiUrl = importMode.value === 'csv' ? '/api/cmb/import-full' : '/api/cmb/import-excel'
+  const apiUrl = importMode.value === 'csv' ? '/api/cmb/import-csv' : '/api/cmb/import-excel'
   
   try {
     const response = await axios.post(apiUrl, formData, {

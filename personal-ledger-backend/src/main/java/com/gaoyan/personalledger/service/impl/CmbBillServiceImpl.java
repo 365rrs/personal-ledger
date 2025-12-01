@@ -61,11 +61,11 @@ public class CmbBillServiceImpl implements CmbBillService {
                 log.debug("读取第{}行: {}", i, headerLines[i]);
             }
 
-            // 解析导出信息
-            CmbExportInfo exportInfo = parseExportInfo(headerLines);
-            billInfo.setExportInfo(exportInfo);
+            // 解析导入信息
+            CmbImportInfo importInfo = parseImportInfo(headerLines);
+            billInfo.setImportInfo(importInfo);
 
-            log.info("解析导出信息结果: {}", exportInfo);
+            log.info("解析导入信息结果: {}", importInfo);
 
             // 跳过第8行的空行，然后使用EasyExcel解析交易记录
             List<CmbBillRecordReal> records = EasyExcel.read(file.getInputStream())
@@ -100,20 +100,20 @@ public class CmbBillServiceImpl implements CmbBillService {
     }
 
     /**
-     * 解析导出信息
+     * 解析导入信息
      *
      * @param headerLines 文件前几行内容
-     * @return 导出信息对象
+     * @return 导入信息对象
      */
-    private CmbExportInfo parseExportInfo(String[] headerLines) {
-        CmbExportInfo exportInfo = new CmbExportInfo();
+    private CmbImportInfo parseImportInfo(String[] headerLines) {
+        CmbImportInfo importInfo = new CmbImportInfo();
 
-        // 解析导出时间
+        // 解析导入时间
         if (headerLines[1] != null) {
             Pattern pattern = Pattern.compile("\\[\\s*(.*?)\\s*\\]");
             Matcher matcher = pattern.matcher(headerLines[1]);
             if (matcher.find()) {
-                exportInfo.setExportTime(matcher.group(1));
+                importInfo.setExportTime(matcher.group(1));
             }
         }
 
@@ -122,7 +122,7 @@ public class CmbBillServiceImpl implements CmbBillService {
             Pattern pattern = Pattern.compile("\\[\\s*(.*?)\\s*\\]");
             Matcher matcher = pattern.matcher(headerLines[2]);
             if (matcher.find()) {
-                exportInfo.setAccount(matcher.group(1));
+                importInfo.setAccount(matcher.group(1));
             }
         }
 
@@ -131,7 +131,7 @@ public class CmbBillServiceImpl implements CmbBillService {
             Pattern pattern = Pattern.compile("\\[\\s*(.*?)\\s*\\]");
             Matcher matcher = pattern.matcher(headerLines[3]);
             if (matcher.find()) {
-                exportInfo.setCurrency(matcher.group(1));
+                importInfo.setCurrency(matcher.group(1));
             }
         }
 
@@ -145,12 +145,12 @@ public class CmbBillServiceImpl implements CmbBillService {
 
             // 查找第一个匹配项（起始日期）
             if (matcher.find()) {
-                exportInfo.setStartDate(matcher.group(1).trim());
+                importInfo.setStartDate(matcher.group(1).trim());
                 log.debug("解析到起始日期: {}", matcher.group(1).trim());
 
                 // 查找第二个匹配项（终止日期）
                 if (matcher.find()) {
-                    exportInfo.setEndDate(matcher.group(1).trim());
+                    importInfo.setEndDate(matcher.group(1).trim());
                     log.debug("解析到终止日期: {}", matcher.group(1).trim());
                 }
             }
@@ -161,13 +161,13 @@ public class CmbBillServiceImpl implements CmbBillService {
             Pattern pattern = Pattern.compile("\\[\\s*(.*?)\\s*\\]|无");
             Matcher matcher = pattern.matcher(headerLines[5]);
             if (matcher.find()) {
-                exportInfo.setFilterSetting(matcher.group().trim());
+                importInfo.setFilterSetting(matcher.group().trim());
             } else {
-                exportInfo.setFilterSetting("无");
+                importInfo.setFilterSetting("无");
             }
         }
 
-        return exportInfo;
+        return importInfo;
     }
 
     /**
@@ -325,19 +325,19 @@ public class CmbBillServiceImpl implements CmbBillService {
             // 创建账单信息
             CmbBillInfo billInfo = new CmbBillInfo();
             
-            // 设置导出信息，尝试从数据中推断账号信息
-            CmbExportInfo exportInfo = new CmbExportInfo();
-            exportInfo.setExportTime(new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new java.util.Date()));
+            // 设置导入信息，尝试从数据中推断账号信息
+            CmbImportInfo importInfo = new CmbImportInfo();
+            importInfo.setExportTime(new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new java.util.Date()));
             
             // 尝试从文件名中推断账号信息
             String inferredAccount = inferAccountFromFileName(file.getOriginalFilename());
-            exportInfo.setAccount(inferredAccount);
+            importInfo.setAccount(inferredAccount);
             
-            exportInfo.setCurrency("人民币");
-            exportInfo.setStartDate("");
-            exportInfo.setEndDate("");
-            exportInfo.setFilterSetting("无");
-            billInfo.setExportInfo(exportInfo);
+            importInfo.setCurrency("人民币");
+            importInfo.setStartDate("");
+            importInfo.setEndDate("");
+            importInfo.setFilterSetting("无");
+            billInfo.setImportInfo(importInfo);
             
             // 设置记录
             billInfo.setRecords(records);
