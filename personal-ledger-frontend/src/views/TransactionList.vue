@@ -467,10 +467,15 @@ const exportData = async () => {
       responseType: 'blob'
     })
     
+    const now = new Date()
+    const dateStr = now.toISOString().slice(0, 10)
+    const timestamp = now.getTime()
+    const fileName = `招商银行账单_${dateStr}_${timestamp}.xlsx`
+    
     const url = window.URL.createObjectURL(new Blob([res.data]))
     const link = document.createElement('a')
     link.href = url
-    link.setAttribute('download', `招商银行账单_${new Date().toISOString().slice(0, 10)}.xlsx`)
+    link.setAttribute('download', fileName)
     document.body.appendChild(link)
     link.click()
     document.body.removeChild(link)

@@ -436,27 +436,6 @@ public class CmbBillServiceImpl implements CmbBillService {
      * @param outputStream 输出流
      */
     @Override
-    public void exportCmbBill(CmbBillInfo billInfo, ServletOutputStream outputStream) {
-        try {
-            // 将原始记录转换为导出格式记录
-            List<CmbBillRecordExport> exportRecords = billInfo.getRecords().stream()
-                    .map(CmbBillRecordExport::fromCmbBillRecordReal)
-                    .collect(Collectors.toList());
-
-            // 使用EasyExcel写入数据到输出流，注册自定义转换器
-            EasyExcel.write(outputStream, CmbBillRecordExport.class)
-                    .registerConverter(new com.gaoyan.personalledger.util.LocalDateConverter())
-                    .registerConverter(new com.gaoyan.personalledger.util.LocalTimeConverter())
-                    .registerWriteHandler(EasyExcelExportUtil.generatorHorizontalCellStyleStrategy())
-                    .sheet("招商银行账单")
-                    .doWrite(exportRecords);
-        } catch (Exception e) {
-            log.error("导出招商银行账单数据失败", e);
-            throw new BusinessException("导出招商银行账单数据失败: " + e.getMessage());
-        }
-    }
-    
-    @Override
     public void exportCmbBillFromDatabase(com.gaoyan.personalledger.entity.TransactionQueryParams params, ServletOutputStream outputStream) {
         try {
             log.info("从数据库导出账单数据: {}", params);

@@ -13,6 +13,8 @@ import org.springframework.web.multipart.MultipartFile;
 import javax.servlet.http.HttpServletResponse;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.List;
 
 /**
@@ -114,7 +116,8 @@ public class CmbBillController {
             HttpServletResponse response) {
         log.info("开始导出招商银行账单数据");
         try {
-            String fileName = "招商银行账单_" + System.currentTimeMillis() + ".xlsx";
+            String dateStr = new SimpleDateFormat("yyyy-MM-dd").format(new Date());
+            String fileName = "招商银行账单_" + dateStr + "_" + System.currentTimeMillis() + ".xlsx";
             String encodedFileName = URLEncoder.encode(fileName, StandardCharsets.UTF_8.toString());
             response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
             response.setHeader("Content-Disposition", "attachment; filename=\"" + encodedFileName + "\"");
