@@ -65,15 +65,15 @@
         <div style="margin-bottom: 10px;">
           <el-tag type="primary" closable @close="selectedDate = ''">{{ selectedDate }}</el-tag>
         </div>
-        <el-table :data="dayDetails" max-height="400">
-          <el-table-column prop="transactionDate" label="交易日期" width="110" />
-          <el-table-column prop="transactionTime" label="交易时间" width="90" />
-          <el-table-column prop="income" label="收入" width="100">
+        <el-table :data="dayDetails" max-height="400" @sort-change="handleSortChange">
+          <el-table-column prop="transactionDate" label="交易日期" width="110" sortable="custom" />
+          <el-table-column prop="transactionTime" label="交易时间" width="110" sortable="custom" />
+          <el-table-column prop="income" label="收入" width="100" sortable="custom">
             <template #default="{ row }">
               <span style="color: #67c23a;">{{ row.income || '-' }}</span>
             </template>
           </el-table-column>
-          <el-table-column prop="expense" label="支出" width="100">
+          <el-table-column prop="expense" label="支出" width="100" sortable="custom">
             <template #default="{ row }">
               <span style="color: #f56c6c;">{{ row.expense || '-' }}</span>
             </template>
@@ -158,6 +158,8 @@ const selectedDate = ref('')
 const dayDetails = ref([])
 const drawerVisible = ref(false)
 const currentRecord = ref(null)
+const sortField = ref('')
+const sortOrder = ref('')
 let chart = null
 
 const getThisMonthDates = () => {
@@ -338,7 +340,9 @@ const loadDayDetails = async (date) => {
       size: 10000,
       startDate: date,
       endDate: date,
-      excludeFromStats: false
+      excludeFromStats: false,
+      sortField: sortField.value,
+      sortOrder: sortOrder.value
     }
     
     if (filter.value.category) {
@@ -352,6 +356,14 @@ const loadDayDetails = async (date) => {
     dayDetails.value = res.data.data?.records || []
   } catch (error) {
     ElMessage.error('加载明细失败')
+  }
+}
+
+const handleSortChange = ({ prop, order }) => {
+  sortField.value = prop || ''
+  sortOrder.value = order === 'ascending' ? 'asc' : order === 'descending' ? 'desc' : ''
+  if (selectedDate.value) {
+    loadDayDetails(selectedDate.value)
   }
 }
 
