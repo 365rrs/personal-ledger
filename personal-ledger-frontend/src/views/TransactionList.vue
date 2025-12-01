@@ -445,27 +445,32 @@ const cleanData = async () => {
 }
 
 const exportData = async () => {
-  if (transactions.value.length === 0) {
-    ElMessage.warning('没有可导出的数据')
-    return
-  }
-  
   exporting.value = true
   try {
-    const exportPayload = {
-      records: transactions.value,
-      exportInfo: { account: '数据库', exportTime: new Date().toLocaleString() },
-      summaryInfo: {}
+    const params = {
+      startDate: filter.startDate,
+      endDate: filter.endDate,
+      category: filter.category === '__UNCATEGORIZED__' ? '' : filter.category,
+      paymentChannel: filter.paymentChannel,
+      transactionType: filter.tradeType,
+      keyword: filter.keyword,
+      minAmount: filter.minAmount,
+      maxAmount: filter.maxAmount,
+      incomeOrExpense: filter.transactionType,
+      excludeFromStats: filter.excludeFromStats,
+      sortField: sortField.value,
+      sortOrder: sortOrder.value,
+      firstImportId: route.query.importId
     }
     
-    const res = await axios.post('http://localhost:8080/api/cmb/export', exportPayload, {
+    const res = await axios.post('http://localhost:8080/api/cmb/export', params, {
       responseType: 'blob'
     })
     
     const url = window.URL.createObjectURL(new Blob([res.data]))
     const link = document.createElement('a')
     link.href = url
-    link.setAttribute('download', `交易记录_${new Date().toISOString().slice(0, 10)}.xlsx`)
+    link.setAttribute('download', `招商银行账单_${new Date().toISOString().slice(0, 10)}.xlsx`)
     document.body.appendChild(link)
     link.click()
     document.body.removeChild(link)

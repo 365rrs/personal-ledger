@@ -87,22 +87,24 @@ public class BillTransactionServiceImpl implements BillTransactionService {
         
         // 排序
         if (sortField != null && !sortField.isEmpty() && sortOrder != null && !sortOrder.isEmpty()) {
-            if ("asc".equals(sortOrder)) {
-                if ("transactionDate".equals(sortField)) {
-                    wrapper.orderByAsc(BillTransaction::getTransactionDate);
-                } else if ("income".equals(sortField)) {
-                    wrapper.last("ORDER BY CAST(income AS DECIMAL) ASC");
-                } else if ("expense".equals(sortField)) {
-                    wrapper.last("ORDER BY CAST(expense AS DECIMAL) ASC");
-                }
-            } else {
-                if ("transactionDate".equals(sortField)) {
+            boolean isAsc = "asc".equals(sortOrder);
+            switch (sortField) {
+                case "transactionDate":
+                    if (isAsc) wrapper.orderByAsc(BillTransaction::getTransactionDate);
+                    else wrapper.orderByDesc(BillTransaction::getTransactionDate);
+                    break;
+                case "transactionTime":
+                    if (isAsc) wrapper.orderByAsc(BillTransaction::getTransactionTime);
+                    else wrapper.orderByDesc(BillTransaction::getTransactionTime);
+                    break;
+                case "income":
+                    wrapper.last("ORDER BY CAST(income AS DECIMAL) " + (isAsc ? "ASC" : "DESC"));
+                    break;
+                case "expense":
+                    wrapper.last("ORDER BY CAST(expense AS DECIMAL) " + (isAsc ? "ASC" : "DESC"));
+                    break;
+                default:
                     wrapper.orderByDesc(BillTransaction::getTransactionDate);
-                } else if ("income".equals(sortField)) {
-                    wrapper.last("ORDER BY CAST(income AS DECIMAL) DESC");
-                } else if ("expense".equals(sortField)) {
-                    wrapper.last("ORDER BY CAST(expense AS DECIMAL) DESC");
-                }
             }
         } else {
             wrapper.orderByDesc(BillTransaction::getTransactionDate);

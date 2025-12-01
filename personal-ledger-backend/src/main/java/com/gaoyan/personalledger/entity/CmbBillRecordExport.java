@@ -65,16 +65,25 @@ public class CmbBillRecordExport {
     /**
      * 支付渠道（微信/支付宝/银行卡/京东支付）
      */
+    @ExcelProperty("支付渠道")
     private String paymentChannel;
+    
+    /**
+     * 收支类型
+     */
+    @ExcelProperty("收支类型")
+    private String incomeOrExpense;
     
     /**
      * 交易分类
      */
+    @ExcelProperty("分类")
     private String category;
     
     /**
      * 用户备注
      */
+    @ExcelProperty("用户备注")
     private String userNote;
     
     /**
@@ -92,6 +101,15 @@ public class CmbBillRecordExport {
         export.setPaymentChannel(real.getPaymentChannel());
         export.setCategory(real.getCategory());
         export.setUserNote(real.getUserNote());
+        
+        // 设置收支类型
+        if (real.getIncome() != null && real.getIncome().compareTo(BigDecimal.ZERO) > 0) {
+            export.setIncomeOrExpense("收入");
+        } else if (real.getExpense() != null && real.getExpense().compareTo(BigDecimal.ZERO) > 0) {
+            export.setIncomeOrExpense("支出");
+        } else {
+            export.setIncomeOrExpense("");
+        }
         
         // 转换是否排除统计标识为可读文本
         if (real.getExcludeFromStats() != null && !real.getExcludeFromStats()) {

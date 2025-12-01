@@ -32,4 +32,11 @@ public interface CmbBillService {
      * @param outputStream 输出流
      */
     void exportCmbBill(CmbBillInfo billInfo, ServletOutputStream outputStream);
+    
+    /**
+     * 从数据库导出招商银行账单为Excel文件
+     * @param params 查询参数
+     * @param outputStream 输出流
+     */
+    void exportCmbBillFromDatabase(com.gaoyan.personalledger.entity.TransactionQueryParams params, ServletOutputStream outputStream);
 }

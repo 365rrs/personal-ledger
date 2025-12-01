@@ -134,7 +134,7 @@
           <el-input v-model="currentRecord.userNote" type="textarea" :rows="3" placeholder="请输入备注" />
         </el-form-item>
         <el-form-item label="计入收支">
-          <el-switch v-model="currentRecord.includeInStats" />
+          <el-switch v-model="currentRecord.excludeFromStats" :active-value="false" :inactive-value="true" active-text="是" inactive-text="否" />
         </el-form-item>
       </el-form>
       <template #footer>
@@ -356,20 +356,18 @@ const loadDayDetails = async (date) => {
 }
 
 const editRecord = (record) => {
-  currentRecord.value = { 
-    ...record,
-    includeInStats: !record.excludeFromStats
-  }
+  currentRecord.value = { ...record }
   drawerVisible.value = true
 }
 
 const saveRecord = async () => {
   try {
     await axios.put(`http://localhost:8080/api/bill/transaction/${currentRecord.value.id}`, {
+      ...currentRecord.value,
       category: currentRecord.value.category,
       paymentChannel: currentRecord.value.paymentChannel,
       userNote: currentRecord.value.userNote,
-      excludeFromStats: !currentRecord.value.includeInStats
+      excludeFromStats: currentRecord.value.excludeFromStats
     })
     ElMessage.success('保存成功')
     drawerVisible.value = false

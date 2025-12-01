@@ -37,6 +37,9 @@ public class CmbBillServiceImpl implements CmbBillService {
 
     @Autowired
     private DataCleaningService dataCleaningService;
+    
+    @Autowired
+    private com.gaoyan.personalledger.mapper.BillTransactionMapper billTransactionMapper;
 
     /**
      * 解析招商银行真实格式的账单CSV文件（完整信息）
@@ -440,8 +443,10 @@ public class CmbBillServiceImpl implements CmbBillService {
                     .map(CmbBillRecordExport::fromCmbBillRecordReal)
                     .collect(Collectors.toList());
 
-            // 使用EasyExcel写入数据到输出流
+            // 使用EasyExcel写入数据到输出流，注册自定义转换器
             EasyExcel.write(outputStream, CmbBillRecordExport.class)
+                    .registerConverter(new com.gaoyan.personalledger.util.LocalDateConverter())
+                    .registerConverter(new com.gaoyan.personalledger.util.LocalTimeConverter())
                     .registerWriteHandler(EasyExcelExportUtil.generatorHorizontalCellStyleStrategy())
                     .sheet("招商银行账单")
                     .doWrite(exportRecords);
@@ -449,5 +454,116 @@ public class CmbBillServiceImpl implements CmbBillService {
             log.error("导出招商银行账单数据失败", e);
             throw new BusinessException("导出招商银行账单数据失败: " + e.getMessage());
         }
+    }
+    
+    @Override
+    public void exportCmbBillFromDatabase(com.gaoyan.personalledger.entity.TransactionQueryParams params, ServletOutputStream outputStream) {
+        try {
+            log.info("从数据库导出账单数据: {}", params);
+            
+            // 从数据库查询数据
+            com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<com.gaoyan.personalledger.entity.BillTransaction> wrapper = 
+                new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<>();
+            
+            if (params.getStartDate() != null) {
+                wrapper.ge(com.gaoyan.personalledger.entity.BillTransaction::getTransactionDate, params.getStartDate());
+            }
+            if (params.getEndDate() != null) {
+                wrapper.le(com.gaoyan.personalledger.entity.BillTransaction::getTransactionDate, params.getEndDate());
+            }
+            if (params.getCategory() != null && !params.getCategory().isEmpty()) {
+                wrapper.eq(com.gaoyan.personalledger.entity.BillTransaction::getCategory, params.getCategory());
+            }
+            if (params.getPaymentChannel() != null && !params.getPaymentChannel().isEmpty()) {
+                wrapper.eq(com.gaoyan.personalledger.entity.BillTransaction::getPaymentChannel, params.getPaymentChannel());
+            }
+            if (params.getTransactionType() != null && !params.getTransactionType().isEmpty()) {
+                wrapper.like(com.gaoyan.personalledger.entity.BillTransaction::getTransactionType, params.getTransactionType());
+            }
+            if (params.getKeyword() != null && !params.getKeyword().isEmpty()) {
+                wrapper.and(w -> w.like(com.gaoyan.personalledger.entity.BillTransaction::getDescription, params.getKeyword())
+                                 .or().like(com.gaoyan.personalledger.entity.BillTransaction::getUserNote, params.getKeyword()));
+            }
+            if (params.getIncomeOrExpense() != null && !params.getIncomeOrExpense().isEmpty()) {
+                if ("income".equals(params.getIncomeOrExpense())) {
+                    wrapper.isNotNull(com.gaoyan.personalledger.entity.BillTransaction::getIncome)
+                           .gt(com.gaoyan.personalledger.entity.BillTransaction::getIncome, BigDecimal.ZERO);
+                } else if ("expense".equals(params.getIncomeOrExpense())) {
+                    wrapper.isNotNull(com.gaoyan.personalledger.entity.BillTransaction::getExpense)
+                           .gt(com.gaoyan.personalledger.entity.BillTransaction::getExpense, BigDecimal.ZERO);
+                }
+            }
+            if (params.getExcludeFromStats() != null) {
+                wrapper.eq(com.gaoyan.personalledger.entity.BillTransaction::getExcludeFromStats, params.getExcludeFromStats());
+            }
+            
+            // 排序
+            String sortField = params.getSortField();
+            String sortOrder = params.getSortOrder();
+            if (sortField != null && !sortField.isEmpty() && sortOrder != null && !sortOrder.isEmpty()) {
+                boolean isAsc = "asc".equals(sortOrder);
+                switch (sortField) {
+                    case "transactionDate":
+                        if (isAsc) wrapper.orderByAsc(com.gaoyan.personalledger.entity.BillTransaction::getTransactionDate);
+                        else wrapper.orderByDesc(com.gaoyan.personalledger.entity.BillTransaction::getTransactionDate);
+                        break;
+                    case "transactionTime":
+                        if (isAsc) wrapper.orderByAsc(com.gaoyan.personalledger.entity.BillTransaction::getTransactionTime);
+                        else wrapper.orderByDesc(com.gaoyan.personalledger.entity.BillTransaction::getTransactionTime);
+                        break;
+                    case "income":
+                        wrapper.last("ORDER BY CAST(income AS DECIMAL) " + (isAsc ? "ASC" : "DESC"));
+                        break;
+                    case "expense":
+                        wrapper.last("ORDER BY CAST(expense AS DECIMAL) " + (isAsc ? "ASC" : "DESC"));
+                        break;
+                    default:
+                        wrapper.orderByDesc(com.gaoyan.personalledger.entity.BillTransaction::getTransactionDate);
+                }
+            } else {
+                wrapper.orderByDesc(com.gaoyan.personalledger.entity.BillTransaction::getTransactionDate);
+            }
+            
+            List<com.gaoyan.personalledger.entity.BillTransaction> transactions = billTransactionMapper.selectList(wrapper);
+            
+            // 转换为CmbBillRecordReal
+            List<CmbBillRecordReal> records = transactions.stream()
+                .map(this::convertTransactionToRecord)
+                .collect(Collectors.toList());
+            
+            // 转换为导出格式
+            List<CmbBillRecordExport> exportRecords = records.stream()
+                    .map(CmbBillRecordExport::fromCmbBillRecordReal)
+                    .collect(Collectors.toList());
+            
+            // 导出
+            EasyExcel.write(outputStream, CmbBillRecordExport.class)
+                    .registerConverter(new com.gaoyan.personalledger.util.LocalDateConverter())
+                    .registerConverter(new com.gaoyan.personalledger.util.LocalTimeConverter())
+                    .registerWriteHandler(EasyExcelExportUtil.generatorHorizontalCellStyleStrategy())
+                    .sheet("招商银行账单")
+                    .doWrite(exportRecords);
+            
+            log.info("成功导出{}\u6761记录", exportRecords.size());
+        } catch (Exception e) {
+            log.error("从数据库导出账单数据失败", e);
+            throw new BusinessException("导出账单数据失败: " + e.getMessage());
+        }
+    }
+    
+    private CmbBillRecordReal convertTransactionToRecord(com.gaoyan.personalledger.entity.BillTransaction transaction) {
+        CmbBillRecordReal record = new CmbBillRecordReal();
+        record.setTransactionDate(transaction.getTransactionDate());
+        record.setTransactionTime(transaction.getTransactionTime());
+        record.setIncome(transaction.getIncome());
+        record.setExpense(transaction.getExpense());
+        record.setBalance(transaction.getBalance());
+        record.setTransactionType(transaction.getTransactionType());
+        record.setDescription(transaction.getDescription());
+        record.setPaymentChannel(transaction.getPaymentChannel());
+        record.setCategory(transaction.getCategory());
+        record.setUserNote(transaction.getUserNote());
+        record.setExcludeFromStats(transaction.getExcludeFromStats());
+        return record;
     }
 }

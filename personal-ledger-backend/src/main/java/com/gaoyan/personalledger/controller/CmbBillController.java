@@ -105,21 +105,21 @@ public class CmbBillController {
     
     /**
      * 导出招商银行账单数据为Excel文件
-     * @param billInfo 账单信息
+     * @param params 查询参数
      * @param response HTTP响应
      */
     @PostMapping("/export")
-    public void exportCmbBill(@RequestBody CmbBillInfo billInfo, HttpServletResponse response) {
+    public void exportCmbBill(
+            @RequestBody com.gaoyan.personalledger.entity.TransactionQueryParams params,
+            HttpServletResponse response) {
         log.info("开始导出招商银行账单数据");
         try {
-            // 设置响应头
             String fileName = "招商银行账单_" + System.currentTimeMillis() + ".xlsx";
             String encodedFileName = URLEncoder.encode(fileName, StandardCharsets.UTF_8.toString());
             response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
             response.setHeader("Content-Disposition", "attachment; filename=\"" + encodedFileName + "\"");
             
-            // 调用服务导出数据
-            cmbBillService.exportCmbBill(billInfo, response.getOutputStream());
+            cmbBillService.exportCmbBillFromDatabase(params, response.getOutputStream());
             response.getOutputStream().flush();
         } catch (Exception e) {
             log.error("导出招商银行账单数据失败", e);
