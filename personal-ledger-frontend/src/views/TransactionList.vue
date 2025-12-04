@@ -13,6 +13,8 @@
           <el-col :span="24">
             <el-form-item label="快捷日期">
               <el-space wrap>
+                <el-date-picker v-model="quickYear" type="year" placeholder="选择年份" value-format="YYYY" style="width: 120px" @change="setQuickYear" />
+                <el-date-picker v-model="quickMonth" type="month" placeholder="选择月份" value-format="YYYY-MM" style="width: 140px" @change="setQuickMonth" />
                 <el-button @click="setQuickDate('today')">今天</el-button>
                 <el-button @click="setQuickDate('yesterday')">昨天</el-button>
                 <el-button @click="setQuickDate('thisWeek')">本周</el-button>
@@ -28,11 +30,7 @@
         <el-row :gutter="16">
           <el-col :span="12">
             <el-form-item label="日期范围">
-              <div style="display: flex; align-items: center; gap: 8px;">
-                <el-date-picker v-model="filter.startDate" type="date" placeholder="开始日期" value-format="YYYY-MM-DD" style="flex: 1" />
-                <span>至</span>
-                <el-date-picker v-model="filter.endDate" type="date" placeholder="结束日期" value-format="YYYY-MM-DD" style="flex: 1" />
-              </div>
+              <el-date-picker v-model="dateRange" type="daterange" range-separator="至" start-placeholder="开始日期" end-placeholder="结束日期" value-format="YYYY-MM-DD" style="width: 100%" @change="handleDateRangeChange" />
             </el-form-item>
           </el-col>
           <el-col :span="6">
@@ -105,6 +103,7 @@
           <el-button type="danger" @click="batchDelete" :disabled="selectedRows.length === 0">批量删除 ({{ selectedRows.length }})</el-button>
           <el-button type="primary" @click="batchEditNote" :disabled="selectedRows.length === 0">批量编辑备注 ({{ selectedRows.length }})</el-button>
           <el-button type="primary" @click="batchEditCategory" :disabled="selectedRows.length === 0">批量分类 ({{ selectedRows.length }})</el-button>
+          <el-button type="primary" @click="batchEditIncludeInStats" :disabled="selectedRows.length === 0">批量设置收支 ({{ selectedRows.length }})</el-button>
         </el-space>
       </div>
 
@@ -175,6 +174,21 @@
       <template #footer>
         <el-button @click="batchCategoryDialogVisible = false">取消</el-button>
         <el-button type="primary" @click="confirmBatchCategory">确定</el-button>
+      </template>
+    </el-dialog>
+
+    <el-dialog v-model="batchIncludeInStatsDialogVisible" title="批量设置收支" width="400px">
+      <el-form label-width="100px">
+        <el-form-item label="是否计入收支">
+          <el-radio-group v-model="batchIncludeInStatsValue">
+            <el-radio :label="true">计入</el-radio>
+            <el-radio :label="false">不计入</el-radio>
+          </el-radio-group>
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="batchIncludeInStatsDialogVisible = false">取消</el-button>
+        <el-button type="primary" @click="confirmBatchIncludeInStats">确定</el-button>
       </template>
     </el-dialog>
 
@@ -270,6 +284,37 @@ const filter = reactive({
   keyword: '',
   includeInStats: ''
 })
+const dateRange = ref([thisMonth.startDate, thisMonth.endDate])
+const quickYear = ref(new Date().getFullYear().toString())
+const quickMonth = ref('')
+
+const handleDateRangeChange = (value) => {
+  if (value) {
+    filter.startDate = value[0]
+    filter.endDate = value[1]
+  } else {
+    filter.startDate = ''
+    filter.endDate = ''
+  }
+}
+
+const setQuickYear = (year) => {
+  if (year) {
+    filter.startDate = `${year}-01-01`
+    filter.endDate = `${year}-12-31`
+    dateRange.value = [filter.startDate, filter.endDate]
+  }
+}
+
+const setQuickMonth = (month) => {
+  if (month) {
+    const [year, mon] = month.split('-')
+    const lastDay = new Date(parseInt(year), parseInt(mon), 0).getDate()
+    filter.startDate = `${month}-01`
+    filter.endDate = `${month}-${String(lastDay).padStart(2, '0')}`
+    dateRange.value = [filter.startDate, filter.endDate]
+  }
+}
 const sortField = ref('')
 const sortOrder = ref('')
 const summary = ref({ income: '0.00', expense: '0.00', balance: '0.00' })
@@ -405,6 +450,7 @@ const setQuickDate = (type) => {
       filter.endDate = formatDate(new Date(today.getFullYear() - 1, 11, 31))
       break
   }
+  dateRange.value = [filter.startDate, filter.endDate]
 }
 
 const cleanData = async () => {
@@ -527,6 +573,9 @@ const resetFilter = () => {
   filter.maxAmount = ''
   filter.keyword = ''
   filter.includeInStats = ''
+  dateRange.value = []
+  quickYear.value = ''
+  quickMonth.value = ''
   page.current = 1
   loadData()
 }
@@ -614,6 +663,33 @@ const confirmBatchCategory = async () => {
     loadData()
   } catch (error) {
     ElMessage.error('批量分类失败: ' + error.message)
+  }
+}
+
+const batchIncludeInStatsDialogVisible = ref(false)
+const batchIncludeInStatsValue = ref(true)
+
+const batchEditIncludeInStats = () => {
+  batchIncludeInStatsValue.value = true
+  batchIncludeInStatsDialogVisible.value = true
+}
+
+const confirmBatchIncludeInStats = async () => {
+  try {
+    const updatePromises = selectedRows.value.map(row => 
+      axios.put(`http://localhost:8080/api/bill/transaction/${row.id}`, {
+        ...row,
+        includeInStats: batchIncludeInStatsValue.value
+      })
+    )
+    
+    await Promise.all(updatePromises)
+    ElMessage.success(`成功设置 ${selectedRows.value.length} 条记录${batchIncludeInStatsValue.value ? '计入' : '不计入'}收支`)
+    selectedRows.value = []
+    batchIncludeInStatsDialogVisible.value = false
+    loadData()
+  } catch (error) {
+    ElMessage.error('批量设置失败: ' + error.message)
   }
 }
 
