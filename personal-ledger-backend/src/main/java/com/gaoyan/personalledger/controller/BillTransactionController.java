@@ -58,6 +58,19 @@ public class BillTransactionController {
     }
     
     /**
+     * 创建交易
+     */
+    @PostMapping
+    public Map<String, Object> createTransaction(@RequestBody BillTransaction transaction) {
+        billTransactionService.save(transaction);
+        
+        Map<String, Object> result = new HashMap<>();
+        result.put("success", true);
+        result.put("message", "创建成功");
+        return result;
+    }
+    
+    /**
      * 更新交易
      */
     @PutMapping("/{id}")

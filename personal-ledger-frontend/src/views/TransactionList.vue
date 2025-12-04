@@ -112,6 +112,7 @@
           <el-button type="primary" @click="batchEditNote" :disabled="selectedRows.length === 0">批量编辑备注 ({{ selectedRows.length }})</el-button>
           <el-button type="primary" @click="batchEditCategory" :disabled="selectedRows.length === 0">批量分类 ({{ selectedRows.length }})</el-button>
           <el-button type="primary" @click="batchEditIncludeInStats" :disabled="selectedRows.length === 0">批量设置收支 ({{ selectedRows.length }})</el-button>
+          <el-button type="success" @click="batchQuickAddRelated" :disabled="selectedRows.length !== 1">快速补录 ({{ selectedRows.length }})</el-button>
         </el-space>
       </div>
 
@@ -189,6 +190,39 @@
       <template #footer>
         <el-button @click="batchCategoryDialogVisible = false">取消</el-button>
         <el-button type="primary" @click="confirmBatchCategory">确定</el-button>
+      </template>
+    </el-dialog>
+
+    <el-dialog v-model="quickAddDialogVisible" title="关联记录快速补录" width="500px">
+      <el-form :model="quickAddForm" label-width="100px">
+        <el-form-item label="原记录">
+          <el-input :value="quickAddForm.originalDesc" readonly />
+        </el-form-item>
+        <el-form-item label="原金额">
+          <el-input :value="quickAddForm.refundAmount" readonly />
+        </el-form-item>
+        <el-form-item label="记账类型" required>
+          <el-radio-group v-model="quickAddForm.recordType" @change="handleRecordTypeChange">
+            <el-radio value="expense">支出（如：退票手续费）</el-radio>
+            <el-radio value="income">收入（如：价保返现）</el-radio>
+          </el-radio-group>
+        </el-form-item>
+        <el-form-item :label="quickAddForm.recordType === 'expense' ? '扣款金额' : '返现金额'" required>
+          <el-input v-model="quickAddForm.deductAmount" :placeholder="quickAddForm.recordType === 'expense' ? '请输入实际扣款金额' : '请输入返现金额'" type="number" />
+        </el-form-item>
+        <el-form-item label="备注">
+          <el-input v-model="quickAddForm.note" type="textarea" :rows="3" :placeholder="quickAddForm.recordType === 'expense' ? '如：退票手续费' : '如：京东价保返现'" />
+        </el-form-item>
+        <el-form-item label="分类">
+          <el-select v-model="quickAddForm.category" filterable placeholder="选择分类">
+            <el-option label="未分类" value="" />
+            <el-option v-for="cat in categories.filter(c => c.type === (quickAddForm.recordType === 'expense' ? 'EXPENSE' : 'INCOME'))" :key="cat.id" :label="cat.name" :value="cat.name" />
+          </el-select>
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="quickAddDialogVisible = false">取消</el-button>
+        <el-button type="primary" @click="confirmQuickAdd">确定补录</el-button>
       </template>
     </el-dialog>
 
@@ -688,6 +722,80 @@ const confirmBatchCategory = async () => {
     loadData()
   } catch (error) {
     ElMessage.error('批量分类失败: ' + error.message)
+  }
+}
+
+const quickAddDialogVisible = ref(false)
+const quickAddForm = reactive({
+  originalId: null,
+  originalDesc: '',
+  refundAmount: '',
+  recordType: 'expense',
+  deductAmount: '',
+  note: '',
+  category: '',
+  transactionDate: '',
+  paymentChannel: ''
+})
+
+const batchQuickAddRelated = () => {
+  if (selectedRows.value.length !== 1) {
+    ElMessage.warning('请选择一条记录进行快速补录')
+    return
+  }
+  quickAddRelated(selectedRows.value[0])
+}
+
+const quickAddRelated = (row) => {
+  quickAddForm.originalId = row.id
+  quickAddForm.originalDesc = row.description
+  quickAddForm.refundAmount = row.income || row.expense || '0.00'
+  quickAddForm.recordType = 'expense'
+  quickAddForm.deductAmount = ''
+  quickAddForm.note = `退款扣款 - ${row.description}`
+  quickAddForm.category = ''
+  quickAddForm.transactionDate = row.transactionDate
+  quickAddForm.paymentChannel = row.paymentChannel
+  quickAddDialogVisible.value = true
+}
+
+const handleRecordTypeChange = () => {
+  quickAddForm.category = ''
+  const desc = quickAddForm.originalDesc
+  quickAddForm.note = quickAddForm.recordType === 'expense' 
+    ? `退款扣款 - ${desc}`
+    : `价保返现 - ${desc}`
+}
+
+const confirmQuickAdd = async () => {
+  if (!quickAddForm.deductAmount || parseFloat(quickAddForm.deductAmount) <= 0) {
+    ElMessage.warning('请输入有效的金额')
+    return
+  }
+  
+  try {
+    const isExpense = quickAddForm.recordType === 'expense'
+    const newRecord = {
+      transactionDate: quickAddForm.transactionDate,
+      transactionTime: new Date().toTimeString().slice(0, 8),
+      income: isExpense ? null : parseFloat(quickAddForm.deductAmount),
+      expense: isExpense ? parseFloat(quickAddForm.deductAmount) : null,
+      balance: null,
+      transactionType: isExpense ? '退款扣款' : '价保返现',
+      description: `关联记录: ${quickAddForm.originalDesc}`,
+      paymentChannel: quickAddForm.paymentChannel,
+      category: quickAddForm.category,
+      userNote: quickAddForm.note,
+      includeInStats: true,
+      isRefund: false
+    }
+    
+    await axios.post('http://localhost:8080/api/bill/transaction', newRecord)
+    ElMessage.success('补录成功')
+    quickAddDialogVisible.value = false
+    loadData()
+  } catch (error) {
+    ElMessage.error('补录失败: ' + error.message)
   }
 }
 
