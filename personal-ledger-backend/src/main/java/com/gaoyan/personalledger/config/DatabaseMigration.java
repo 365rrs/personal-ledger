@@ -3,6 +3,7 @@ package com.gaoyan.personalledger.config;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
 import org.springframework.core.annotation.Order;
 
 import javax.annotation.PostConstruct;
@@ -14,9 +15,11 @@ import java.sql.Statement;
 /**
  * 数据库迁移配置
  * 用于修复已存在表的结构问题
+ * 仅在SQLite环境下生效
  */
 @Slf4j
 @Configuration
+@Profile("sqlite")
 @Order(1) // 确保在SqliteConfig之前执行
 public class DatabaseMigration {
     

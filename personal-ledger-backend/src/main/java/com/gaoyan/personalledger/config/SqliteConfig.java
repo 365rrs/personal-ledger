@@ -3,6 +3,7 @@ package com.gaoyan.personalledger.config;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
 import org.springframework.core.annotation.Order;
 
 import javax.annotation.PostConstruct;
@@ -15,9 +16,11 @@ import java.util.Set;
 
 /**
  * SQLite配置 - 统一数据库初始化管理
+ * 仅在SQLite环境下生效
  */
 @Slf4j
 @Configuration
+@Profile("sqlite")
 @Order(2) // 在DatabaseMigration之后执行
 public class SqliteConfig {
     
