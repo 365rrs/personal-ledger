@@ -54,7 +54,6 @@ public class BillImportProcessorServiceImpl implements BillImportProcessorServic
             
             // 2. 创建导入记录
             BillImportHistory billImportHistory = new BillImportHistory();
-            billImportHistory.setId(System.currentTimeMillis());
             billImportHistory.setImportName(file.getOriginalFilename());
             billImportHistory.setSourceFile(file.getOriginalFilename());
             billImportHistory.setFileType("CSV");
@@ -95,7 +94,6 @@ public class BillImportProcessorServiceImpl implements BillImportProcessorServic
             
             // 2. 创建导入记录
             BillImportHistory billImportHistory = new BillImportHistory();
-            billImportHistory.setId(System.currentTimeMillis() + 1);
             billImportHistory.setImportName(file.getOriginalFilename());
             billImportHistory.setSourceFile(file.getOriginalFilename());
             billImportHistory.setFileType("EXCEL");
@@ -138,7 +136,6 @@ public class BillImportProcessorServiceImpl implements BillImportProcessorServic
             if (existing == null) {
                 // 新增交易
                 BillTransaction transaction = convertToTransaction(record, importId);
-                transaction.setId(IdUtil.getSnowflakeNextId());
                 billTransactionMapper.insert(transaction);
                 
                 // 记录关联关系
@@ -318,7 +315,6 @@ public class BillImportProcessorServiceImpl implements BillImportProcessorServic
         
         if (existing == null) {
             BillTransactionImport relation = new BillTransactionImport();
-            relation.setId(IdUtil.getSnowflakeNextId());
             relation.setTransactionId(transactionId);
             relation.setImportId(importId);
             relation.setIsNew(isNew);
