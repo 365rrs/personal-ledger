@@ -15,7 +15,7 @@
       >
         <el-menu-item index="/dashboard">
           <el-icon><House /></el-icon>
-          <span>消费看板</span>
+          <span>仪表盘</span>
         </el-menu-item>
         <el-sub-menu index="/bill-import">
           <template #title>
