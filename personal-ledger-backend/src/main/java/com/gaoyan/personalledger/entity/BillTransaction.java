@@ -79,6 +79,11 @@ public class BillTransaction {
     private Boolean includeInStats;
     
     /**
+     * 是否退款(true-是 false-否)
+     */
+    private Boolean isRefund;
+    
+    /**
      * 首次导入记录ID
      */
     private Long firstImportId;

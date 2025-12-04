@@ -87,6 +87,14 @@
               </el-select>
             </el-form-item>
           </el-col>
+          <el-col :span="6">
+            <el-form-item label="是否退款">
+              <el-select v-model="filter.isRefund" clearable placeholder="全部">
+                <el-option label="退款" :value="true" />
+                <el-option label="非退款" :value="false" />
+              </el-select>
+            </el-form-item>
+          </el-col>
           <el-col :span="12">
             <el-form-item label=" ">
               <el-button type="primary" @click="loadData" :icon="Search">查询</el-button>
@@ -141,6 +149,13 @@
           <template #default="{ row }">
             <el-tag size="small" :type="row.includeInStats ? 'success' : 'info'">
               {{ row.includeInStats ? '是' : '否' }}
+            </el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column label="退款" width="80" align="center">
+          <template #default="{ row }">
+            <el-tag size="small" :type="row.isRefund ? 'warning' : ''" v-if="row.isRefund">
+              退款
             </el-tag>
           </template>
         </el-table-column>
@@ -229,6 +244,9 @@
         <el-form-item label="计入收支">
           <el-switch v-model="currentRecord.includeInStats" active-text="是" inactive-text="否" />
         </el-form-item>
+        <el-form-item label="是否退款">
+          <el-switch v-model="currentRecord.isRefund" active-text="是" inactive-text="否" />
+        </el-form-item>
       </el-form>
       <template #footer v-if="drawerMode === 'edit'">
         <el-button @click="drawerVisible = false">取消</el-button>
@@ -282,7 +300,8 @@ const filter = reactive({
   minAmount: '',
   maxAmount: '',
   keyword: '',
-  includeInStats: ''
+  includeInStats: '',
+  isRefund: ''
 })
 const dateRange = ref([thisMonth.startDate, thisMonth.endDate])
 const quickYear = ref(new Date().getFullYear().toString())
@@ -354,6 +373,11 @@ const loadData = async () => {
     // 计入收支参数
     if (filter.includeInStats !== '') {
       params.includeInStats = filter.includeInStats
+    }
+    
+    // 退款参数
+    if (filter.isRefund !== '') {
+      params.isRefund = filter.isRefund
     }
     
     const res = await axios.get('http://localhost:8080/api/bill/transaction/list', { params })
@@ -573,6 +597,7 @@ const resetFilter = () => {
   filter.maxAmount = ''
   filter.keyword = ''
   filter.includeInStats = ''
+  filter.isRefund = ''
   dateRange.value = []
   quickYear.value = ''
   quickMonth.value = ''

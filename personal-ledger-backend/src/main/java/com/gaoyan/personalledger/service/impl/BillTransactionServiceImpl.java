@@ -46,7 +46,7 @@ public class BillTransactionServiceImpl implements BillTransactionService {
     public Page<BillTransaction> pageList(int current, int size, LocalDate startDate, LocalDate endDate, 
                                           String category, String paymentChannel, String transactionType, 
                                           String keyword, String minAmount, String maxAmount, 
-                                          String incomeOrExpense, Boolean includeInStats, 
+                                          String incomeOrExpense, Boolean includeInStats, Boolean isRefund, 
                                           String sortField, String sortOrder, Long firstImportId) {
         Page<BillTransaction> page = new Page<>(current, size);
         LambdaQueryWrapper<BillTransaction> wrapper = new LambdaQueryWrapper<>();
@@ -83,6 +83,9 @@ public class BillTransactionServiceImpl implements BillTransactionService {
         }
         if (includeInStats != null) {
             wrapper.eq(BillTransaction::getIncludeInStats, includeInStats);
+        }
+        if (isRefund != null) {
+            wrapper.eq(BillTransaction::getIsRefund, isRefund);
         }
         
         // 排序

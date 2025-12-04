@@ -33,6 +33,8 @@ public class TransactionQueryParams {
     
     private Boolean includeInStats;
     
+    private Boolean isRefund;
+    
     private String sortField;
     
     private String sortOrder;
