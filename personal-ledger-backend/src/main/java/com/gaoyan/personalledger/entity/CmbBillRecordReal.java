@@ -61,10 +61,10 @@ public class CmbBillRecordReal {
     private String description;
     
     /**
-     * 是否排除统计(0-计入 1-排除)
+     * 是否计入收支(true-计入 false-不计入)
      */
     @ExcelProperty("是否计入收支标识")
-    private Boolean excludeFromStats = true;
+    private Boolean includeInStats = true;
     
     /**
      * 支付渠道（微信/支付宝/银行卡/京东支付）

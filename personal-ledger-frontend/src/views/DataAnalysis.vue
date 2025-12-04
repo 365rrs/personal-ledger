@@ -83,10 +83,10 @@
           <el-table-column prop="category" label="分类" width="100" />
           <el-table-column prop="description" label="交易备注" min-width="180" show-overflow-tooltip />
           <el-table-column prop="userNote" label="用户备注" width="150" show-overflow-tooltip />
-          <el-table-column prop="excludeFromStats" label="计入收支" width="100" align="center">
+          <el-table-column prop="includeInStats" label="计入收支" width="100" align="center">
             <template #default="{ row }">
-              <el-tag :type="row.excludeFromStats ? 'info' : 'success'" size="small">
-                {{ row.excludeFromStats ? '否' : '是' }}
+              <el-tag :type="row.includeInStats ? 'success' : 'info'" size="small">
+                {{ row.includeInStats ? '是' : '否' }}
               </el-tag>
             </template>
           </el-table-column>
@@ -134,7 +134,7 @@
           <el-input v-model="currentRecord.userNote" type="textarea" :rows="3" placeholder="请输入备注" />
         </el-form-item>
         <el-form-item label="计入收支">
-          <el-switch v-model="currentRecord.excludeFromStats" :active-value="false" :inactive-value="true" active-text="是" inactive-text="否" />
+          <el-switch v-model="currentRecord.includeInStats" active-text="是" inactive-text="否" />
         </el-form-item>
       </el-form>
       <template #footer>
@@ -340,7 +340,7 @@ const loadDayDetails = async (date) => {
       size: 10000,
       startDate: date,
       endDate: date,
-      excludeFromStats: false,
+      includeInStats: true,
       sortField: sortField.value,
       sortOrder: sortOrder.value
     }
@@ -379,7 +379,7 @@ const saveRecord = async () => {
       category: currentRecord.value.category,
       paymentChannel: currentRecord.value.paymentChannel,
       userNote: currentRecord.value.userNote,
-      excludeFromStats: currentRecord.value.excludeFromStats
+      includeInStats: currentRecord.value.includeInStats
     })
     ElMessage.success('保存成功')
     drawerVisible.value = false

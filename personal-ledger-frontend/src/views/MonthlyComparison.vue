@@ -134,12 +134,12 @@ const loadData = async () => {
 
     // 获取本月汇总
     const currentRes = await axios.get('http://localhost:8080/api/bill/transaction/summary', {
-      params: { startDate: currentStart, endDate: currentEnd }
+      params: { startDate: currentStart, endDate: currentEnd, includeInStats: true }
     })
     
     // 获取上月汇总
     const lastRes = await axios.get('http://localhost:8080/api/bill/transaction/summary', {
-      params: { startDate: lastStart, endDate: lastEnd }
+      params: { startDate: lastStart, endDate: lastEnd, includeInStats: true }
     })
 
     currentMonth.value = {
@@ -166,10 +166,10 @@ const loadCategoryComparison = async (currentStart, currentEnd, lastStart, lastE
   try {
     const [currentStats, lastStats] = await Promise.all([
       axios.get('http://localhost:8080/api/bill/transaction/category-stats', {
-        params: { startDate: currentStart, endDate: currentEnd, type: 'expense' }
+        params: { startDate: currentStart, endDate: currentEnd, type: 'expense', includeInStats: true }
       }),
       axios.get('http://localhost:8080/api/bill/transaction/category-stats', {
-        params: { startDate: lastStart, endDate: lastEnd, type: 'expense' }
+        params: { startDate: lastStart, endDate: lastEnd, type: 'expense', includeInStats: true }
       })
     ])
 

@@ -17,6 +17,28 @@
           <el-icon><House /></el-icon>
           <span>消费看板</span>
         </el-menu-item>
+        <el-sub-menu index="/bill-import">
+          <template #title>
+            <el-icon><Upload /></el-icon>
+            <span>数据导入</span>
+          </template>
+          <el-menu-item index="/bill-import">
+            <el-icon><Grid /></el-icon>
+            <span>标准导入</span>
+          </el-menu-item>
+          <el-menu-item index="/bill-import-simple">
+            <el-icon><Lightning /></el-icon>
+            <span>快速导入</span>
+          </el-menu-item>
+          <el-menu-item index="/bill-import-history">
+            <el-icon><Document /></el-icon>
+            <span>导入历史</span>
+          </el-menu-item>
+        </el-sub-menu>
+        <el-menu-item index="/transaction-list">
+          <el-icon><List /></el-icon>
+          <span>交易记录</span>
+        </el-menu-item>
         <el-sub-menu index="/analysis">
           <template #title>
             <el-icon><DataAnalysis /></el-icon>
@@ -37,28 +59,6 @@
           <el-menu-item index="/category-analysis">
             <el-icon><PieChart /></el-icon>
             <span>按分类统计</span>
-          </el-menu-item>
-        </el-sub-menu>
-        <el-menu-item index="/transaction-list">
-          <el-icon><List /></el-icon>
-          <span>交易记录</span>
-        </el-menu-item>
-        <el-sub-menu index="/bill-import">
-          <template #title>
-            <el-icon><Upload /></el-icon>
-            <span>数据导入</span>
-          </template>
-          <el-menu-item index="/bill-import">
-            <el-icon><Grid /></el-icon>
-            <span>标准导入</span>
-          </el-menu-item>
-          <el-menu-item index="/bill-import-simple">
-            <el-icon><Lightning /></el-icon>
-            <span>快速导入</span>
-          </el-menu-item>
-          <el-menu-item index="/bill-import-history">
-            <el-icon><Document /></el-icon>
-            <span>导入历史</span>
           </el-menu-item>
         </el-sub-menu>
         <el-sub-menu index="/settings">

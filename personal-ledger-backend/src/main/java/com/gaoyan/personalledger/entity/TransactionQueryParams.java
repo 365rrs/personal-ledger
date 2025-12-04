@@ -31,7 +31,7 @@ public class TransactionQueryParams {
     
     private String incomeOrExpense;
     
-    private Boolean excludeFromStats;
+    private Boolean includeInStats;
     
     private String sortField;
     

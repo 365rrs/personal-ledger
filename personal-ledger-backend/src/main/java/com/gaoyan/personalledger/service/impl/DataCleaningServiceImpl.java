@@ -173,6 +173,11 @@ public class DataCleaningServiceImpl implements DataCleaningService {
         int count = 0;
         
         for (CmbBillRecordReal record : records) {
+            // 如果用户备注已有值，则跳过清洗
+            if (record.getUserNote() != null && !record.getUserNote().isEmpty()) {
+                continue;
+            }
+            
             String originalRemark = record.getDescription();
             if (originalRemark != null && !originalRemark.isEmpty()) {
                 for (CleaningRule rule : rules) {
@@ -192,7 +197,7 @@ public class DataCleaningServiceImpl implements DataCleaningService {
     private void processExcludedRecords(List<CmbBillRecordReal> records) {
         for (CmbBillRecordReal record : records) {
             if ("汇入汇款".equals(record.getTransactionType()) && "高明希".equals(record.getDescription())) {
-                record.setExcludeFromStats(false);
+                record.setIncludeInStats(false);
             }
         }
     }
@@ -219,8 +224,8 @@ public class DataCleaningServiceImpl implements DataCleaningService {
         } else {
             record.setTransactionType("");
         }
-        if (record.getExcludeFromStats() == null) {
-            record.setExcludeFromStats(true);
+        if (record.getIncludeInStats() == null) {
+            record.setIncludeInStats(true);
         }
         return record;
     }

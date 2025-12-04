@@ -21,6 +21,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
+import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -68,12 +69,22 @@ public class CmbBillServiceImpl implements CmbBillService {
             log.info("解析导入信息结果: {}", importInfo);
 
             // 跳过第8行的空行，然后使用EasyExcel解析交易记录
-            List<CmbBillRecordReal> records = EasyExcel.read(file.getInputStream())
+            List<CmbBillRecordCsvImport> importRecords = EasyExcel.read(file.getInputStream())
                     .excelType(ExcelTypeEnum.CSV)
-                    .head(CmbBillRecordReal.class)
+                    .head(CmbBillRecordCsvImport.class)
                     .headRowNumber(8)  // 跳过前8行注释（包括空行）
                     .sheet()
                     .doReadSync();
+
+            // 处理导入记录，移除最后3行非交易数据
+            if (importRecords.size() >= 3) {
+                importRecords = importRecords.subList(0, importRecords.size() - 3);
+            }
+
+            // 转换导入记录为实际记录
+            List<CmbBillRecordReal> records = importRecords.stream()
+                    .map(this::convertImportToReal)
+                    .collect(Collectors.toList());
 
             // 只进行基础数据处理，不进行清洗
             records = processRawData(records);
@@ -237,8 +248,8 @@ public class CmbBillServiceImpl implements CmbBillService {
             }
 
             // 设置默认值
-            if (record.getExcludeFromStats() == null) {
-                record.setExcludeFromStats(true); // 默认计入收支
+            if (record.getIncludeInStats() == null) {
+                record.setIncludeInStats(true); // 默认计入收支
             }
 
             // 初始化空字段
@@ -310,6 +321,8 @@ public class CmbBillServiceImpl implements CmbBillService {
             // 使用EasyExcel读取Excel文件
             List<CmbBillRecordExport> exportRecords = EasyExcel.read(file.getInputStream())
                     .head(CmbBillRecordExport.class)
+                    .registerConverter(new com.gaoyan.personalledger.util.LocalDateConverter())
+                    .registerConverter(new com.gaoyan.personalledger.util.LocalTimeConverter())
                     .sheet()
                     .doReadSync();
             
@@ -371,11 +384,11 @@ public class CmbBillServiceImpl implements CmbBillService {
         real.setCategory(export.getCategory() != null ? export.getCategory() : "");
         real.setUserNote(export.getUserNote() != null ? export.getUserNote() : "");
         
-        // 转换是否排除统计文本为布尔值
-        if ("是".equals(export.getExcludeFromStatsText())) {
-            real.setExcludeFromStats(true);
+        // 转换是否计入统计文本为布尔值
+        if ("是".equals(export.getIncludeInStatsText())) {
+            real.setIncludeInStats(true);
         } else {
-            real.setExcludeFromStats(false);
+            real.setIncludeInStats(false);
         }
         
         return real;
@@ -432,7 +445,7 @@ public class CmbBillServiceImpl implements CmbBillService {
     /**
      * 导出招商银行账单为Excel文件
      *
-     * @param billInfo     账单信息
+     * @param params       查询参数
      * @param outputStream 输出流
      */
     @Override
@@ -440,94 +453,133 @@ public class CmbBillServiceImpl implements CmbBillService {
         try {
             log.info("从数据库导出账单数据: {}", params);
             
-            // 从数据库查询数据
             com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<com.gaoyan.personalledger.entity.BillTransaction> wrapper = 
                 new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<>();
             
-            if (params.getStartDate() != null) {
-                wrapper.ge(com.gaoyan.personalledger.entity.BillTransaction::getTransactionDate, params.getStartDate());
-            }
-            if (params.getEndDate() != null) {
-                wrapper.le(com.gaoyan.personalledger.entity.BillTransaction::getTransactionDate, params.getEndDate());
-            }
-            if (params.getCategory() != null && !params.getCategory().isEmpty()) {
-                wrapper.eq(com.gaoyan.personalledger.entity.BillTransaction::getCategory, params.getCategory());
-            }
-            if (params.getPaymentChannel() != null && !params.getPaymentChannel().isEmpty()) {
-                wrapper.eq(com.gaoyan.personalledger.entity.BillTransaction::getPaymentChannel, params.getPaymentChannel());
-            }
-            if (params.getTransactionType() != null && !params.getTransactionType().isEmpty()) {
-                wrapper.like(com.gaoyan.personalledger.entity.BillTransaction::getTransactionType, params.getTransactionType());
-            }
-            if (params.getKeyword() != null && !params.getKeyword().isEmpty()) {
-                wrapper.and(w -> w.like(com.gaoyan.personalledger.entity.BillTransaction::getDescription, params.getKeyword())
-                                 .or().like(com.gaoyan.personalledger.entity.BillTransaction::getUserNote, params.getKeyword()));
-            }
-            if (params.getIncomeOrExpense() != null && !params.getIncomeOrExpense().isEmpty()) {
-                if ("income".equals(params.getIncomeOrExpense())) {
-                    wrapper.isNotNull(com.gaoyan.personalledger.entity.BillTransaction::getIncome)
-                           .gt(com.gaoyan.personalledger.entity.BillTransaction::getIncome, BigDecimal.ZERO);
-                } else if ("expense".equals(params.getIncomeOrExpense())) {
-                    wrapper.isNotNull(com.gaoyan.personalledger.entity.BillTransaction::getExpense)
-                           .gt(com.gaoyan.personalledger.entity.BillTransaction::getExpense, BigDecimal.ZERO);
-                }
-            }
-            if (params.getExcludeFromStats() != null) {
-                wrapper.eq(com.gaoyan.personalledger.entity.BillTransaction::getExcludeFromStats, params.getExcludeFromStats());
-            }
-            
-            // 排序
-            String sortField = params.getSortField();
-            String sortOrder = params.getSortOrder();
-            if (sortField != null && !sortField.isEmpty() && sortOrder != null && !sortOrder.isEmpty()) {
-                boolean isAsc = "asc".equals(sortOrder);
-                switch (sortField) {
-                    case "transactionDate":
-                        if (isAsc) wrapper.orderByAsc(com.gaoyan.personalledger.entity.BillTransaction::getTransactionDate);
-                        else wrapper.orderByDesc(com.gaoyan.personalledger.entity.BillTransaction::getTransactionDate);
-                        break;
-                    case "transactionTime":
-                        if (isAsc) wrapper.orderByAsc(com.gaoyan.personalledger.entity.BillTransaction::getTransactionTime);
-                        else wrapper.orderByDesc(com.gaoyan.personalledger.entity.BillTransaction::getTransactionTime);
-                        break;
-                    case "income":
-                        wrapper.last("ORDER BY CAST(income AS DECIMAL) " + (isAsc ? "ASC" : "DESC"));
-                        break;
-                    case "expense":
-                        wrapper.last("ORDER BY CAST(expense AS DECIMAL) " + (isAsc ? "ASC" : "DESC"));
-                        break;
-                    default:
-                        wrapper.orderByDesc(com.gaoyan.personalledger.entity.BillTransaction::getTransactionDate);
-                }
-            } else {
-                wrapper.orderByDesc(com.gaoyan.personalledger.entity.BillTransaction::getTransactionDate);
-            }
+            buildQueryConditions(wrapper, params);
+            applySorting(wrapper, params);
             
             List<com.gaoyan.personalledger.entity.BillTransaction> transactions = billTransactionMapper.selectList(wrapper);
             
-            // 转换为CmbBillRecordReal
             List<CmbBillRecordReal> records = transactions.stream()
                 .map(this::convertTransactionToRecord)
                 .collect(Collectors.toList());
             
-            // 转换为导出格式
             List<CmbBillRecordExport> exportRecords = records.stream()
                     .map(CmbBillRecordExport::fromCmbBillRecordReal)
                     .collect(Collectors.toList());
             
-            // 导出
-            EasyExcel.write(outputStream, CmbBillRecordExport.class)
-                    .registerConverter(new com.gaoyan.personalledger.util.LocalDateConverter())
-                    .registerConverter(new com.gaoyan.personalledger.util.LocalTimeConverter())
-                    .registerWriteHandler(EasyExcelExportUtil.generatorHorizontalCellStyleStrategy())
-                    .sheet("招商银行账单")
-                    .doWrite(exportRecords);
+            writeExcelFile(outputStream, exportRecords);
             
-            log.info("成功导出{}\u6761记录", exportRecords.size());
+            log.info("成功导出{}条记录", exportRecords.size());
         } catch (Exception e) {
             log.error("从数据库导出账单数据失败", e);
             throw new BusinessException("导出账单数据失败: " + e.getMessage());
         }
+    }
+    
+    /**
+     * 构建查询条件
+     */
+    private void buildQueryConditions(com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<com.gaoyan.personalledger.entity.BillTransaction> wrapper, 
+                                     com.gaoyan.personalledger.entity.TransactionQueryParams params) {
+        if (params.getStartDate() != null) {
+            wrapper.ge(com.gaoyan.personalledger.entity.BillTransaction::getTransactionDate, params.getStartDate());
+        }
+        if (params.getEndDate() != null) {
+            wrapper.le(com.gaoyan.personalledger.entity.BillTransaction::getTransactionDate, params.getEndDate());
+        }
+        if (params.getCategory() != null && !params.getCategory().isEmpty()) {
+            wrapper.eq(com.gaoyan.personalledger.entity.BillTransaction::getCategory, params.getCategory());
+        }
+        if (params.getPaymentChannel() != null && !params.getPaymentChannel().isEmpty()) {
+            wrapper.eq(com.gaoyan.personalledger.entity.BillTransaction::getPaymentChannel, params.getPaymentChannel());
+        }
+        if (params.getTransactionType() != null && !params.getTransactionType().isEmpty()) {
+            wrapper.like(com.gaoyan.personalledger.entity.BillTransaction::getTransactionType, params.getTransactionType());
+        }
+        if (params.getKeyword() != null && !params.getKeyword().isEmpty()) {
+            wrapper.and(w -> w.like(com.gaoyan.personalledger.entity.BillTransaction::getDescription, params.getKeyword())
+                             .or().like(com.gaoyan.personalledger.entity.BillTransaction::getUserNote, params.getKeyword()));
+        }
+        
+        applyIncomeExpenseFilter(wrapper, params.getIncomeOrExpense());
+        
+        if (params.getIncludeInStats() != null) {
+            wrapper.eq(com.gaoyan.personalledger.entity.BillTransaction::getIncludeInStats, params.getIncludeInStats());
+        }
+    }
+    
+    /**
+     * 应用收入支出过滤条件
+     */
+    private void applyIncomeExpenseFilter(com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<com.gaoyan.personalledger.entity.BillTransaction> wrapper, 
+                                         String incomeOrExpense) {
+        if (incomeOrExpense == null || incomeOrExpense.isEmpty()) {
+            return;
+        }
+        
+        if ("income".equals(incomeOrExpense)) {
+            wrapper.isNotNull(com.gaoyan.personalledger.entity.BillTransaction::getIncome)
+                   .gt(com.gaoyan.personalledger.entity.BillTransaction::getIncome, BigDecimal.ZERO);
+        } else if ("expense".equals(incomeOrExpense)) {
+            wrapper.isNotNull(com.gaoyan.personalledger.entity.BillTransaction::getExpense)
+                   .gt(com.gaoyan.personalledger.entity.BillTransaction::getExpense, BigDecimal.ZERO);
+        }
+    }
+    
+    /**
+     * 应用排序
+     */
+    private void applySorting(com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<com.gaoyan.personalledger.entity.BillTransaction> wrapper, 
+                             com.gaoyan.personalledger.entity.TransactionQueryParams params) {
+        String sortField = params.getSortField();
+        String sortOrder = params.getSortOrder();
+        
+        if (sortField == null || sortField.isEmpty() || sortOrder == null || sortOrder.isEmpty()) {
+            wrapper.orderByDesc(com.gaoyan.personalledger.entity.BillTransaction::getTransactionDate);
+            return;
+        }
+        
+        boolean isAsc = "asc".equals(sortOrder);
+        applySortingByField(wrapper, sortField, isAsc);
+    }
+    
+    /**
+     * 根据字段应用排序
+     */
+    private void applySortingByField(com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<com.gaoyan.personalledger.entity.BillTransaction> wrapper, 
+                                    String sortField, boolean isAsc) {
+        switch (sortField) {
+            case "transactionDate":
+                if (isAsc) wrapper.orderByAsc(com.gaoyan.personalledger.entity.BillTransaction::getTransactionDate);
+                else wrapper.orderByDesc(com.gaoyan.personalledger.entity.BillTransaction::getTransactionDate);
+                break;
+            case "transactionTime":
+                if (isAsc) wrapper.orderByAsc(com.gaoyan.personalledger.entity.BillTransaction::getTransactionTime);
+                else wrapper.orderByDesc(com.gaoyan.personalledger.entity.BillTransaction::getTransactionTime);
+                break;
+            case "income":
+                wrapper.last("ORDER BY CAST(income AS DECIMAL) " + (isAsc ? "ASC" : "DESC"));
+                break;
+            case "expense":
+                wrapper.last("ORDER BY CAST(expense AS DECIMAL) " + (isAsc ? "ASC" : "DESC"));
+                break;
+            default:
+                wrapper.orderByDesc(com.gaoyan.personalledger.entity.BillTransaction::getTransactionDate);
+        }
+    }
+    
+    /**
+     * 写入Excel文件
+     */
+    private void writeExcelFile(ServletOutputStream outputStream, List<CmbBillRecordExport> exportRecords) {
+        EasyExcel.write(outputStream, CmbBillRecordExport.class)
+                .registerConverter(new com.gaoyan.personalledger.util.LocalDateConverter())
+                .registerConverter(new com.gaoyan.personalledger.util.LocalTimeConverter())
+                .registerWriteHandler(EasyExcelExportUtil.generatorHorizontalCellStyleStrategy())
+                .sheet("招商银行账单")
+                .doWrite(exportRecords);
     }
     
     private CmbBillRecordReal convertTransactionToRecord(com.gaoyan.personalledger.entity.BillTransaction transaction) {
@@ -542,7 +594,101 @@ public class CmbBillServiceImpl implements CmbBillService {
         record.setPaymentChannel(transaction.getPaymentChannel());
         record.setCategory(transaction.getCategory());
         record.setUserNote(transaction.getUserNote());
-        record.setExcludeFromStats(transaction.getExcludeFromStats());
+        record.setIncludeInStats(transaction.getIncludeInStats());
         return record;
+    }
+    
+    /**
+     * 将导入格式记录转换为真实格式记录
+     * 
+     * @param importRecord 导入格式记录
+     * @return 真实格式记录
+     */
+    private CmbBillRecordReal convertImportToReal(CmbBillRecordCsvImport importRecord) {
+        CmbBillRecordReal real = new CmbBillRecordReal();
+        
+        // 转换交易日期
+        if (importRecord.getTransactionDate() != null && !importRecord.getTransactionDate().isEmpty()) {
+            try {
+                String dateStr = importRecord.getTransactionDate().trim();
+                // 处理格式为yyyyMMdd的日期
+                if (dateStr.length() == 8) {
+                    LocalDate date = LocalDate.of(
+                        Integer.parseInt(dateStr.substring(0, 4)),
+                        Integer.parseInt(dateStr.substring(4, 6)),
+                        Integer.parseInt(dateStr.substring(6, 8))
+                    );
+                    real.setTransactionDate(date);
+                } else {
+                    // 处理其他格式的日期
+                    real.setTransactionDate(LocalDate.parse(dateStr));
+                }
+            } catch (Exception e) {
+                log.warn("无法解析交易日期: {}", importRecord.getTransactionDate());
+            }
+        }
+        
+        // 转换交易时间
+        if (importRecord.getTransactionTime() != null && !importRecord.getTransactionTime().isEmpty()) {
+            try {
+                String timeStr = importRecord.getTransactionTime().trim();
+                // 处理格式为HHmmss的时间
+                if (timeStr.length() == 6) {
+                    LocalTime time = LocalTime.of(
+                        Integer.parseInt(timeStr.substring(0, 2)),
+                        Integer.parseInt(timeStr.substring(2, 4)),
+                        Integer.parseInt(timeStr.substring(4, 6))
+                    );
+                    real.setTransactionTime(time);
+                } else if (timeStr.contains(":")) {
+                    // 处理带冒号的时间格式，如"15:03:47"
+                    real.setTransactionTime(LocalTime.parse(timeStr));
+                } else {
+                    // 处理其他格式的时间
+                    real.setTransactionTime(LocalTime.parse(timeStr));
+                }
+            } catch (Exception e) {
+                log.warn("无法解析交易时间: {}", importRecord.getTransactionTime());
+            }
+        }
+        
+        // 转换收入
+        if (importRecord.getIncome() != null && !importRecord.getIncome().isEmpty()) {
+            try {
+                real.setIncome(new BigDecimal(importRecord.getIncome()));
+            } catch (NumberFormatException e) {
+                log.warn("无法解析收入金额: {}", importRecord.getIncome());
+            }
+        }
+        
+        // 转换支出
+        if (importRecord.getExpense() != null && !importRecord.getExpense().isEmpty()) {
+            try {
+                real.setExpense(new BigDecimal(importRecord.getExpense()));
+            } catch (NumberFormatException e) {
+                log.warn("无法解析支出金额: {}", importRecord.getExpense());
+            }
+        }
+        
+        // 转换余额
+        if (importRecord.getBalance() != null && !importRecord.getBalance().isEmpty()) {
+            try {
+                real.setBalance(new BigDecimal(importRecord.getBalance()));
+            } catch (NumberFormatException e) {
+                log.warn("无法解析余额: {}", importRecord.getBalance());
+            }
+        }
+        
+        // 设置其他字符串字段
+        real.setTransactionType(importRecord.getTransactionType());
+        real.setDescription(importRecord.getDescription());
+        
+        // 设置默认值
+        real.setIncludeInStats(true); // 默认计入统计
+        real.setPaymentChannel(""); // 默认为空
+        real.setCategory(""); // 默认为空
+        real.setUserNote(""); // 默认为空
+        
+        return real;
     }
 }

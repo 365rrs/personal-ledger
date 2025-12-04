@@ -37,7 +37,7 @@ public interface BillTransactionService {
     Page<BillTransaction> pageList(int current, int size, LocalDate startDate, LocalDate endDate, 
                                    String category, String paymentChannel, String transactionType, 
                                    String keyword, String minAmount, String maxAmount, 
-                                   String incomeOrExpense, Boolean excludeFromStats, 
+                                   String incomeOrExpense, Boolean includeInStats, 
                                    String sortField, String sortOrder, Long firstImportId);
     
     /**
@@ -56,7 +56,7 @@ public interface BillTransactionService {
     java.util.Map<String, Object> getSummary(LocalDate startDate, LocalDate endDate, 
                                               String category, String paymentChannel, String transactionType, 
                                               String keyword, String minAmount, String maxAmount, 
-                                              String incomeOrExpense, Boolean excludeFromStats, Long firstImportId);
+                                              String incomeOrExpense, Boolean includeInStats, Long firstImportId);
     
     /**
      * 按天统计

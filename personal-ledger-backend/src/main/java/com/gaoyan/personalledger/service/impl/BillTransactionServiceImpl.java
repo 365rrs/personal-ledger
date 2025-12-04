@@ -46,7 +46,7 @@ public class BillTransactionServiceImpl implements BillTransactionService {
     public Page<BillTransaction> pageList(int current, int size, LocalDate startDate, LocalDate endDate, 
                                           String category, String paymentChannel, String transactionType, 
                                           String keyword, String minAmount, String maxAmount, 
-                                          String incomeOrExpense, Boolean excludeFromStats, 
+                                          String incomeOrExpense, Boolean includeInStats, 
                                           String sortField, String sortOrder, Long firstImportId) {
         Page<BillTransaction> page = new Page<>(current, size);
         LambdaQueryWrapper<BillTransaction> wrapper = new LambdaQueryWrapper<>();
@@ -81,8 +81,8 @@ public class BillTransactionServiceImpl implements BillTransactionService {
                        .gt(BillTransaction::getExpense, java.math.BigDecimal.ZERO);
             }
         }
-        if (excludeFromStats != null) {
-            wrapper.eq(BillTransaction::getExcludeFromStats, excludeFromStats);
+        if (includeInStats != null) {
+            wrapper.eq(BillTransaction::getIncludeInStats, includeInStats);
         }
         
         // 排序
@@ -129,11 +129,11 @@ public class BillTransactionServiceImpl implements BillTransactionService {
     public java.util.Map<String, Object> getSummary(LocalDate startDate, LocalDate endDate, 
                                                      String category, String paymentChannel, String transactionType, 
                                                      String keyword, String minAmount, String maxAmount, 
-                                                     String incomeOrExpense, Boolean excludeFromStats, Long firstImportId) {
+                                                     String incomeOrExpense, Boolean includeInStats, Long firstImportId) {
         LambdaQueryWrapper<BillTransaction> wrapper = new LambdaQueryWrapper<>();
         
         // 汇总时只计算计入收支的数据
-        wrapper.eq(BillTransaction::getExcludeFromStats, false);
+        wrapper.eq(BillTransaction::getIncludeInStats, true);
         
         if (startDate != null) {
             wrapper.ge(BillTransaction::getTransactionDate, startDate);
@@ -195,7 +195,7 @@ public class BillTransactionServiceImpl implements BillTransactionService {
         LambdaQueryWrapper<BillTransaction> wrapper = new LambdaQueryWrapper<>();
         
         // 只统计计入收支的数据
-        wrapper.eq(BillTransaction::getExcludeFromStats, false);
+        wrapper.eq(BillTransaction::getIncludeInStats, true);
         
         if (startDate != null) {
             wrapper.ge(BillTransaction::getTransactionDate, startDate);
@@ -259,7 +259,7 @@ public class BillTransactionServiceImpl implements BillTransactionService {
             new com.baomidou.mybatisplus.core.conditions.query.QueryWrapper<>();
         
         // 只统计计入收支的数据
-        wrapper.eq("exclude_from_stats", false);
+        wrapper.eq("include_in_stats", true);
         
         if (startDate != null) {
             wrapper.ge("transaction_date", startDate);
@@ -320,7 +320,7 @@ public class BillTransactionServiceImpl implements BillTransactionService {
         // 添加"未分类"统计
         com.baomidou.mybatisplus.core.conditions.query.QueryWrapper<BillTransaction> unclassifiedWrapper = 
             new com.baomidou.mybatisplus.core.conditions.query.QueryWrapper<>();
-        unclassifiedWrapper.eq("exclude_from_stats", false);
+        unclassifiedWrapper.eq("include_in_stats", true);
         
         if (startDate != null) {
             unclassifiedWrapper.ge("transaction_date", startDate);
@@ -344,7 +344,7 @@ public class BillTransactionServiceImpl implements BillTransactionService {
             // 计算未分类的金额总和
             com.baomidou.mybatisplus.core.conditions.query.QueryWrapper<BillTransaction> unclassifiedAmountWrapper = 
                 new com.baomidou.mybatisplus.core.conditions.query.QueryWrapper<>();
-            unclassifiedAmountWrapper.eq("exclude_from_stats", false);
+            unclassifiedAmountWrapper.eq("include_in_stats", true);
             
             if (startDate != null) {
                 unclassifiedAmountWrapper.ge("transaction_date", startDate);

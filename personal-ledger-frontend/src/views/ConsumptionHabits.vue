@@ -139,7 +139,8 @@ const loadData = async () => {
         startDate,
         endDate,
         size: 10000,
-        incomeOrExpense: 'expense'
+        incomeOrExpense: 'expense',
+        includeInStats: true
       }
     })
 

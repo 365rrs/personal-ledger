@@ -1,5 +1,6 @@
 package com.gaoyan.personalledger.service.impl;
 
+import cn.hutool.core.util.IdUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.gaoyan.personalledger.entity.*;
 import com.gaoyan.personalledger.mapper.BillTransactionImportMapper;
@@ -131,16 +132,13 @@ public class BillImportProcessorServiceImpl implements BillImportProcessorServic
         ImportResult result = new ImportResult();
         
         for (CmbBillRecordReal record : records) {
-            // 构建去重key
-            String deduplicateKey = buildDeduplicateKey(record);
-            
             // 查询是否已存在
-            BillTransaction existing = findByDeduplicateKey(deduplicateKey, record);
+            BillTransaction existing = findByDeduplicateKey(record);
             
             if (existing == null) {
                 // 新增交易
                 BillTransaction transaction = convertToTransaction(record, importId);
-                transaction.setId(System.currentTimeMillis() + result.newCount); // 生成唯一ID
+                transaction.setId(IdUtil.getSnowflakeNextId());
                 billTransactionMapper.insert(transaction);
                 
                 // 记录关联关系
@@ -164,32 +162,42 @@ public class BillImportProcessorServiceImpl implements BillImportProcessorServic
     }
     
     /**
-     * 构建去重key
+     * 根据记录查询是否已存在重复交易
      */
-    private String buildDeduplicateKey(CmbBillRecordReal record) {
-        return String.format("%s_%s_%s_%s",
-            record.getTransactionDate(),
-            record.getTransactionTime(),
-            record.getExpense() != null ? record.getExpense() : record.getIncome(),
-            record.getDescription());
-    }
-    
-    /**
-     * 根据去重key查询交易
-     */
-    private BillTransaction findByDeduplicateKey(String key, CmbBillRecordReal record) {
+    private BillTransaction findByDeduplicateKey(CmbBillRecordReal record) {
         LambdaQueryWrapper<BillTransaction> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(BillTransaction::getTransactionDate, record.getTransactionDate())
                .eq(BillTransaction::getTransactionTime, record.getTransactionTime())
                .eq(BillTransaction::getDescription, record.getDescription());
         
-        if (record.getExpense() != null) {
-            wrapper.eq(BillTransaction::getExpense, record.getExpense());
-        } else {
-            wrapper.eq(BillTransaction::getIncome, record.getIncome());
+        List<BillTransaction> candidates = billTransactionMapper.selectList(wrapper);
+        
+        if (candidates == null || candidates.isEmpty()) {
+            return null;
         }
         
-        return billTransactionMapper.selectOne(wrapper);
+        // 在代码中比较金额，忽略精度差异
+        for (BillTransaction candidate : candidates) {
+            if (isAmountMatch(record, candidate)) {
+                return candidate;
+            }
+        }
+        
+        return null;
+    }
+    
+    /**
+     * 比较金额是否匹配（忽略精度差异）
+     */
+    private boolean isAmountMatch(CmbBillRecordReal record, BillTransaction candidate) {
+        if (record.getExpense() != null && record.getExpense().compareTo(BigDecimal.ZERO) > 0) {
+            return candidate.getExpense() != null && 
+                   record.getExpense().compareTo(candidate.getExpense()) == 0;
+        } else if (record.getIncome() != null && record.getIncome().compareTo(BigDecimal.ZERO) > 0) {
+            return candidate.getIncome() != null && 
+                   record.getIncome().compareTo(candidate.getIncome()) == 0;
+        }
+        return false;
     }
     
     /**
@@ -208,7 +216,7 @@ public class BillImportProcessorServiceImpl implements BillImportProcessorServic
         transaction.setPaymentChannel(record.getPaymentChannel());
         transaction.setCategory(record.getCategory());
         transaction.setUserNote(record.getUserNote());
-        transaction.setExcludeFromStats(record.getExcludeFromStats());
+        transaction.setIncludeInStats(record.getIncludeInStats());
         transaction.setFirstImportId(importId);
         transaction.setLastImportId(importId);
         transaction.setImportCount(1);
@@ -259,7 +267,7 @@ public class BillImportProcessorServiceImpl implements BillImportProcessorServic
                     existing.setTransactionType(record.getTransactionType());
                     existing.setCategory(record.getCategory());
                     existing.setUserNote(record.getUserNote());
-                    existing.setExcludeFromStats(record.getExcludeFromStats());
+                    existing.setIncludeInStats(record.getIncludeInStats());
                     existing.setUpdateTime(LocalDateTime.now());
                     
                     billTransactionMapper.updateById(existing);
@@ -285,7 +293,7 @@ public class BillImportProcessorServiceImpl implements BillImportProcessorServic
                     existing.setTransactionType(record.getTransactionType());
                     existing.setCategory(record.getCategory());
                     existing.setUserNote(record.getUserNote());
-                    existing.setExcludeFromStats(record.getExcludeFromStats());
+                    existing.setIncludeInStats(record.getIncludeInStats());
                     existing.setUpdateTime(LocalDateTime.now());
                     
                     billTransactionMapper.updateById(existing);
@@ -302,11 +310,19 @@ public class BillImportProcessorServiceImpl implements BillImportProcessorServic
      * 记录交易与导入的关联关系
      */
     private void saveTransactionImport(Long transactionId, Long importId, Boolean isNew) {
-        BillTransactionImport relation = new BillTransactionImport();
-        relation.setId(System.currentTimeMillis() + transactionId); // 生成唯一ID
-        relation.setTransactionId(transactionId);
-        relation.setImportId(importId);
-        relation.setIsNew(isNew);
-        billTransactionImportMapper.insert(relation);
+        // 检查是否已存在该关联关系
+        LambdaQueryWrapper<BillTransactionImport> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(BillTransactionImport::getTransactionId, transactionId)
+               .eq(BillTransactionImport::getImportId, importId);
+        BillTransactionImport existing = billTransactionImportMapper.selectOne(wrapper);
+        
+        if (existing == null) {
+            BillTransactionImport relation = new BillTransactionImport();
+            relation.setId(IdUtil.getSnowflakeNextId());
+            relation.setTransactionId(transactionId);
+            relation.setImportId(importId);
+            relation.setIsNew(isNew);
+            billTransactionImportMapper.insert(relation);
+        }
     }
 }

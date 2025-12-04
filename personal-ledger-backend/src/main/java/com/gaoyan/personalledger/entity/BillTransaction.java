@@ -3,6 +3,8 @@ package com.gaoyan.personalledger.entity;
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
 import lombok.Data;
 
 import java.math.BigDecimal;
@@ -18,6 +20,7 @@ import java.time.LocalTime;
 public class BillTransaction {
     
     @TableId(type = IdType.INPUT)
+    @JsonSerialize(using = ToStringSerializer.class)
     private Long id;
     
     /**
@@ -71,9 +74,9 @@ public class BillTransaction {
     private String userNote;
     
     /**
-     * 是否排除统计(0-计入 1-排除)
+     * 是否计入收支(true-计入 false-不计入)
      */
-    private Boolean excludeFromStats;
+    private Boolean includeInStats;
     
     /**
      * 首次导入记录ID

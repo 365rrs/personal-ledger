@@ -136,7 +136,7 @@ public class SqliteConfig {
                     "payment_channel VARCHAR(50)," +
                     "category VARCHAR(50)," +
                     "user_note TEXT," +
-                    "exclude_from_stats BOOLEAN DEFAULT 0," +
+                    "include_in_stats BOOLEAN DEFAULT 1," +
                     "first_import_id INTEGER," +
                     "last_import_id INTEGER," +
                     "import_count INTEGER DEFAULT 1," +

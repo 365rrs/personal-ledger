@@ -83,9 +83,9 @@
           </el-col>
           <el-col :span="6">
             <el-form-item label="计入收支">
-              <el-select v-model="filter.excludeFromStats" clearable placeholder="全部">
-                <el-option label="计入" :value="false" />
-                <el-option label="不计入" :value="true" />
+              <el-select v-model="filter.includeInStats" clearable placeholder="全部">
+                <el-option label="计入" :value="true" />
+                <el-option label="不计入" :value="false" />
               </el-select>
             </el-form-item>
           </el-col>
@@ -140,8 +140,8 @@
         <el-table-column prop="userNote" label="用户备注" width="150" show-overflow-tooltip />
         <el-table-column label="计入收支" width="100" align="center">
           <template #default="{ row }">
-            <el-tag size="small" :type="row.excludeFromStats ? 'info' : 'success'">
-              {{ row.excludeFromStats ? '否' : '是' }}
+            <el-tag size="small" :type="row.includeInStats ? 'success' : 'info'">
+              {{ row.includeInStats ? '是' : '否' }}
             </el-tag>
           </template>
         </el-table-column>
@@ -213,7 +213,7 @@
           <el-input v-model="currentRecord.userNote" type="textarea" :rows="3" />
         </el-form-item>
         <el-form-item label="计入收支">
-          <el-switch v-model="currentRecord.excludeFromStats" :active-value="false" :inactive-value="true" active-text="是" inactive-text="否" />
+          <el-switch v-model="currentRecord.includeInStats" active-text="是" inactive-text="否" />
         </el-form-item>
       </el-form>
       <template #footer v-if="drawerMode === 'edit'">
@@ -268,7 +268,7 @@ const filter = reactive({
   minAmount: '',
   maxAmount: '',
   keyword: '',
-  excludeFromStats: ''
+  includeInStats: ''
 })
 const sortField = ref('')
 const sortOrder = ref('')
@@ -307,8 +307,8 @@ const loadData = async () => {
     }
     
     // 计入收支参数
-    if (filter.excludeFromStats !== '') {
-      params.excludeFromStats = filter.excludeFromStats
+    if (filter.includeInStats !== '') {
+      params.includeInStats = filter.includeInStats
     }
     
     const res = await axios.get('http://localhost:8080/api/bill/transaction/list', { params })
@@ -343,8 +343,8 @@ const loadSummary = async () => {
     if (filter.transactionType) {
       params.incomeOrExpense = filter.transactionType
     }
-    if (filter.excludeFromStats !== '') {
-      params.excludeFromStats = filter.excludeFromStats
+    if (filter.includeInStats !== '') {
+      params.includeInStats = filter.includeInStats
     }
     
     const res = await axios.get('http://localhost:8080/api/bill/transaction/summary', { params })
@@ -425,7 +425,7 @@ const cleanData = async () => {
     balance: item.balance,
     transactionType: item.transactionType,
     description: item.description,
-    excludeFromStats: item.excludeFromStats,
+    includeInStats: item.includeInStats,
     paymentChannel: item.paymentChannel,
     category: item.category,
     userNote: item.userNote
@@ -457,7 +457,7 @@ const exportData = async () => {
       minAmount: filter.minAmount,
       maxAmount: filter.maxAmount,
       incomeOrExpense: filter.transactionType,
-      excludeFromStats: filter.excludeFromStats,
+      includeInStats: filter.includeInStats,
       sortField: sortField.value,
       sortOrder: sortOrder.value,
       firstImportId: route.query.importId
@@ -526,7 +526,7 @@ const resetFilter = () => {
   filter.minAmount = ''
   filter.maxAmount = ''
   filter.keyword = ''
-  filter.excludeFromStats = ''
+  filter.includeInStats = ''
   page.current = 1
   loadData()
 }

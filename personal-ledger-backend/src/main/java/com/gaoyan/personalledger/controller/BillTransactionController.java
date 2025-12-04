@@ -35,7 +35,7 @@ public class BillTransactionController {
         
         Page<BillTransaction> page = billTransactionService.pageList(current, size, params.getStartDate(), params.getEndDate(), 
                 params.getCategory(), params.getPaymentChannel(), params.getTransactionType(), params.getKeyword(), 
-                params.getMinAmount(), params.getMaxAmount(), params.getIncomeOrExpense(), params.getExcludeFromStats(), 
+                params.getMinAmount(), params.getMaxAmount(), params.getIncomeOrExpense(), params.getIncludeInStats(), 
                 params.getSortField(), params.getSortOrder(), params.getFirstImportId());
         
         Map<String, Object> result = new HashMap<>();
@@ -92,7 +92,7 @@ public class BillTransactionController {
         
         Map<String, Object> summary = billTransactionService.getSummary(params.getStartDate(), params.getEndDate(), 
                 params.getCategory(), params.getPaymentChannel(), params.getTransactionType(), params.getKeyword(), 
-                params.getMinAmount(), params.getMaxAmount(), params.getIncomeOrExpense(), params.getExcludeFromStats(), 
+                params.getMinAmount(), params.getMaxAmount(), params.getIncomeOrExpense(), params.getIncludeInStats(), 
                 params.getFirstImportId());
         
         Map<String, Object> result = new HashMap<>();

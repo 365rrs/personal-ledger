@@ -141,7 +141,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import axios from 'axios'
 import { ElMessage, ElMessageBox } from 'element-plus'
@@ -153,7 +153,7 @@ import {
 } from '@element-plus/icons-vue'
 
 const router = useRouter()
-const form = reactive({})
+
 const selectedFile = ref(null)
 const selectedExcelFile = ref(null)
 const uploading = ref(false)
@@ -183,10 +183,7 @@ const loadImportHistory = async () => {
   }
 }
 
-// 刷新导入历史
-const saveImportHistory = async () => {
-  await loadImportHistory()
-}
+
 
 const handleFileChange = (file) => {
   selectedFile.value = file.raw
@@ -220,42 +217,6 @@ const importFile = async () => {
     // 确保先加载历史记录
     loadImportHistory()
 
-    // 检查是否有相同账号的数据需要合并
-    const existingData = findExistingBillData(response.data.exportInfo.account)
-
-    let importId, billData
-
-    if (existingData) {
-      // 合并数据
-      importId = existingData.id
-      const mergedRecords = mergeRecords(existingData.data, response.data.records)
-
-      billData = {
-        ...existingData,
-        fileName: `${existingData.fileName} + ${selectedFile.value.name}`,
-        importTime: `${existingData.importTime} (更新: ${new Date().toLocaleString()})`,
-        data: mergedRecords,
-        exportInfo: response.data.exportInfo, // 使用最新的导出信息
-        summary: response.data.summaryInfo // 使用最新的统计信息
-      }
-    } else {
-      // 新建数据
-      importId = Date.now().toString()
-      billData = {
-        id: importId,
-        fileName: selectedFile.value.name,
-        importTime: new Date().toLocaleString(),
-        data: response.data.records,
-        exportInfo: response.data.exportInfo,
-        summary: response.data.summaryInfo
-      }
-    }
-
-    localStorage.setItem(`billData_${importId}`, JSON.stringify(billData))
-
-    // 刷新导入历史
-    await saveImportHistory()
-
     ElMessage.success('账单导入成功')
     clearForm()
 
@@ -286,42 +247,6 @@ const importExcelFile = async () => {
     // 确保先加载历史记录
     loadImportHistory()
 
-    // 检查是否有相同账号的数据需要合并
-    const existingData = findExistingBillData(response.data.exportInfo.account)
-
-    let importId, billData
-
-    if (existingData) {
-      // 合并数据
-      importId = existingData.id
-      const mergedRecords = mergeRecords(existingData.data, response.data.records)
-
-      billData = {
-        ...existingData,
-        fileName: `${existingData.fileName} + ${selectedExcelFile.value.name}`,
-        importTime: `${existingData.importTime} (更新: ${new Date().toLocaleString()})`,
-        data: mergedRecords,
-        exportInfo: response.data.exportInfo,
-        summary: response.data.summaryInfo
-      }
-    } else {
-      // 新建数据
-      importId = Date.now().toString()
-      billData = {
-        id: importId,
-        fileName: selectedExcelFile.value.name,
-        importTime: new Date().toLocaleString(),
-        data: response.data.records,
-        exportInfo: response.data.exportInfo,
-        summary: response.data.summaryInfo
-      }
-    }
-
-    localStorage.setItem(`billData_${importId}`, JSON.stringify(billData))
-
-    // 刷新导入历史
-    await saveImportHistory()
-
     ElMessage.success('Excel账单导入成功')
     clearForm()
 
@@ -343,109 +268,7 @@ const clearForm = () => {
   }
 }
 
-const goToAnalysis = (importId) => {
-  router.push(`/bill-analysis/${importId}`)
-}
 
-const deleteImportRecord = async (importId, index) => {
-  try {
-    await ElMessageBox.confirm('确定要删除这条导入记录吗？', '确认删除', {
-      confirmButtonText: '确定',
-      cancelButtonText: '取消',
-      type: 'warning'
-    })
-    
-    await axios.delete(`http://localhost:8080/api/bill/import/${importId}`)
-    ElMessage.success('删除成功')
-    loadImportHistory()
-  } catch (error) {
-    if (error !== 'cancel') {
-      ElMessage.error('删除失败')
-    }
-  }
-}
-
-// 查找现有的账单数据（智能匹配账号）
-const findExistingBillData = (account) => {
-  for (const historyItem of importHistory.value) {
-    if (historyItem.status === 'success') {
-      const existingData = localStorage.getItem(`billData_${historyItem.id}`)
-      if (existingData) {
-        const billData = JSON.parse(existingData)
-        const existingAccount = billData.exportInfo?.account
-
-        // 智能匹配逻辑：
-        // 1. 完全匹配
-        // 2. 都是招商银行相关账号（包含“招商”或“银行”）
-        // 3. Excel导入与CSV导入的数据合并
-        if (existingAccount === account ||
-            (isRelatedAccount(existingAccount) && isRelatedAccount(account))) {
-          return billData
-        }
-      }
-    }
-  }
-  return null
-}
-
-// 判断是否为相关账号（招商银行相关）
-const isRelatedAccount = (account) => {
-  if (!account) return false
-  const lowerAccount = account.toLowerCase()
-  return lowerAccount.includes('招商') ||
-      lowerAccount.includes('银行') ||
-      lowerAccount.includes('excel') ||
-      lowerAccount.includes('cmb')
-}
-
-// 合并记录（去重合并）
-const mergeRecords = (existingRecords, newRecords) => {
-  const merged = [...existingRecords]
-
-  for (const newRecord of newRecords) {
-    // 创建唯一键用于去重
-    const newKey = createRecordKey(newRecord)
-
-    // 检查是否已存在
-    const existingIndex = merged.findIndex(record => createRecordKey(record) === newKey)
-
-    if (existingIndex === -1) {
-      // 新记录，直接添加
-      merged.push(newRecord)
-    } else {
-      // 已存在的记录，保留用户的手动修改
-      const existingRecord = merged[existingIndex]
-      merged[existingIndex] = {
-        ...newRecord,
-        userRemark: existingRecord.userRemark || newRecord.userRemark,
-        paymentChannel: existingRecord.paymentChannel || newRecord.paymentChannel,
-        transactionType: existingRecord.transactionType || newRecord.transactionType,
-        category: existingRecord.category || newRecord.category,
-        excludeFromMonthly: existingRecord.excludeFromMonthly !== undefined ? existingRecord.excludeFromMonthly : newRecord.excludeFromMonthly
-      }
-    }
-  }
-
-  // 按日期排序
-  return merged.sort((a, b) => {
-    const dateA = new Date(a.formattedTradeDate || a.transactionDate)
-    const dateB = new Date(b.formattedTradeDate || b.transactionDate)
-    return dateA - dateB
-  })
-}
-
-// 创建记录唯一键
-const createRecordKey = (record) => {
-  // 使用格式化后的日期，如果没有则使用原始日期
-  const date = record.formattedTradeDate || record.transactionDate
-  const time = record.transactionTime || ''
-  const income = record.income ? parseFloat(record.income).toFixed(2) : '0.00'
-  const expense = record.expense ? parseFloat(record.expense).toFixed(2) : '0.00'
-  const type = record.transactionType || ''
-  const remark = record.description || ''
-
-  return `${date}_${time}_${income}_${expense}_${type}_${remark}`
-}
 
 // 切换到标准版导入
 const switchToStandard = () => {

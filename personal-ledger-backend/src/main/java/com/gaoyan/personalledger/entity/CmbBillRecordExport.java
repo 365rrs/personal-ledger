@@ -56,11 +56,11 @@ public class CmbBillRecordExport {
     private String description;
     
     /**
-     * 是否排除统计(0-计入 1-排除)
+     * 是否计入收支统计
      * 转换为可读文本: "是" 或 "否"
      */
     @ExcelProperty("是否计入本月收支")
-    private String excludeFromStatsText;
+    private String includeInStatsText;
     
     /**
      * 支付渠道（微信/支付宝/银行卡/京东支付）
@@ -111,11 +111,11 @@ public class CmbBillRecordExport {
             export.setIncomeOrExpense("");
         }
         
-        // 转换是否排除统计标识为可读文本
-        if (real.getExcludeFromStats() != null && !real.getExcludeFromStats()) {
-            export.setExcludeFromStatsText("是");
+        // 转换是否计入统计标识为可读文本
+        if (real.getIncludeInStats() != null && real.getIncludeInStats()) {
+            export.setIncludeInStatsText("是");
         } else {
-            export.setExcludeFromStatsText("否");
+            export.setIncludeInStatsText("否");
         }
         
         return export;
