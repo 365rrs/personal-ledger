@@ -9,6 +9,7 @@ import RuleManagement from '../views/RuleManagement.vue'
 import CategoryManagement from '../views/CategoryManagement.vue'
 import PaymentChannelManagement from '../views/PaymentChannelManagement.vue'
 import TransactionList from '../views/TransactionList.vue'
+import ManualEntry from '../views/ManualEntry.vue'
 import MonthlyComparison from '../views/MonthlyComparison.vue'
 import ConsumptionHabits from '../views/ConsumptionHabits.vue'
 
@@ -66,6 +67,12 @@ const routes = [
     name: 'TransactionList',
     component: TransactionList,
     meta: { title: '交易记录' }
+  },
+  {
+    path: '/manual-entry',
+    name: 'ManualEntry',
+    component: ManualEntry,
+    meta: { title: '手动记账' }
   },
   {
     path: '/data-analysis',

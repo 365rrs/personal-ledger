@@ -84,6 +84,11 @@ public class BillTransaction {
     private Boolean isRefund;
     
     /**
+     * 是否手工记账(true-是 false-否)
+     */
+    private Boolean isManualEntry;
+    
+    /**
      * 首次导入记录ID
      */
     private Long firstImportId;

@@ -36,10 +36,20 @@
             <span>导入历史</span>
           </el-menu-item>
         </el-sub-menu>
-        <el-menu-item index="/transaction-list">
-          <el-icon><List /></el-icon>
-          <span>交易记录</span>
-        </el-menu-item>
+        <el-sub-menu index="/transaction">
+          <template #title>
+            <el-icon><List /></el-icon>
+            <span>交易管理</span>
+          </template>
+          <el-menu-item index="/transaction-list">
+            <el-icon><List /></el-icon>
+            <span>交易记录</span>
+          </el-menu-item>
+          <el-menu-item index="/manual-entry">
+            <el-icon><Edit /></el-icon>
+            <span>手动记账</span>
+          </el-menu-item>
+        </el-sub-menu>
         <el-sub-menu index="/analysis">
           <template #title>
             <el-icon><DataAnalysis /></el-icon>
@@ -98,7 +108,7 @@
 </template>
 
 <script setup>
-import { House, Upload, Grid, Lightning, DataAnalysis, Document, TrendCharts, PieChart, Setting, Collection, CreditCard, Tools, List } from '@element-plus/icons-vue'
+import { House, Upload, Grid, Lightning, DataAnalysis, Document, TrendCharts, PieChart, Setting, Collection, CreditCard, Tools, List, Edit } from '@element-plus/icons-vue'
 </script>
 
 <style scoped>

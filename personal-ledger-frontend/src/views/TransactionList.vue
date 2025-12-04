@@ -787,7 +787,8 @@ const confirmQuickAdd = async () => {
       category: quickAddForm.category,
       userNote: quickAddForm.note,
       includeInStats: true,
-      isRefund: false
+      isRefund: false,
+      isManualEntry: true
     }
     
     await axios.post('http://localhost:8080/api/bill/transaction', newRecord)

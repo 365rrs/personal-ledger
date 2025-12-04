@@ -87,6 +87,7 @@ CREATE TABLE IF NOT EXISTS `bill_transaction` (
   `user_note` TEXT DEFAULT NULL COMMENT '用户备注',
   `include_in_stats` TINYINT(1) DEFAULT 1 COMMENT '是否计入统计: 0-不计入, 1-计入',
   `is_refund` TINYINT(1) DEFAULT 0 COMMENT '是否退款: 0-否, 1-是',
+  `is_manual_entry` TINYINT(1) DEFAULT 0 COMMENT '是否手工记账: 0-否, 1-是',
   `first_import_id` BIGINT DEFAULT NULL COMMENT '首次导入ID',
   `last_import_id` BIGINT DEFAULT NULL COMMENT '最后导入ID',
   `import_count` INT DEFAULT 1 COMMENT '导入次数',

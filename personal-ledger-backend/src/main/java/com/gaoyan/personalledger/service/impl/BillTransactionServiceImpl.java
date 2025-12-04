@@ -72,6 +72,14 @@ public class BillTransactionServiceImpl implements BillTransactionService {
             wrapper.and(w -> w.like(BillTransaction::getDescription, keyword)
                              .or().like(BillTransaction::getUserNote, keyword));
         }
+        if (minAmount != null && !minAmount.isEmpty()) {
+            java.math.BigDecimal min = new java.math.BigDecimal(minAmount);
+            wrapper.and(w -> w.ge(BillTransaction::getIncome, min).or().ge(BillTransaction::getExpense, min));
+        }
+        if (maxAmount != null && !maxAmount.isEmpty()) {
+            java.math.BigDecimal max = new java.math.BigDecimal(maxAmount);
+            wrapper.and(w -> w.le(BillTransaction::getIncome, max).or().le(BillTransaction::getExpense, max));
+        }
         if (incomeOrExpense != null && !incomeOrExpense.isEmpty()) {
             if ("income".equals(incomeOrExpense)) {
                 wrapper.isNotNull(BillTransaction::getIncome)
