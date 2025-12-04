@@ -17,7 +17,7 @@ public class CleaningRule {
     /**
      * 规则ID
      */
-    @TableId(type = IdType.NONE)
+    @TableId(type = IdType.AUTO)
     private Long id;
     
     /**

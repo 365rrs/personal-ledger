@@ -85,7 +85,7 @@ CREATE TABLE IF NOT EXISTS `bill_transaction` (
   `payment_channel` VARCHAR(50) DEFAULT NULL COMMENT '支付渠道',
   `category` VARCHAR(50) DEFAULT NULL COMMENT '分类',
   `user_note` TEXT DEFAULT NULL COMMENT '用户备注',
-  `exclude_from_stats` TINYINT(1) DEFAULT 0 COMMENT '是否排除统计: 0-计入统计, 1-排除统计',
+  `include_in_stats` TINYINT(1) DEFAULT 1 COMMENT '是否计入统计: 0-不计入, 1-计入',
   `first_import_id` BIGINT DEFAULT NULL COMMENT '首次导入ID',
   `last_import_id` BIGINT DEFAULT NULL COMMENT '最后导入ID',
   `import_count` INT DEFAULT 1 COMMENT '导入次数',

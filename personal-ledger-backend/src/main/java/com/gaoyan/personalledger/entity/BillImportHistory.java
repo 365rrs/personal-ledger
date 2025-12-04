@@ -15,7 +15,7 @@ import java.time.LocalDateTime;
 @TableName("bill_import_history")
 public class BillImportHistory {
     
-    @TableId(type = IdType.INPUT)
+    @TableId(type = IdType.AUTO)
     private Long id;
     
     /**

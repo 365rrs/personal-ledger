@@ -19,7 +19,7 @@ import java.time.LocalTime;
 @TableName("bill_transaction")
 public class BillTransaction {
     
-    @TableId(type = IdType.INPUT)
+    @TableId(type = IdType.AUTO)
     @JsonSerialize(using = ToStringSerializer.class)
     private Long id;
     
