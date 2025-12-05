@@ -9,8 +9,11 @@ import RuleManagement from '../views/RuleManagement.vue'
 import CategoryManagement from '../views/CategoryManagement.vue'
 import PaymentChannelManagement from '../views/PaymentChannelManagement.vue'
 import TransactionList from '../views/TransactionList.vue'
-import ManualEntry from '../views/ManualEntry.vue'
-import MonthlyComparison from '../views/MonthlyComparison.vue'
+
+import MonthlyBalance from '../views/MonthlyBalance.vue'
+import CumulativeBalance from '../views/CumulativeBalance.vue'
+import LargeTransactionAnalysis from '../views/LargeTransactionAnalysis.vue'
+import FrequentTransactionAnalysis from '../views/FrequentTransactionAnalysis.vue'
 import ConsumptionHabits from '../views/ConsumptionHabits.vue'
 
 const routes = [
@@ -68,12 +71,7 @@ const routes = [
     component: TransactionList,
     meta: { title: '交易记录' }
   },
-  {
-    path: '/manual-entry',
-    name: 'ManualEntry',
-    component: ManualEntry,
-    meta: { title: '手动记账' }
-  },
+
   {
     path: '/data-analysis',
     name: 'DataAnalysis',
@@ -86,11 +84,30 @@ const routes = [
     component: CategoryAnalysis,
     meta: { title: '按分类统计' }
   },
+
   {
-    path: '/monthly-comparison',
-    name: 'MonthlyComparison',
-    component: MonthlyComparison,
-    meta: { title: '月度对比' }
+    path: '/monthly-balance',
+    name: 'MonthlyBalance',
+    component: MonthlyBalance,
+    meta: { title: '月度结余' }
+  },
+  {
+    path: '/cumulative-balance',
+    name: 'CumulativeBalance',
+    component: CumulativeBalance,
+    meta: { title: '累计结余' }
+  },
+  {
+    path: '/large-transaction-analysis',
+    name: 'LargeTransactionAnalysis',
+    component: LargeTransactionAnalysis,
+    meta: { title: '大额交易分析' }
+  },
+  {
+    path: '/frequent-transaction-analysis',
+    name: 'FrequentTransactionAnalysis',
+    component: FrequentTransactionAnalysis,
+    meta: { title: '高频交易分析' }
   },
   {
     path: '/consumption-habits',

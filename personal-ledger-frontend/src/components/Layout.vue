@@ -45,19 +45,27 @@
             <el-icon><List /></el-icon>
             <span>交易记录</span>
           </el-menu-item>
-          <el-menu-item index="/manual-entry">
-            <el-icon><Edit /></el-icon>
-            <span>手动记账</span>
-          </el-menu-item>
         </el-sub-menu>
         <el-sub-menu index="/analysis">
           <template #title>
             <el-icon><DataAnalysis /></el-icon>
             <span>消费分析</span>
           </template>
-          <el-menu-item index="/monthly-comparison">
+          <el-menu-item index="/monthly-balance">
             <el-icon><TrendCharts /></el-icon>
-            <span>月度对比</span>
+            <span>月度结余</span>
+          </el-menu-item>
+          <el-menu-item index="/cumulative-balance">
+            <el-icon><TrendCharts /></el-icon>
+            <span>累计结余</span>
+          </el-menu-item>
+          <el-menu-item index="/large-transaction-analysis">
+            <el-icon><DataAnalysis /></el-icon>
+            <span>大额交易分析</span>
+          </el-menu-item>
+          <el-menu-item index="/frequent-transaction-analysis">
+            <el-icon><DataAnalysis /></el-icon>
+            <span>高频交易分析</span>
           </el-menu-item>
           <el-menu-item index="/consumption-habits">
             <el-icon><PieChart /></el-icon>

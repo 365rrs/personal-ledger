@@ -113,6 +113,7 @@
           <el-button type="primary" @click="batchEditCategory" :disabled="selectedRows.length === 0">批量分类 ({{ selectedRows.length }})</el-button>
           <el-button type="primary" @click="batchEditIncludeInStats" :disabled="selectedRows.length === 0">批量设置收支 ({{ selectedRows.length }})</el-button>
           <el-button type="success" @click="batchQuickAddRelated" :disabled="selectedRows.length !== 1">快速补录 ({{ selectedRows.length }})</el-button>
+          <el-button type="primary" @click="openManualEntry">手动记账</el-button>
         </el-space>
       </div>
 
@@ -241,39 +242,52 @@
       </template>
     </el-dialog>
 
-    <el-drawer v-model="drawerVisible" :title="drawerMode === 'view' ? '查看交易' : '编辑交易'" size="500px">
-      <el-form :model="currentRecord" label-width="100px" :disabled="drawerMode === 'view'">
-        <el-form-item label="交易日期">
-          <el-input v-model="currentRecord.transactionDate" readonly />
+    <el-drawer v-model="drawerVisible" :title="getDrawerTitle()" size="500px">
+      <el-form :model="currentRecord" :rules="drawerMode === 'manual' ? manualRules : {}" ref="drawerFormRef" label-width="100px" :disabled="drawerMode === 'view'">
+        <el-form-item label="交易日期" :prop="drawerMode === 'manual' ? 'transactionDate' : ''">
+          <el-date-picker v-if="drawerMode === 'manual'" v-model="currentRecord.transactionDate" type="date" placeholder="选择日期" value-format="YYYY-MM-DD" style="width: 100%" />
+          <el-input v-else v-model="currentRecord.transactionDate" readonly />
         </el-form-item>
-        <el-form-item label="交易时间">
-          <el-input v-model="currentRecord.transactionTime" readonly />
+        <el-form-item label="交易时间" :prop="drawerMode === 'manual' ? 'transactionTime' : ''">
+          <el-time-picker v-if="drawerMode === 'manual'" v-model="currentRecord.transactionTime" placeholder="选择时间" value-format="HH:mm:ss" style="width: 100%" />
+          <el-input v-else v-model="currentRecord.transactionTime" readonly />
         </el-form-item>
-        <el-form-item label="收入">
+        <el-form-item v-if="drawerMode === 'manual'" label="收支类型" prop="type">
+          <el-radio-group v-model="currentRecord.type">
+            <el-radio label="income">收入</el-radio>
+            <el-radio label="expense">支出</el-radio>
+          </el-radio-group>
+        </el-form-item>
+        <el-form-item v-if="drawerMode === 'manual'" label="金额" prop="amount">
+          <el-input v-model="currentRecord.amount" placeholder="请输入金额" type="number" step="0.01">
+            <template #prepend>¥</template>
+          </el-input>
+        </el-form-item>
+        <el-form-item v-if="drawerMode !== 'manual'" label="收入">
           <el-input v-model="currentRecord.income" readonly />
         </el-form-item>
-        <el-form-item label="支出">
+        <el-form-item v-if="drawerMode !== 'manual'" label="支出">
           <el-input v-model="currentRecord.expense" readonly />
         </el-form-item>
         <el-form-item label="交易类型">
-          <el-input v-model="currentRecord.transactionType" readonly />
+          <el-input v-model="currentRecord.transactionType" :placeholder="drawerMode === 'manual' ? '如：转账、消费、退款等' : ''" :readonly="drawerMode === 'view'" />
         </el-form-item>
-        <el-form-item label="交易备注">
-          <el-input v-model="currentRecord.description" type="textarea" readonly />
+        <el-form-item label="交易描述">
+          <el-input v-model="currentRecord.description" type="textarea" :placeholder="drawerMode === 'manual' ? '交易描述' : ''" :readonly="drawerMode === 'view'" />
         </el-form-item>
         <el-form-item label="分类">
-          <el-select v-model="currentRecord.category" filterable>
+          <el-select v-model="currentRecord.category" filterable :placeholder="drawerMode === 'manual' ? '请选择分类' : ''">
             <el-option label="未分类" value="" />
-            <el-option v-for="cat in categories" :key="cat.id" :label="cat.name" :value="cat.name" />
+            <el-option v-for="cat in filteredCategories" :key="cat.id" :label="cat.name" :value="cat.name" />
           </el-select>
         </el-form-item>
         <el-form-item label="支付渠道">
-          <el-select v-model="currentRecord.paymentChannel" filterable>
+          <el-select v-model="currentRecord.paymentChannel" filterable :placeholder="drawerMode === 'manual' ? '请选择支付渠道' : ''">
             <el-option v-for="ch in channels" :key="ch.id" :label="ch.name" :value="ch.name" />
           </el-select>
         </el-form-item>
         <el-form-item label="用户备注">
-          <el-input v-model="currentRecord.userNote" type="textarea" :rows="3" />
+          <el-input v-model="currentRecord.userNote" type="textarea" :rows="3" :placeholder="drawerMode === 'manual' ? '添加备注信息' : ''" />
         </el-form-item>
         <el-form-item label="计入收支">
           <el-switch v-model="currentRecord.includeInStats" active-text="是" inactive-text="否" />
@@ -282,9 +296,9 @@
           <el-switch v-model="currentRecord.isRefund" active-text="是" inactive-text="否" />
         </el-form-item>
       </el-form>
-      <template #footer v-if="drawerMode === 'edit'">
+      <template #footer v-if="drawerMode !== 'view'">
         <el-button @click="drawerVisible = false">取消</el-button>
-        <el-button type="primary" @click="saveRecord">保存</el-button>
+        <el-button type="primary" @click="saveRecord" :loading="submitting">保存</el-button>
       </template>
     </el-drawer>
   </div>
@@ -375,6 +389,24 @@ const page = reactive({ current: 1, size: 20, total: 0 })
 const drawerVisible = ref(false)
 const drawerMode = ref('view')
 const currentRecord = ref({})
+const drawerFormRef = ref(null)
+const submitting = ref(false)
+
+const manualRules = {
+  transactionDate: [{ required: true, message: '请选择交易日期', trigger: 'change' }],
+  transactionTime: [{ required: true, message: '请选择交易时间', trigger: 'change' }],
+  type: [{ required: true, message: '请选择收支类型', trigger: 'change' }],
+  amount: [
+    { required: true, message: '请输入金额', trigger: 'blur' },
+    { pattern: /^\d+(\.\d{1,2})?$/, message: '请输入有效金额', trigger: 'blur' }
+  ]
+}
+
+const filteredCategories = computed(() => {
+  if (drawerMode.value !== 'manual') return categories.value
+  const typeMap = { income: 'INCOME', expense: 'EXPENSE' }
+  return categories.value.filter(cat => cat.type === typeMap[currentRecord.value.type])
+})
 
 const loadData = async () => {
   loading.value = true
@@ -537,7 +569,7 @@ const cleanData = async () => {
   
   cleaning.value = true
   try {
-    const res = await axios.post('http://localhost:8080/api/cmb/clean-records', convertedData)
+    const res = await axios.post('http://localhost:8080/api/bill/import/clean-records', convertedData)
     const result = res.data
     ElMessage.success(`数据清洗完成：总记录 ${result.totalCount} 条，更新 ${result.updatedCount} 条`)
     loadData()
@@ -567,7 +599,7 @@ const exportData = async () => {
       firstImportId: route.query.importId
     }
     
-    const res = await axios.post('http://localhost:8080/api/cmb/export', params, {
+    const res = await axios.post('http://localhost:8080/api/bill/import/export', params, {
       responseType: 'blob'
     })
     
@@ -661,14 +693,74 @@ const editRecord = (row) => {
   drawerVisible.value = true
 }
 
+const getDrawerTitle = () => {
+  if (drawerMode.value === 'view') return '查看交易'
+  if (drawerMode.value === 'edit') return '编辑交易'
+  if (drawerMode.value === 'manual') return '手动记账'
+  return '交易记录'
+}
+
+const openManualEntry = () => {
+  currentRecord.value = {
+    transactionDate: new Date().toISOString().split('T')[0],
+    transactionTime: new Date().toTimeString().split(' ')[0],
+    type: 'expense',
+    amount: '',
+    category: '',
+    paymentChannel: '',
+    transactionType: '',
+    description: '',
+    userNote: '',
+    includeInStats: true,
+    isRefund: false
+  }
+  drawerMode.value = 'manual'
+  drawerVisible.value = true
+}
+
 const saveRecord = async () => {
-  try {
-    await axios.put(`http://localhost:8080/api/bill/transaction/${currentRecord.value.id}`, currentRecord.value)
-    ElMessage.success('保存成功')
-    drawerVisible.value = false
-    loadData()
-  } catch (error) {
-    ElMessage.error('保存失败: ' + error.message)
+  if (drawerMode.value === 'manual') {
+    if (!drawerFormRef.value) return
+    
+    await drawerFormRef.value.validate(async (valid) => {
+      if (!valid) return
+      
+      submitting.value = true
+      try {
+        const data = {
+          transactionDate: currentRecord.value.transactionDate,
+          transactionTime: currentRecord.value.transactionTime,
+          income: currentRecord.value.type === 'income' ? currentRecord.value.amount : null,
+          expense: currentRecord.value.type === 'expense' ? currentRecord.value.amount : null,
+          category: currentRecord.value.category,
+          paymentChannel: currentRecord.value.paymentChannel,
+          transactionType: currentRecord.value.transactionType,
+          description: currentRecord.value.description,
+          userNote: currentRecord.value.userNote,
+          includeInStats: currentRecord.value.includeInStats,
+          isRefund: currentRecord.value.isRefund,
+          isManualEntry: true
+        }
+        
+        await axios.post('http://localhost:8080/api/bill/transaction', data)
+        ElMessage.success('记账成功')
+        drawerVisible.value = false
+        loadData()
+      } catch (error) {
+        ElMessage.error('记账失败：' + (error.response?.data?.message || error.message))
+      } finally {
+        submitting.value = false
+      }
+    })
+  } else {
+    try {
+      await axios.put(`http://localhost:8080/api/bill/transaction/${currentRecord.value.id}`, currentRecord.value)
+      ElMessage.success('保存成功')
+      drawerVisible.value = false
+      loadData()
+    } catch (error) {
+      ElMessage.error('保存失败: ' + error.message)
+    }
   }
 }
 
