@@ -66,6 +66,13 @@
           <el-table-column prop="subCategory" label="二级分类" width="100" />
           <el-table-column prop="description" label="交易备注" min-width="180" show-overflow-tooltip />
           <el-table-column prop="userNote" label="用户备注" width="150" show-overflow-tooltip />
+          <el-table-column label="标签" width="200">
+            <template #default="{ row }">
+              <el-tag v-for="tag in row.tags" :key="tag.id" :style="{ backgroundColor: tag.color, borderColor: tag.color, color: '#fff', marginRight: '4px' }" size="small">
+                {{ tag.name }}
+              </el-tag>
+            </template>
+          </el-table-column>
           <el-table-column prop="includeInStats" label="计入收支" width="100" align="center">
             <template #default="{ row }">
               <el-tag :type="row.includeInStats ? 'success' : 'info'" size="small">
@@ -82,47 +89,15 @@
       </div>
     </el-card>
 
-    <!-- 编辑抽屉 -->
-    <el-drawer v-model="drawerVisible" title="编辑交易记录" size="500px">
-      <el-form v-if="currentRecord" label-width="100px">
-        <el-form-item label="交易日期">
-          <el-input v-model="currentRecord.transactionDate" readonly />
-        </el-form-item>
-        <el-form-item label="交易时间">
-          <el-input v-model="currentRecord.transactionTime" readonly />
-        </el-form-item>
-        <el-form-item label="收入">
-          <el-input v-model="currentRecord.income" readonly />
-        </el-form-item>
-        <el-form-item label="支出">
-          <el-input v-model="currentRecord.expense" readonly />
-        </el-form-item>
-        <el-form-item label="交易类型">
-          <el-input v-model="currentRecord.transactionType" readonly />
-        </el-form-item>
-        <el-form-item label="描述">
-          <el-input v-model="currentRecord.description" readonly />
-        </el-form-item>
-        <el-form-item label="支付渠道">
-          <el-select v-model="currentRecord.paymentChannel" clearable filterable placeholder="请选择">
-            <el-option v-for="ch in channels" :key="ch" :label="ch" :value="ch" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="分类">
-          <el-cascader v-model="currentRecord.category" :options="categoryTree" :props="{ value: 'name', label: 'name', children: 'children', checkStrictly: true, emitPath: false }" clearable filterable placeholder="请选择" style="width: 100%" />
-        </el-form-item>
-        <el-form-item label="用户备注">
-          <el-input v-model="currentRecord.userNote" type="textarea" :rows="3" placeholder="请输入备注" />
-        </el-form-item>
-        <el-form-item label="计入收支">
-          <el-switch v-model="currentRecord.includeInStats" active-text="是" inactive-text="否" />
-        </el-form-item>
-      </el-form>
-      <template #footer>
-        <el-button @click="drawerVisible = false">取消</el-button>
-        <el-button type="primary" @click="saveRecord">保存</el-button>
-      </template>
-    </el-drawer>
+    <TransactionEditDrawer
+      v-model="drawerVisible"
+      mode="edit"
+      :record="currentRecord"
+      :categories="categoryTree"
+      :channels="channelList"
+      :all-tags="allTags"
+      @saved="handleSaved"
+    />
   </div>
 </template>
 
@@ -131,6 +106,7 @@ import { ref, onMounted, nextTick } from 'vue'
 import axios from 'axios'
 import * as echarts from 'echarts'
 import { ElMessage } from 'element-plus'
+import TransactionEditDrawer from '../components/TransactionEditDrawer.vue'
 
 const chartRef = ref(null)
 const startDate = ref('')
@@ -143,6 +119,8 @@ const currentRecord = ref(null)
 const categories = ref([])
 const categoryTree = ref([])
 const channels = ref([])
+const channelList = ref([])
+const allTags = ref([])
 let chart = null
 
 // 排序字段和顺序
@@ -231,6 +209,7 @@ const loadCategoryDetails = async (row) => {
     const transactions = res.data.data?.records || []
     
     categoryDetails.value = transactions
+    await loadTransactionTags()
   } catch (error) {
     ElMessage.error('加载明细失败')
   }
@@ -246,27 +225,14 @@ const handleSortChange = ({ prop, order }) => {
 }
 
 const editRecord = (record) => {
-  currentRecord.value = { ...record }
+  currentRecord.value = record
   drawerVisible.value = true
 }
 
-const saveRecord = async () => {
-  try {
-    await axios.put(`http://localhost:8080/api/bill/transaction/${currentRecord.value.id}`, {
-      ...currentRecord.value,
-      category: currentRecord.value.category,
-      paymentChannel: currentRecord.value.paymentChannel,
-      userNote: currentRecord.value.userNote,
-      includeInStats: currentRecord.value.includeInStats
-    })
-    ElMessage.success('保存成功')
-    drawerVisible.value = false
-    loadData()
-    if (selectedCategory.value) {
-      loadCategoryDetails({ category: selectedCategory.value })
-    }
-  } catch (error) {
-    ElMessage.error('保存失败')
+const handleSaved = () => {
+  loadData()
+  if (selectedCategory.value) {
+    loadCategoryDetails({ category: selectedCategory.value })
   }
 }
 
@@ -298,9 +264,32 @@ const loadChannels = async () => {
   try {
     const res = await axios.get('http://localhost:8080/api/payment-channel/list')
     channels.value = res.data.map(c => c.name)
+    channelList.value = res.data
   } catch (error) {
     console.error('加载支付渠道失败', error)
   }
+}
+
+const loadTags = async () => {
+  try {
+    const res = await axios.get('http://localhost:8080/api/bill/tag/list')
+    allTags.value = res.data
+  } catch (error) {
+    console.error('加载标签失败', error)
+  }
+}
+
+const loadTransactionTags = async () => {
+  const tagPromises = categoryDetails.value.map(async (transaction) => {
+    try {
+      const tagIds = await axios.get(`http://localhost:8080/api/bill/tag/transaction/${transaction.id}`)
+      const tags = allTags.value.filter(tag => tagIds.data.includes(tag.id))
+      transaction.tags = tags
+    } catch (error) {
+      transaction.tags = []
+    }
+  })
+  await Promise.all(tagPromises)
 }
 
 onMounted(async () => {
@@ -312,6 +301,7 @@ onMounted(async () => {
   endDate.value = `${year}-${month}-${new Date(year, now.getMonth() + 1, 0).getDate()}`
   loadCategories()
   loadChannels()
+  loadTags()
   loadData()
 })
 </script>
