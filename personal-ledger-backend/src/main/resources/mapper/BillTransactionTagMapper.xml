@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.gaoyan.personalledger.mapper.BillTransactionTagMapper">
+    
+    <select id="selectTagIdsByTransactionId" resultType="java.lang.Long">
+        SELECT tag_id FROM bill_transaction_tag WHERE transaction_id = #{transactionId}
+    </select>
+    
+    <select id="selectByTransactionIds" resultType="com.gaoyan.personalledger.entity.BillTransactionTag">
+        SELECT transaction_id, tag_id FROM bill_transaction_tag
+        WHERE transaction_id IN
+        <foreach collection="transactionIds" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </select>
+    
+</mapper>

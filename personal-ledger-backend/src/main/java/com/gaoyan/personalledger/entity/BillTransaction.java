@@ -1,6 +1,7 @@
 package com.gaoyan.personalledger.entity;
 
 import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
@@ -11,6 +12,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.List;
 
 /**
  * 账单交易明细实体
@@ -117,4 +119,10 @@ public class BillTransaction {
      * 更新时间
      */
     private LocalDateTime updateTime;
+    
+    /**
+     * 标签列表（非数据库字段）
+     */
+    @TableField(exist = false)
+    private List<BillTag> tags;
 }

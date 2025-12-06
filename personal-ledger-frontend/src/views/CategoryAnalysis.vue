@@ -206,10 +206,7 @@ const loadCategoryDetails = async (row) => {
     }
     
     const res = await axios.get('http://localhost:8080/api/bill/transaction/list', { params })
-    const transactions = res.data.data?.records || []
-    
-    categoryDetails.value = transactions
-    await loadTransactionTags()
+    categoryDetails.value = res.data.data?.records || []
   } catch (error) {
     ElMessage.error('加载明细失败')
   }
@@ -277,19 +274,6 @@ const loadTags = async () => {
   } catch (error) {
     console.error('加载标签失败', error)
   }
-}
-
-const loadTransactionTags = async () => {
-  const tagPromises = categoryDetails.value.map(async (transaction) => {
-    try {
-      const tagIds = await axios.get(`http://localhost:8080/api/bill/tag/transaction/${transaction.id}`)
-      const tags = allTags.value.filter(tag => tagIds.data.includes(tag.id))
-      transaction.tags = tags
-    } catch (error) {
-      transaction.tags = []
-    }
-  })
-  await Promise.all(tagPromises)
 }
 
 onMounted(async () => {

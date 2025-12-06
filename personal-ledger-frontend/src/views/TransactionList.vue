@@ -167,7 +167,7 @@
       <el-table :data="transactions" v-loading="loading" @selection-change="handleSelectionChange" @sort-change="handleSortChange">
         <el-table-column type="selection" width="55" resizable />
         <el-table-column v-if="visibleColumns.transactionDate" prop="transactionDate" label="交易日期" width="120" sortable="custom" resizable />
-        <el-table-column v-if="visibleColumns.transactionTime" prop="transactionTime" label="交易时间" width="100" resizable />
+        <el-table-column v-if="visibleColumns.transactionTime" prop="transactionTime" label="交易时间" width="110" sortable="custom" resizable />
         <el-table-column v-if="visibleColumns.income" prop="income" label="收入" width="100" sortable="custom" resizable />
         <el-table-column v-if="visibleColumns.expense" prop="expense" label="支出" width="100" sortable="custom" resizable />
         <el-table-column v-if="visibleColumns.transactionType" prop="transactionType" label="交易类型" width="120" show-overflow-tooltip resizable />
@@ -602,9 +602,6 @@ const loadData = async () => {
     transactions.value = res.data.data.records
     page.total = res.data.data.total
     
-    // 加载每条记录的标签
-    await loadTransactionTags()
-    
     // 加载汇总数据
     loadSummary()
   } catch (error) {
@@ -612,19 +609,6 @@ const loadData = async () => {
   } finally {
     loading.value = false
   }
-}
-
-const loadTransactionTags = async () => {
-  const tagPromises = transactions.value.map(async (transaction) => {
-    try {
-      const tagIds = await axios.get(`http://localhost:8080/api/bill/tag/transaction/${transaction.id}`)
-      const tags = allTags.value.filter(tag => tagIds.data.includes(tag.id))
-      transaction.tags = tags
-    } catch (error) {
-      transaction.tags = []
-    }
-  })
-  await Promise.all(tagPromises)
 }
 
 const loadSummary = async () => {

@@ -4,16 +4,21 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.gaoyan.personalledger.entity.BillTag;
 import com.gaoyan.personalledger.entity.BillTransaction;
+import com.gaoyan.personalledger.entity.BillTransactionTag;
 import com.gaoyan.personalledger.entity.Category;
+import com.gaoyan.personalledger.mapper.BillTagMapper;
 import com.gaoyan.personalledger.mapper.BillTransactionMapper;
+import com.gaoyan.personalledger.mapper.BillTransactionTagMapper;
 import com.gaoyan.personalledger.service.BillTransactionService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
-import java.util.List;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -24,6 +29,12 @@ public class BillTransactionServiceImpl implements BillTransactionService {
     
     @Autowired
     private com.gaoyan.personalledger.mapper.CategoryMapper categoryMapper;
+    
+    @Autowired
+    private BillTransactionTagMapper billTransactionTagMapper;
+    
+    @Autowired
+    private BillTagMapper billTagMapper;
     
     @Override
     public void save(BillTransaction transaction) {
@@ -184,7 +195,12 @@ public class BillTransactionServiceImpl implements BillTransactionService {
             wrapper.orderByDesc(BillTransaction::getTransactionDate);
         }
         
-        return billTransactionMapper.selectPage(page, wrapper);
+        Page<BillTransaction> result = billTransactionMapper.selectPage(page, wrapper);
+        
+        // 批量加载标签
+        loadTagsForTransactions(result.getRecords());
+        
+        return result;
     }
     
     @Override
@@ -407,5 +423,48 @@ public class BillTransactionServiceImpl implements BillTransactionService {
         }
         
         return list;
+    }
+    
+    /**
+     * 批量加载交易的标签
+     */
+    private void loadTagsForTransactions(List<BillTransaction> transactions) {
+        if (transactions == null || transactions.isEmpty()) {
+            return;
+        }
+        
+        // 获取所有交易ID
+        List<Long> transactionIds = transactions.stream()
+                .map(BillTransaction::getId)
+                .collect(Collectors.toList());
+        
+        // 批量查询交易标签关联
+        List<BillTransactionTag> relations = billTransactionTagMapper.selectByTransactionIds(transactionIds);
+        
+        // 获取所有标签ID
+        Set<Long> tagIds = relations.stream()
+                .map(BillTransactionTag::getTagId)
+                .collect(Collectors.toSet());
+        
+        // 批量查询标签信息
+        Map<Long, BillTag> tagMap = new HashMap<>();
+        if (!tagIds.isEmpty()) {
+            List<BillTag> tags = billTagMapper.selectBatchIds(tagIds);
+            tagMap = tags.stream().collect(Collectors.toMap(BillTag::getId, tag -> tag));
+        }
+        
+        // 构建交易ID到标签列表的映射
+        Map<Long, List<BillTag>> transactionTagMap = new HashMap<>();
+        for (BillTransactionTag relation : relations) {
+            BillTag tag = tagMap.get(relation.getTagId());
+            if (tag != null) {
+                transactionTagMap.computeIfAbsent(relation.getTransactionId(), k -> new ArrayList<>()).add(tag);
+            }
+        }
+        
+        // 设置每个交易的标签列表
+        for (BillTransaction transaction : transactions) {
+            transaction.setTags(transactionTagMap.getOrDefault(transaction.getId(), new ArrayList<>()));
+        }
     }
 }
