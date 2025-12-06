@@ -1,11 +1,6 @@
 <template>
   <div class="transaction-list">
     <el-card shadow="hover">
-      <template #header>
-        <div class="header">
-          <span>交易记录</span>
-        </div>
-      </template>
 
       <el-form label-width="80px" class="filter-form">
         <el-row :gutter="12">
@@ -52,18 +47,20 @@
               </el-select>
             </el-form-item>
           </el-col>
-          <el-col :span="6">
-            <el-form-item label="关键词">
-              <el-input v-model="filter.keyword" placeholder="搜索备注" clearable />
-            </el-form-item>
-          </el-col>
         </el-row>
         <el-row :gutter="12">
           <el-col :span="5">
             <el-form-item label="分类">
-              <el-select v-model="displayCategory" filterable allow-create placeholder="全部" style="width: 100%" clearable>
+              <el-select v-model="displayCategory" filterable allow-create default-first-option placeholder="全部" style="width: 100%" clearable :filter-method="filterCategory">
                 <el-option label="未分类" value="__UNCATEGORIZED__" />
-                <el-option v-for="cat in allCategoryNames" :key="cat" :label="cat" :value="cat" />
+                <el-option v-for="cat in filteredParentCategories" :key="cat.name" :value="cat.name">
+                  <span style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                    <span>{{ cat.name }}</span>
+                    <el-tag :type="cat.type === 'EXPENSE' ? 'danger' : 'success'" size="small">
+                      {{ cat.type === 'EXPENSE' ? '支出' : '收入' }}
+                    </el-tag>
+                  </span>
+                </el-option>
               </el-select>
             </el-form-item>
           </el-col>
@@ -71,7 +68,7 @@
             <el-form-item label="二级分类">
               <el-select v-model="displaySubCategory" filterable placeholder="全部" clearable style="width: 100%">
                 <el-option label="未分类" value="__UNCATEGORIZED__" />
-                <el-option v-for="cat in subCategories" :key="cat.name" :label="cat.name" :value="cat.name" />
+                <el-option v-for="cat in filteredSubCategories" :key="cat.name" :label="cat.name" :value="cat.name" />
               </el-select>
             </el-form-item>
           </el-col>
@@ -87,16 +84,13 @@
               <el-input v-model="filter.tradeType" placeholder="交易类型" clearable />
             </el-form-item>
           </el-col>
-          <el-col :span="4">
-            <el-form-item label="是否退款">
-              <el-select v-model="filter.isRefund" clearable placeholder="全部" style="width: 100%">
-                <el-option label="退款" :value="true" />
-                <el-option label="非退款" :value="false" />
-              </el-select>
-            </el-form-item>
-          </el-col>
         </el-row>
         <el-row :gutter="12">
+          <el-col :span="6">
+            <el-form-item label="关键词">
+              <el-input v-model="filter.keyword" placeholder="搜索备注" clearable />
+            </el-form-item>
+          </el-col>
           <el-col :span="8">
             <el-form-item label="金额范围">
               <div style="display: flex; align-items: center; gap: 8px;">
@@ -104,6 +98,14 @@
                 <span>~</span>
                 <el-input v-model="filter.maxAmount" placeholder="最大" clearable />
               </div>
+            </el-form-item>
+          </el-col>
+          <el-col :span="4">
+            <el-form-item label="是否退款">
+              <el-select v-model="filter.isRefund" clearable placeholder="全部" style="width: 100%">
+                <el-option label="退款" :value="true" />
+                <el-option label="非退款" :value="false" />
+              </el-select>
             </el-form-item>
           </el-col>
           <el-col :span="16">
@@ -462,13 +464,48 @@ const filteredCategoryTree = computed(() => {
 
 const displayCategory = computed({
   get: () => filter.category === '__ALL__' ? null : filter.category,
-  set: (val) => { filter.category = val || '__ALL__' }
+  set: (val) => { 
+    filter.category = val || '__ALL__'
+    // 当分类改变时，清空二级分类
+    if (val && val !== '__UNCATEGORIZED__') {
+      filter.subCategory = '__ALL__'
+    }
+  }
 })
 
 const displaySubCategory = computed({
   get: () => filter.subCategory === '__ALL__' ? null : filter.subCategory,
   set: (val) => { filter.subCategory = val || '__ALL__' }
 })
+
+// 根据选中的分类过滤二级分类
+const filteredSubCategories = computed(() => {
+  // 如果没有选择分类或选择了未分类，显示所有二级分类
+  if (!filter.category || filter.category === '__ALL__' || filter.category === '__UNCATEGORIZED__') {
+    return subCategories.value
+  }
+  
+  // 找到选中的一级分类
+  const selectedParent = categoryTree.value.find(cat => cat.name === filter.category)
+  if (!selectedParent || !selectedParent.children) {
+    return []
+  }
+  
+  // 返回该一级分类下的二级分类
+  return selectedParent.children.map(child => ({ name: child.name }))
+})
+
+const categoryFilterText = ref('')
+const filteredParentCategories = computed(() => {
+  if (!categoryFilterText.value) {
+    return parentCategories.value
+  }
+  return parentCategories.value.filter(cat => cat.name.includes(categoryFilterText.value))
+})
+
+const filterCategory = (query) => {
+  categoryFilterText.value = query
+}
 
 const loadData = async () => {
   loading.value = true
@@ -762,7 +799,7 @@ const extractParentAndSubCategories = (tree) => {
   const subs = []
   const allNames = []
   tree.forEach(node => {
-    parents.push({ name: node.name })
+    parents.push({ name: node.name, type: node.type })
     allNames.push(node.name)
     if (node.children && node.children.length > 0) {
       node.children.forEach(child => {
@@ -1174,6 +1211,9 @@ onMounted(() => {
 }
 
 .filter-form {
+  padding: 16px;
+  background: #f5f7fa;
+  border-radius: 4px;
   margin-bottom: 16px;
 }
 
