@@ -137,27 +137,34 @@
       </div>
 
       <el-table :data="transactions" v-loading="loading" @selection-change="handleSelectionChange" @sort-change="handleSortChange">
-        <el-table-column type="selection" width="55" />
-        <el-table-column prop="transactionDate" label="交易日期" width="120" sortable="custom" />
-        <el-table-column prop="transactionTime" label="交易时间" width="100" />
-        <el-table-column prop="income" label="收入" width="100" sortable="custom" />
-        <el-table-column prop="expense" label="支出" width="100" sortable="custom" />
-        <el-table-column prop="transactionType" label="交易类型" width="120" show-overflow-tooltip />
-        <el-table-column prop="paymentChannel" label="支付渠道" width="100" />
-        <el-table-column prop="category" label="分类" width="100" />
-        <el-table-column prop="description" label="交易备注" show-overflow-tooltip />
-        <el-table-column prop="userNote" label="用户备注" width="150" show-overflow-tooltip />
-        <el-table-column label="计入收支" width="100" align="center">
+        <el-table-column type="selection" width="55" resizable />
+        <el-table-column prop="transactionDate" label="交易日期" width="120" sortable="custom" resizable />
+        <el-table-column prop="transactionTime" label="交易时间" width="100" resizable />
+        <el-table-column prop="income" label="收入" width="100" sortable="custom" resizable />
+        <el-table-column prop="expense" label="支出" width="100" sortable="custom" resizable />
+        <el-table-column prop="transactionType" label="交易类型" width="120" show-overflow-tooltip resizable />
+        <el-table-column prop="paymentChannel" label="支付渠道" width="100" resizable />
+        <el-table-column prop="category" label="分类" width="100" resizable />
+        <el-table-column prop="description" label="交易备注" width="250" show-overflow-tooltip resizable />
+        <el-table-column prop="userNote" label="用户备注" width="150" show-overflow-tooltip resizable />
+        <el-table-column label="计入收支" width="100" align="center" resizable>
           <template #default="{ row }">
             <el-tag size="small" :type="row.includeInStats ? 'success' : 'info'">
               {{ row.includeInStats ? '是' : '否' }}
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="退款" width="80" align="center">
+        <el-table-column label="退款" width="80" align="center" resizable>
           <template #default="{ row }">
             <el-tag size="small" :type="row.isRefund ? 'warning' : ''" v-if="row.isRefund">
               退款
+            </el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column label="手工记账" width="100" align="center" resizable>
+          <template #default="{ row }">
+            <el-tag size="small" type="primary" v-if="row.isManualEntry">
+              手工
             </el-tag>
           </template>
         </el-table-column>
@@ -480,6 +487,9 @@ const loadSummary = async () => {
     }
     if (filter.includeInStats !== '') {
       params.includeInStats = filter.includeInStats
+    }
+    if (filter.isRefund !== '') {
+      params.isRefund = filter.isRefund
     }
     
     const res = await axios.get('http://localhost:8080/api/bill/transaction/summary', { params })

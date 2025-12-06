@@ -106,7 +106,7 @@ public class BillTransactionController {
         Map<String, Object> summary = billTransactionService.getSummary(params.getStartDate(), params.getEndDate(), 
                 params.getCategory(), params.getPaymentChannel(), params.getTransactionType(), params.getKeyword(), 
                 params.getMinAmount(), params.getMaxAmount(), params.getIncomeOrExpense(), params.getIncludeInStats(), 
-                params.getFirstImportId());
+                params.getIsRefund(), params.getFirstImportId());
         
         Map<String, Object> result = new HashMap<>();
         result.put("success", true);

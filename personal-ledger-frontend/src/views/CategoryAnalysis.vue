@@ -5,11 +5,8 @@
         <div class="header">
           <span>按分类统计</span>
           <el-space>
-            <el-radio-group v-model="type" @change="loadData">
-              <el-radio-button label="expense">支出</el-radio-button>
-              <el-radio-button label="income">收入</el-radio-button>
-            </el-radio-group>
-            <el-date-picker v-model="dateRange" type="monthrange" value-format="YYYY-MM" @change="loadData" />
+            <el-date-picker v-model="startDate" type="date" placeholder="开始日期" value-format="YYYY-MM-DD" @change="loadData" />
+            <el-date-picker v-model="endDate" type="date" placeholder="结束日期" value-format="YYYY-MM-DD" @change="loadData" />
           </el-space>
         </div>
       </template>
@@ -20,10 +17,23 @@
         </el-col>
         <el-col :span="12">
           <el-table :data="categoryData" style="width: 100%" @row-click="loadCategoryDetails">
-            <el-table-column prop="category" label="分类" />
-            <el-table-column prop="amount" label="金额" align="right" />
+            <el-table-column prop="category" label="分类" width="120" />
+            <el-table-column prop="income" label="收入" align="right" width="100">
+              <template #default="{ row }">
+                <span style="color: #67c23a;">{{ row.income }}</span>
+              </template>
+            </el-table-column>
+            <el-table-column prop="expense" label="支出" align="right" width="100">
+              <template #default="{ row }">
+                <span style="color: #f56c6c;">{{ row.expense }}</span>
+              </template>
+            </el-table-column>
+            <el-table-column prop="balance" label="结余" align="right" width="100">
+              <template #default="{ row }">
+                <span :style="{ color: parseFloat(row.balance) >= 0 ? '#67c23a' : '#f56c6c' }">{{ row.balance }}</span>
+              </template>
+            </el-table-column>
             <el-table-column prop="count" label="笔数" align="center" width="80" />
-            <el-table-column prop="percent" label="占比" align="right" width="80" />
           </el-table>
         </el-col>
       </el-row>
@@ -124,8 +134,8 @@ import * as echarts from 'echarts'
 import { ElMessage } from 'element-plus'
 
 const chartRef = ref(null)
-const type = ref('expense')
-const dateRange = ref([])
+const startDate = ref('')
+const endDate = ref('')
 const categoryData = ref([])
 const selectedCategory = ref('')
 const categoryDetails = ref([])
@@ -141,26 +151,35 @@ const sortOrder = ref('')
 
 const loadData = async () => {
   try {
-    const getMonthEnd = (yearMonth) => {
-      const [year, month] = yearMonth.split('-')
-      return new Date(year, month, 0).getDate()
-    }
-    
     const params = {
-      startDate: dateRange.value?.[0] ? `${dateRange.value[0]}-01` : undefined,
-      endDate: dateRange.value?.[1] ? `${dateRange.value[1]}-${getMonthEnd(dateRange.value[1])}` : undefined,
-      type: type.value
+      size: 10000,
+      startDate: startDate.value || undefined,
+      endDate: endDate.value || undefined,
+      includeInStats: true
     }
     
-    const res = await axios.get('http://localhost:8080/api/bill/transaction/category-stats', { params })
-    const stats = res.data.data || []
+    const res = await axios.get('http://localhost:8080/api/bill/transaction/list', { params })
+    const transactions = res.data.data?.records || []
     
-    categoryData.value = stats.map(s => ({
-      category: s.category,
-      amount: parseFloat(s.amount).toFixed(2),
-      count: s.count,
-      percent: parseFloat(s.percent).toFixed(1) + '%'
-    }))
+    // 按分类聚合数据
+    const categoryMap = {}
+    transactions.forEach(t => {
+      const cat = t.category || '未分类'
+      if (!categoryMap[cat]) {
+        categoryMap[cat] = { income: 0, expense: 0, count: 0 }
+      }
+      categoryMap[cat].income += parseFloat(t.income || 0)
+      categoryMap[cat].expense += parseFloat(t.expense || 0)
+      categoryMap[cat].count++
+    })
+    
+    categoryData.value = Object.entries(categoryMap).map(([category, data]) => ({
+      category,
+      income: data.income.toFixed(2),
+      expense: data.expense.toFixed(2),
+      balance: (data.income - data.expense).toFixed(2),
+      count: data.count
+    })).sort((a, b) => parseFloat(b.expense) - parseFloat(a.expense))
     
     renderChart(categoryData.value)
   } catch (error) {
@@ -174,12 +193,12 @@ const renderChart = (data) => {
   }
 
   const option = {
-    title: { text: type.value === 'expense' ? '支出分类' : '收入分类', left: 'center' },
+    title: { text: '支出分类占比', left: 'center' },
     tooltip: { trigger: 'item', formatter: '{b}: {c} ({d}%)' },
     series: [{
       type: 'pie',
       radius: ['40%', '70%'],
-      data: data.map(d => ({ name: d.category, value: parseFloat(d.amount) })),
+      data: data.map(d => ({ name: d.category, value: parseFloat(d.expense) })),
       emphasis: { itemStyle: { shadowBlur: 10, shadowOffsetX: 0, shadowColor: 'rgba(0, 0, 0, 0.5)' } }
     }]
   }
@@ -198,15 +217,10 @@ const renderChart = (data) => {
 const loadCategoryDetails = async (row) => {
   selectedCategory.value = row.category
   try {
-    const getMonthEnd = (yearMonth) => {
-      const [year, month] = yearMonth.split('-')
-      return new Date(year, month, 0).getDate()
-    }
-    
     const params = {
       size: 10000,
-      startDate: dateRange.value?.[0] ? `${dateRange.value[0]}-01` : undefined,
-      endDate: dateRange.value?.[1] ? `${dateRange.value[1]}-${getMonthEnd(dateRange.value[1])}` : undefined,
+      startDate: startDate.value || undefined,
+      endDate: endDate.value || undefined,
       category: row.category === '未分类' ? '' : row.category,
       includeInStats: true,
       sortField: sortField.value,
@@ -216,14 +230,7 @@ const loadCategoryDetails = async (row) => {
     const res = await axios.get('http://localhost:8080/api/bill/transaction/list', { params })
     const transactions = res.data.data?.records || []
     
-    // 根据类型过滤
-    categoryDetails.value = transactions.filter(t => {
-      if (type.value === 'expense') {
-        return t.expense && parseFloat(t.expense) > 0
-      } else {
-        return t.income && parseFloat(t.income) > 0
-      }
-    })
+    categoryDetails.value = transactions
   } catch (error) {
     ElMessage.error('加载明细失败')
   }
@@ -284,10 +291,10 @@ const loadChannels = async () => {
 onMounted(async () => {
   await nextTick()
   const now = new Date()
-  dateRange.value = [
-    `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`,
-    `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
-  ]
+  const year = now.getFullYear()
+  const month = String(now.getMonth() + 1).padStart(2, '0')
+  startDate.value = `${year}-${month}-01`
+  endDate.value = `${year}-${month}-${new Date(year, now.getMonth() + 1, 0).getDate()}`
   loadCategories()
   loadChannels()
   loadData()

@@ -56,7 +56,7 @@ public interface BillTransactionService {
     java.util.Map<String, Object> getSummary(LocalDate startDate, LocalDate endDate, 
                                               String category, String paymentChannel, String transactionType, 
                                               String keyword, String minAmount, String maxAmount, 
-                                              String incomeOrExpense, Boolean includeInStats, Long firstImportId);
+                                              String incomeOrExpense, Boolean includeInStats, Boolean isRefund, Long firstImportId);
     
     /**
      * 按天统计

@@ -140,7 +140,7 @@ public class BillTransactionServiceImpl implements BillTransactionService {
     public java.util.Map<String, Object> getSummary(LocalDate startDate, LocalDate endDate, 
                                                      String category, String paymentChannel, String transactionType, 
                                                      String keyword, String minAmount, String maxAmount, 
-                                                     String incomeOrExpense, Boolean includeInStats, Long firstImportId) {
+                                                     String incomeOrExpense, Boolean includeInStats, Boolean isRefund, Long firstImportId) {
         LambdaQueryWrapper<BillTransaction> wrapper = new LambdaQueryWrapper<>();
         
         // 汇总时只计算计入收支的数据
@@ -167,6 +167,14 @@ public class BillTransactionServiceImpl implements BillTransactionService {
             wrapper.and(w -> w.like(BillTransaction::getDescription, keyword)
                              .or().like(BillTransaction::getUserNote, keyword));
         }
+        if (minAmount != null && !minAmount.isEmpty()) {
+            java.math.BigDecimal min = new java.math.BigDecimal(minAmount);
+            wrapper.and(w -> w.ge(BillTransaction::getIncome, min).or().ge(BillTransaction::getExpense, min));
+        }
+        if (maxAmount != null && !maxAmount.isEmpty()) {
+            java.math.BigDecimal max = new java.math.BigDecimal(maxAmount);
+            wrapper.and(w -> w.le(BillTransaction::getIncome, max).or().le(BillTransaction::getExpense, max));
+        }
         if (incomeOrExpense != null && !incomeOrExpense.isEmpty()) {
             if ("income".equals(incomeOrExpense)) {
                 wrapper.isNotNull(BillTransaction::getIncome)
@@ -175,6 +183,9 @@ public class BillTransactionServiceImpl implements BillTransactionService {
                 wrapper.isNotNull(BillTransaction::getExpense)
                        .gt(BillTransaction::getExpense, java.math.BigDecimal.ZERO);
             }
+        }
+        if (isRefund != null) {
+            wrapper.eq(BillTransaction::getIsRefund, isRefund);
         }
         
         List<BillTransaction> list = billTransactionMapper.selectList(wrapper);
