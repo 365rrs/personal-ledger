@@ -8,53 +8,58 @@
       </template>
 
       <el-form label-width="80px" class="filter-form">
-        <el-row :gutter="16">
+        <el-row :gutter="12">
           <el-col :span="24">
-            <el-form-item label="快捷日期">
-              <el-space wrap>
-                <el-date-picker v-model="quickYear" type="year" placeholder="选择年份" value-format="YYYY" style="width: 120px" @change="setQuickYear" />
-                <el-date-picker v-model="quickMonth" type="month" placeholder="选择月份" value-format="YYYY-MM" style="width: 140px" @change="setQuickMonth" />
-                <el-button @click="setQuickDate('today')">今天</el-button>
-                <el-button @click="setQuickDate('yesterday')">昨天</el-button>
-                <el-button @click="setQuickDate('thisWeek')">本周</el-button>
-                <el-button @click="setQuickDate('thisMonth')">本月</el-button>
-                <el-button @click="setQuickDate('lastMonth')">上月</el-button>
-                <el-button @click="setQuickDate('last3Months')">近3月</el-button>
-                <el-button @click="setQuickDate('thisYear')">今年</el-button>
-                <el-button @click="setQuickDate('lastYear')">去年</el-button>
-              </el-space>
+            <el-form-item label="快捷日期" class="quick-date-item">
+              <div class="quick-date-wrapper">
+                <el-date-picker v-model="quickYear" type="year" placeholder="选择年份" value-format="YYYY" style="width: 110px" @change="setQuickYear" />
+                <el-date-picker v-model="quickMonth" type="month" placeholder="选择月份" value-format="YYYY-MM" style="width: 130px" @change="setQuickMonth" />
+                <el-button-group>
+                  <el-button @click="setQuickDate('today')">今天</el-button>
+                  <el-button @click="setQuickDate('yesterday')">昨天</el-button>
+                  <el-button @click="setQuickDate('thisWeek')">本周</el-button>
+                  <el-button @click="setQuickDate('thisMonth')">本月</el-button>
+                  <el-button @click="setQuickDate('lastMonth')">上月</el-button>
+                </el-button-group>
+                <el-button-group>
+                  <el-button @click="setQuickDate('last3Months')">近3月</el-button>
+                  <el-button @click="setQuickDate('thisYear')">今年</el-button>
+                  <el-button @click="setQuickDate('lastYear')">去年</el-button>
+                </el-button-group>
+              </div>
             </el-form-item>
           </el-col>
         </el-row>
-        <el-row :gutter="16">
-          <el-col :span="12">
+        <el-row :gutter="12">
+          <el-col :span="10">
             <el-form-item label="日期范围">
               <el-date-picker v-model="dateRange" type="daterange" range-separator="至" start-placeholder="开始日期" end-placeholder="结束日期" value-format="YYYY-MM-DD" style="width: 100%" @change="handleDateRangeChange" />
             </el-form-item>
           </el-col>
-          <el-col :span="6">
+          <el-col :span="4">
             <el-form-item label="收支类型">
-              <el-select v-model="filter.transactionType" clearable placeholder="全部">
+              <el-select v-model="filter.transactionType" clearable placeholder="全部" style="width: 100%">
                 <el-option label="收入" value="income" />
                 <el-option label="支出" value="expense" />
               </el-select>
             </el-form-item>
           </el-col>
-          <el-col :span="6">
-            <el-form-item label="支付渠道">
-              <el-select v-model="filter.paymentChannel" clearable filterable placeholder="全部">
-                <el-option v-for="ch in channels" :key="ch.id" :label="ch.name" :value="ch.name" />
+          <el-col :span="4">
+            <el-form-item label="计入收支">
+              <el-select v-model="filter.includeInStats" clearable placeholder="全部" style="width: 100%">
+                <el-option label="计入" :value="true" />
+                <el-option label="不计入" :value="false" />
               </el-select>
             </el-form-item>
           </el-col>
-        </el-row>
-        <el-row :gutter="16">
           <el-col :span="6">
-            <el-form-item label="交易类型">
-              <el-input v-model="filter.tradeType" placeholder="交易类型" clearable />
+            <el-form-item label="关键词">
+              <el-input v-model="filter.keyword" placeholder="搜索备注" clearable />
             </el-form-item>
           </el-col>
-          <el-col :span="6">
+        </el-row>
+        <el-row :gutter="12">
+          <el-col :span="5">
             <el-form-item label="分类">
               <el-select v-model="displayCategory" filterable allow-create placeholder="全部" style="width: 100%" clearable>
                 <el-option label="未分类" value="__UNCATEGORIZED__" />
@@ -62,50 +67,47 @@
               </el-select>
             </el-form-item>
           </el-col>
-        </el-row>
-        <el-row :gutter="16">
-          <el-col :span="6">
+          <el-col :span="5">
             <el-form-item label="二级分类">
-              <el-select v-model="displaySubCategory" filterable placeholder="全部" clearable>
+              <el-select v-model="displaySubCategory" filterable placeholder="全部" clearable style="width: 100%">
                 <el-option label="未分类" value="__UNCATEGORIZED__" />
                 <el-option v-for="cat in subCategories" :key="cat.name" :label="cat.name" :value="cat.name" />
               </el-select>
             </el-form-item>
           </el-col>
-          <el-col :span="12">
-            <el-form-item label="金额范围">
-              <div style="display: flex; align-items: center; gap: 8px;">
-                <el-input v-model="filter.minAmount" placeholder="最小金额" clearable style="flex: 1" />
-                <span>至</span>
-                <el-input v-model="filter.maxAmount" placeholder="最大金额" clearable style="flex: 1" />
-              </div>
-            </el-form-item>
-          </el-col>
-        </el-row>
-        <el-row :gutter="16">
-          <el-col :span="6">
-            <el-form-item label="关键词">
-              <el-input v-model="filter.keyword" placeholder="搜索备注" clearable />
-            </el-form-item>
-          </el-col>
-          <el-col :span="6">
-            <el-form-item label="计入收支">
-              <el-select v-model="filter.includeInStats" clearable placeholder="全部">
-                <el-option label="计入" :value="true" />
-                <el-option label="不计入" :value="false" />
+          <el-col :span="5">
+            <el-form-item label="支付渠道">
+              <el-select v-model="filter.paymentChannel" clearable filterable placeholder="全部" style="width: 100%">
+                <el-option v-for="ch in channels" :key="ch.id" :label="ch.name" :value="ch.name" />
               </el-select>
             </el-form-item>
           </el-col>
-          <el-col :span="6">
+          <el-col :span="5">
+            <el-form-item label="交易类型">
+              <el-input v-model="filter.tradeType" placeholder="交易类型" clearable />
+            </el-form-item>
+          </el-col>
+          <el-col :span="4">
             <el-form-item label="是否退款">
-              <el-select v-model="filter.isRefund" clearable placeholder="全部">
+              <el-select v-model="filter.isRefund" clearable placeholder="全部" style="width: 100%">
                 <el-option label="退款" :value="true" />
                 <el-option label="非退款" :value="false" />
               </el-select>
             </el-form-item>
           </el-col>
-          <el-col :span="12">
-            <el-form-item label=" ">
+        </el-row>
+        <el-row :gutter="12">
+          <el-col :span="8">
+            <el-form-item label="金额范围">
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <el-input v-model="filter.minAmount" placeholder="最小" clearable />
+                <span>~</span>
+                <el-input v-model="filter.maxAmount" placeholder="最大" clearable />
+              </div>
+            </el-form-item>
+          </el-col>
+          <el-col :span="16">
+            <el-form-item label=" " label-width="0">
               <el-button type="primary" @click="loadData" :icon="Search">查询</el-button>
               <el-button @click="resetFilter" :icon="RefreshRight">重置</el-button>
             </el-form-item>
@@ -1172,7 +1174,22 @@ onMounted(() => {
 }
 
 .filter-form {
-  margin-bottom: 20px;
+  margin-bottom: 16px;
+}
+
+.filter-form .el-form-item {
+  margin-bottom: 12px;
+}
+
+.quick-date-item {
+  margin-bottom: 8px;
+}
+
+.quick-date-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
 }
 
 .el-pagination {
