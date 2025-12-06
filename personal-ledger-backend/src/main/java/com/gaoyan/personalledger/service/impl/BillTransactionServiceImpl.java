@@ -218,7 +218,7 @@ public class BillTransactionServiceImpl implements BillTransactionService {
                                                      String category, String subCategory,
                                                      String paymentChannel, String transactionType, 
                                                      String keyword, String minAmount, String maxAmount, 
-                                                     String incomeOrExpense, Boolean includeInStats, Boolean isRefund, Long firstImportId) {
+                                                     String incomeOrExpense, Boolean includeInStats, Boolean isRefund, Long firstImportId, String tagIds) {
         LambdaQueryWrapper<BillTransaction> wrapper = new LambdaQueryWrapper<>();
         
         wrapper.eq(BillTransaction::getIncludeInStats, true);
@@ -272,6 +272,11 @@ public class BillTransactionServiceImpl implements BillTransactionService {
         }
         if (isRefund != null) {
             wrapper.eq(BillTransaction::getIsRefund, isRefund);
+        }
+        if (tagIds != null && !tagIds.isEmpty()) {
+            String[] tagIdArray = tagIds.split(",");
+            wrapper.in(BillTransaction::getId, 
+                billTransactionMapper.selectTransactionIdsByTagIds(java.util.Arrays.asList(tagIdArray)));
         }
         
         List<BillTransaction> list = billTransactionMapper.selectList(wrapper);

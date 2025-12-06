@@ -58,7 +58,7 @@ public interface BillTransactionService {
                                               String category, String subCategory,
                                               String paymentChannel, String transactionType, 
                                               String keyword, String minAmount, String maxAmount, 
-                                              String incomeOrExpense, Boolean includeInStats, Boolean isRefund, Long firstImportId);
+                                              String incomeOrExpense, Boolean includeInStats, Boolean isRefund, Long firstImportId, String tagIds);
     
     /**
      * 按天统计

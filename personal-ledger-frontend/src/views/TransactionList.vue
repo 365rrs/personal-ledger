@@ -656,6 +656,9 @@ const loadSummary = async () => {
     if (filter.isRefund !== '') {
       params.isRefund = filter.isRefund
     }
+    if (filter.tagIds && filter.tagIds.length > 0) {
+      params.tagIds = filter.tagIds.join(',')
+    }
     
     const res = await axios.get('http://localhost:8080/api/bill/transaction/summary', { params })
     summary.value = res.data.data
