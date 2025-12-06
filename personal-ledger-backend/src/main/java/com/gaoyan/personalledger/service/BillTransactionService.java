@@ -35,7 +35,8 @@ public interface BillTransactionService {
      * 分页查询交易列表
      */
     Page<BillTransaction> pageList(int current, int size, LocalDate startDate, LocalDate endDate, 
-                                   String category, String paymentChannel, String transactionType, 
+                                   String category, String parentCategory, String subCategory,
+                                   String paymentChannel, String transactionType, 
                                    String keyword, String minAmount, String maxAmount, 
                                    String incomeOrExpense, Boolean includeInStats, Boolean isRefund, 
                                    String sortField, String sortOrder, Long firstImportId);
@@ -54,7 +55,8 @@ public interface BillTransactionService {
      * 获取交易汇总
      */
     java.util.Map<String, Object> getSummary(LocalDate startDate, LocalDate endDate, 
-                                              String category, String paymentChannel, String transactionType, 
+                                              String category, String parentCategory, String subCategory,
+                                              String paymentChannel, String transactionType, 
                                               String keyword, String minAmount, String maxAmount, 
                                               String incomeOrExpense, Boolean includeInStats, Boolean isRefund, Long firstImportId);
     

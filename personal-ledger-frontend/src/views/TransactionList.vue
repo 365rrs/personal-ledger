@@ -56,21 +56,26 @@
           </el-col>
           <el-col :span="6">
             <el-form-item label="分类">
-              <el-cascader v-model="filter.categoryPath" :options="categoryTree" :props="{ value: 'name', label: 'name', children: 'children', checkStrictly: true, emitPath: false }" clearable filterable placeholder="全部" @change="handleCategoryChange" style="width: 100%" />
+              <el-select v-model="displayCategory" filterable allow-create placeholder="全部" style="width: 100%" clearable>
+                <el-option label="未分类" value="__UNCATEGORIZED__" />
+                <el-option v-for="cat in allCategoryNames" :key="cat" :label="cat" :value="cat" />
+              </el-select>
             </el-form-item>
           </el-col>
         </el-row>
         <el-row :gutter="16">
           <el-col :span="6">
             <el-form-item label="一级分类">
-              <el-select v-model="filter.parentCategory" clearable filterable placeholder="全部">
+              <el-select v-model="displayParentCategory" filterable placeholder="全部" clearable>
+                <el-option label="未分类" value="__UNCATEGORIZED__" />
                 <el-option v-for="cat in parentCategories" :key="cat.name" :label="cat.name" :value="cat.name" />
               </el-select>
             </el-form-item>
           </el-col>
           <el-col :span="6">
             <el-form-item label="二级分类">
-              <el-select v-model="filter.subCategory" clearable filterable placeholder="全部">
+              <el-select v-model="displaySubCategory" filterable placeholder="全部" clearable>
+                <el-option label="未分类" value="__UNCATEGORIZED__" />
                 <el-option v-for="cat in subCategories" :key="cat.name" :label="cat.name" :value="cat.name" />
               </el-select>
             </el-form-item>
@@ -116,7 +121,7 @@
         </el-row>
       </el-form>
 
-      <div style="margin-bottom: 16px;">
+      <div style="margin-bottom: 16px; display: flex; justify-content: space-between;">
         <el-space>
           <el-button type="warning" @click="cleanData" :loading="cleaning" :icon="Refresh">清洗数据</el-button>
           <el-button type="success" @click="exportData" :loading="exporting" :icon="Download">数据导出</el-button>
@@ -127,6 +132,7 @@
           <el-button type="success" @click="batchQuickAddRelated" :disabled="selectedRows.length !== 1">快速补录 ({{ selectedRows.length }})</el-button>
           <el-button type="primary" @click="openManualEntry">手动记账</el-button>
         </el-space>
+        <el-button @click="columnSettingsVisible = true" :icon="Setting">列设置</el-button>
       </div>
 
       <div class="summary-box" style="margin-bottom: 16px;">
@@ -150,32 +156,32 @@
 
       <el-table :data="transactions" v-loading="loading" @selection-change="handleSelectionChange" @sort-change="handleSortChange">
         <el-table-column type="selection" width="55" resizable />
-        <el-table-column prop="transactionDate" label="交易日期" width="120" sortable="custom" resizable />
-        <el-table-column prop="transactionTime" label="交易时间" width="100" resizable />
-        <el-table-column prop="income" label="收入" width="100" sortable="custom" resizable />
-        <el-table-column prop="expense" label="支出" width="100" sortable="custom" resizable />
-        <el-table-column prop="transactionType" label="交易类型" width="120" show-overflow-tooltip resizable />
-        <el-table-column prop="paymentChannel" label="支付渠道" width="100" resizable />
-        <el-table-column prop="category" label="分类" width="100" resizable />
-        <el-table-column prop="parentCategory" label="一级分类" width="100" resizable />
-        <el-table-column prop="subCategory" label="二级分类" width="100" resizable />
-        <el-table-column prop="description" label="交易备注" width="250" show-overflow-tooltip resizable />
-        <el-table-column prop="userNote" label="用户备注" width="150" show-overflow-tooltip resizable />
-        <el-table-column label="计入收支" width="100" align="center" resizable>
+        <el-table-column v-if="visibleColumns.transactionDate" prop="transactionDate" label="交易日期" width="120" sortable="custom" resizable />
+        <el-table-column v-if="visibleColumns.transactionTime" prop="transactionTime" label="交易时间" width="100" resizable />
+        <el-table-column v-if="visibleColumns.income" prop="income" label="收入" width="100" sortable="custom" resizable />
+        <el-table-column v-if="visibleColumns.expense" prop="expense" label="支出" width="100" sortable="custom" resizable />
+        <el-table-column v-if="visibleColumns.transactionType" prop="transactionType" label="交易类型" width="120" show-overflow-tooltip resizable />
+        <el-table-column v-if="visibleColumns.paymentChannel" prop="paymentChannel" label="支付渠道" width="100" resizable />
+        <el-table-column v-if="visibleColumns.category" prop="category" label="分类" width="100" resizable />
+        <el-table-column v-if="visibleColumns.parentCategory" prop="parentCategory" label="一级分类" width="100" resizable />
+        <el-table-column v-if="visibleColumns.subCategory" prop="subCategory" label="二级分类" width="100" resizable />
+        <el-table-column v-if="visibleColumns.description" prop="description" label="交易备注" width="250" show-overflow-tooltip resizable />
+        <el-table-column v-if="visibleColumns.userNote" prop="userNote" label="用户备注" width="150" show-overflow-tooltip resizable />
+        <el-table-column v-if="visibleColumns.includeInStats" label="计入收支" width="100" align="center" resizable>
           <template #default="{ row }">
             <el-tag size="small" :type="row.includeInStats ? 'success' : 'info'">
               {{ row.includeInStats ? '是' : '否' }}
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="退款" width="80" align="center" resizable>
+        <el-table-column v-if="visibleColumns.isRefund" label="退款" width="80" align="center" resizable>
           <template #default="{ row }">
             <el-tag size="small" :type="row.isRefund ? 'warning' : ''" v-if="row.isRefund">
               退款
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="手工记账" width="100" align="center" resizable>
+        <el-table-column v-if="visibleColumns.isManualEntry" label="手工记账" width="100" align="center" resizable>
           <template #default="{ row }">
             <el-tag size="small" type="primary" v-if="row.isManualEntry">
               手工
@@ -242,6 +248,20 @@
       </template>
     </el-dialog>
 
+    <el-dialog v-model="columnSettingsVisible" title="列设置" width="400px">
+      <div style="max-height: 400px; overflow-y: auto;">
+        <el-checkbox-group v-model="selectedColumns">
+          <div v-for="col in columnOptions" :key="col.key" style="margin-bottom: 8px;">
+            <el-checkbox :label="col.key">{{ col.label }}</el-checkbox>
+          </div>
+        </el-checkbox-group>
+      </div>
+      <template #footer>
+        <el-button @click="resetColumns">恢复默认</el-button>
+        <el-button type="primary" @click="saveColumnSettings">确定</el-button>
+      </template>
+    </el-dialog>
+
     <el-dialog v-model="batchIncludeInStatsDialogVisible" title="批量设置收支" width="400px">
       <el-form label-width="100px">
         <el-form-item label="是否计入收支">
@@ -291,7 +311,7 @@
           <el-input v-model="currentRecord.description" type="textarea" :placeholder="drawerMode === 'manual' ? '交易描述' : ''" :readonly="drawerMode === 'view'" />
         </el-form-item>
         <el-form-item label="分类">
-          <el-cascader v-model="currentRecord.category" :options="filteredCategoryTree" :props="{ value: 'name', label: 'name', children: 'children', checkStrictly: true, emitPath: false }" clearable filterable :placeholder="drawerMode === 'manual' ? '请选择分类' : ''" style="width: 100%" />
+          <el-cascader v-model="currentRecord.category" :options="filteredCategoryTree" :props="{ value: 'name', label: 'name', children: 'children', checkStrictly: true, emitPath: false }" clearable filterable :placeholder="drawerMode === 'manual' ? '请选择分类' : ''" style="width: 100%" :disabled="drawerMode === 'view'" />
         </el-form-item>
         <el-form-item label="支付渠道">
           <el-select v-model="currentRecord.paymentChannel" filterable :placeholder="drawerMode === 'manual' ? '请选择支付渠道' : ''">
@@ -321,7 +341,7 @@ import { ref, reactive, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import axios from 'axios'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Refresh, Download, Search, RefreshRight } from '@element-plus/icons-vue'
+import { Refresh, Download, Search, RefreshRight, Setting } from '@element-plus/icons-vue'
 
 const route = useRoute()
 
@@ -334,6 +354,7 @@ const categories = ref([])
 const categoryTree = ref([])
 const parentCategories = ref([])
 const subCategories = ref([])
+const allCategoryNames = ref([])
 const channels = ref([])
 const getThisMonthDates = () => {
   const today = new Date()
@@ -356,10 +377,9 @@ const thisMonth = getThisMonthDates()
 const filter = reactive({ 
   startDate: thisMonth.startDate,
   endDate: thisMonth.endDate,
-  category: '',
-  categoryPath: [],
-  parentCategory: '',
-  subCategory: '',
+  category: '__ALL__',
+  parentCategory: '__ALL__',
+  subCategory: '__ALL__',
   transactionType: '', 
   paymentChannel: '',
   tradeType: '',
@@ -427,9 +447,25 @@ const filteredCategories = computed(() => {
 })
 
 const filteredCategoryTree = computed(() => {
-  if (drawerMode.value !== 'manual') return categoryTree.value
+  if (drawerMode.value === 'view') return categoryTree.value
+  if (!currentRecord.value.type) return categoryTree.value
   const typeMap = { income: 'INCOME', expense: 'EXPENSE' }
   return categoryTree.value.filter(cat => cat.type === typeMap[currentRecord.value.type])
+})
+
+const displayCategory = computed({
+  get: () => filter.category === '__ALL__' ? null : filter.category,
+  set: (val) => { filter.category = val || '__ALL__' }
+})
+
+const displayParentCategory = computed({
+  get: () => filter.parentCategory === '__ALL__' ? null : filter.parentCategory,
+  set: (val) => { filter.parentCategory = val || '__ALL__' }
+})
+
+const displaySubCategory = computed({
+  get: () => filter.subCategory === '__ALL__' ? null : filter.subCategory,
+  set: (val) => { filter.subCategory = val || '__ALL__' }
 })
 
 const loadData = async () => {
@@ -450,10 +486,10 @@ const loadData = async () => {
       firstImportId: route.query.importId
     }
     
-    // 分类参数
-    if (filter.category) {
-      params.category = filter.category === '__UNCATEGORIZED__' ? '' : filter.category
-    }
+    // 分类参数：__ALL__=不查询，__UNCATEGORIZED__=查未分类，其他=查具体分类
+    params.category = filter.category === '__UNCATEGORIZED__' ? '' : filter.category
+    params.parentCategory = filter.parentCategory === '__UNCATEGORIZED__' ? '' : filter.parentCategory
+    params.subCategory = filter.subCategory === '__UNCATEGORIZED__' ? '' : filter.subCategory
     
     // 收支类型参数
     if (filter.transactionType) {
@@ -496,9 +532,10 @@ const loadSummary = async () => {
       firstImportId: route.query.importId
     }
     
-    if (filter.category) {
-      params.category = filter.category === '__UNCATEGORIZED__' ? '' : filter.category
-    }
+    // 分类参数：__ALL__=不查询，__UNCATEGORIZED__=查未分类，其他=查具体分类
+    params.category = filter.category === '__UNCATEGORIZED__' ? '' : filter.category
+    params.parentCategory = filter.parentCategory === '__UNCATEGORIZED__' ? '' : filter.parentCategory
+    params.subCategory = filter.subCategory === '__UNCATEGORIZED__' ? '' : filter.subCategory
     if (filter.transactionType) {
       params.incomeOrExpense = filter.transactionType
     }
@@ -682,10 +719,9 @@ const batchDelete = async () => {
 const resetFilter = () => {
   filter.startDate = ''
   filter.endDate = ''
-  filter.category = ''
-  filter.categoryPath = []
-  filter.parentCategory = ''
-  filter.subCategory = ''
+  filter.category = '__ALL__'
+  filter.parentCategory = '__ALL__'
+  filter.subCategory = '__ALL__'
   filter.transactionType = ''
   filter.paymentChannel = ''
   filter.tradeType = ''
@@ -725,21 +761,23 @@ const flattenCategories = (tree) => {
 const extractParentAndSubCategories = (tree) => {
   const parents = []
   const subs = []
+  const allNames = []
   tree.forEach(node => {
     parents.push({ name: node.name })
+    allNames.push(node.name)
     if (node.children && node.children.length > 0) {
       node.children.forEach(child => {
         subs.push({ name: child.name })
+        allNames.push(child.name)
       })
     }
   })
   parentCategories.value = parents
   subCategories.value = subs
+  allCategoryNames.value = allNames
 }
 
-const handleCategoryChange = (value) => {
-  filter.category = value || ''
-}
+
 
 const loadChannels = async () => {
   const res = await axios.get('http://localhost:8080/api/payment-channel/list')
@@ -754,6 +792,7 @@ const viewRecord = (row) => {
 
 const editRecord = (row) => {
   currentRecord.value = { ...row }
+  currentRecord.value.type = row.income && parseFloat(row.income) > 0 ? 'income' : 'expense'
   drawerMode.value = 'edit'
   drawerVisible.value = true
 }
@@ -819,7 +858,42 @@ const saveRecord = async () => {
     })
   } else {
     try {
-      await axios.put(`http://localhost:8080/api/bill/transaction/${currentRecord.value.id}`, currentRecord.value)
+      const selectedCategory = categories.value.find(c => c.name === currentRecord.value.category)
+      let categoryData = { category: null, parentCategory: null, subCategory: null }
+      
+      if (selectedCategory) {
+        if (selectedCategory.parentId === null || selectedCategory.parentId === 0) {
+          categoryData = {
+            category: selectedCategory.name,
+            parentCategory: selectedCategory.name,
+            subCategory: null
+          }
+        } else {
+          const parent = categories.value.find(c => c.id === selectedCategory.parentId)
+          if (parent) {
+            categoryData = {
+              category: parent.name,
+              parentCategory: parent.name,
+              subCategory: selectedCategory.name
+            }
+          }
+        }
+      }
+      
+      const data = {
+        transactionDate: currentRecord.value.transactionDate,
+        transactionTime: currentRecord.value.transactionTime,
+        income: currentRecord.value.income,
+        expense: currentRecord.value.expense,
+        ...categoryData,
+        paymentChannel: currentRecord.value.paymentChannel,
+        transactionType: currentRecord.value.transactionType,
+        description: currentRecord.value.description,
+        userNote: currentRecord.value.userNote,
+        includeInStats: currentRecord.value.includeInStats,
+        isRefund: currentRecord.value.isRefund
+      }
+      await axios.put(`http://localhost:8080/api/bill/transaction/${currentRecord.value.id}`, data)
       ElMessage.success('保存成功')
       drawerVisible.value = false
       loadData()
@@ -865,10 +939,32 @@ const batchEditCategory = () => {
 
 const confirmBatchCategory = async () => {
   try {
+    const selectedCategory = categories.value.find(c => c.name === batchCategoryValue.value)
+    let categoryData = { category: null, parentCategory: null, subCategory: null }
+    
+    if (selectedCategory) {
+      if (selectedCategory.parentId === null || selectedCategory.parentId === 0) {
+        categoryData = {
+          category: selectedCategory.name,
+          parentCategory: selectedCategory.name,
+          subCategory: null
+        }
+      } else {
+        const parent = categories.value.find(c => c.id === selectedCategory.parentId)
+        if (parent) {
+          categoryData = {
+            category: parent.name,
+            parentCategory: parent.name,
+            subCategory: selectedCategory.name
+          }
+        }
+      }
+    }
+    
     const updatePromises = selectedRows.value.map(row => 
       axios.put(`http://localhost:8080/api/bill/transaction/${row.id}`, {
         ...row,
-        category: batchCategoryValue.value
+        ...categoryData
       })
     )
     
@@ -960,6 +1056,55 @@ const confirmQuickAdd = async () => {
 const batchIncludeInStatsDialogVisible = ref(false)
 const batchIncludeInStatsValue = ref(true)
 
+const columnSettingsVisible = ref(false)
+const columnOptions = [
+  { key: 'transactionDate', label: '交易日期' },
+  { key: 'transactionTime', label: '交易时间' },
+  { key: 'income', label: '收入' },
+  { key: 'expense', label: '支出' },
+  { key: 'transactionType', label: '交易类型' },
+  { key: 'paymentChannel', label: '支付渠道' },
+  { key: 'category', label: '分类' },
+  { key: 'parentCategory', label: '一级分类' },
+  { key: 'subCategory', label: '二级分类' },
+  { key: 'description', label: '交易备注' },
+  { key: 'userNote', label: '用户备注' },
+  { key: 'includeInStats', label: '计入收支' },
+  { key: 'isRefund', label: '退款' },
+  { key: 'isManualEntry', label: '手工记账' }
+]
+
+const defaultColumns = columnOptions.map(col => col.key)
+const selectedColumns = ref([...defaultColumns])
+const visibleColumns = computed(() => {
+  const result = {}
+  columnOptions.forEach(col => {
+    result[col.key] = selectedColumns.value.includes(col.key)
+  })
+  return result
+})
+
+const saveColumnSettings = () => {
+  localStorage.setItem('transactionListColumns', JSON.stringify(selectedColumns.value))
+  columnSettingsVisible.value = false
+  ElMessage.success('列设置已保存')
+}
+
+const resetColumns = () => {
+  selectedColumns.value = [...defaultColumns]
+}
+
+const loadColumnSettings = () => {
+  const saved = localStorage.getItem('transactionListColumns')
+  if (saved) {
+    try {
+      selectedColumns.value = JSON.parse(saved)
+    } catch (e) {
+      selectedColumns.value = [...defaultColumns]
+    }
+  }
+}
+
 const batchEditIncludeInStats = () => {
   batchIncludeInStatsValue.value = true
   batchIncludeInStatsDialogVisible.value = true
@@ -988,6 +1133,7 @@ onMounted(() => {
   loadData()
   loadCategories()
   loadChannels()
+  loadColumnSettings()
 })
 </script>
 

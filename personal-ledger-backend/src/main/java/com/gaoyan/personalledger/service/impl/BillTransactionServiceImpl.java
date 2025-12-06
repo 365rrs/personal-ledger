@@ -1,6 +1,7 @@
 package com.gaoyan.personalledger.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.gaoyan.personalledger.entity.BillTransaction;
 import com.gaoyan.personalledger.mapper.BillTransactionMapper;
@@ -52,10 +53,12 @@ public class BillTransactionServiceImpl implements BillTransactionService {
         }
         
         if (category.getParentId() == null || category.getParentId() == 0) {
+            // 一级分类：category和parentCategory都设为一级分类名，subCategory设为null
             transaction.setParentCategory(category.getName());
             transaction.setSubCategory(null);
             transaction.setCategory(category.getName());
         } else {
+            // 二级分类：category设为父分类名，parentCategory设为父分类名，subCategory设为二级分类名
             com.gaoyan.personalledger.entity.Category parent = categoryMapper.selectById(category.getParentId());
             if (parent != null) {
                 transaction.setParentCategory(parent.getName());
@@ -71,8 +74,22 @@ public class BillTransactionServiceImpl implements BillTransactionService {
     
     @Override
     public void updateById(BillTransaction transaction) {
-        splitCategory(transaction);
-        billTransactionMapper.updateById(transaction);
+        UpdateWrapper<BillTransaction> updateWrapper = new UpdateWrapper<>();
+        updateWrapper.eq("id", transaction.getId())
+                .set("transaction_date", transaction.getTransactionDate())
+                .set("transaction_time", transaction.getTransactionTime())
+                .set("income", transaction.getIncome())
+                .set("expense", transaction.getExpense())
+                .set("category", transaction.getCategory())
+                .set("parent_category", transaction.getParentCategory())
+                .setSql("sub_category = " + (transaction.getSubCategory() == null ? "NULL" : "'" + transaction.getSubCategory() + "'"))
+                .set("payment_channel", transaction.getPaymentChannel())
+                .set("transaction_type", transaction.getTransactionType())
+                .set("description", transaction.getDescription())
+                .set("user_note", transaction.getUserNote())
+                .set("include_in_stats", transaction.getIncludeInStats())
+                .set("is_refund", transaction.getIsRefund());
+        billTransactionMapper.update(null, updateWrapper);
     }
     
     @Override
@@ -82,7 +99,8 @@ public class BillTransactionServiceImpl implements BillTransactionService {
     
     @Override
     public Page<BillTransaction> pageList(int current, int size, LocalDate startDate, LocalDate endDate, 
-                                          String category, String paymentChannel, String transactionType, 
+                                          String category, String parentCategory, String subCategory,
+                                          String paymentChannel, String transactionType, 
                                           String keyword, String minAmount, String maxAmount, 
                                           String incomeOrExpense, Boolean includeInStats, Boolean isRefund, 
                                           String sortField, String sortOrder, Long firstImportId) {
@@ -95,12 +113,28 @@ public class BillTransactionServiceImpl implements BillTransactionService {
         if (endDate != null) {
             wrapper.le(BillTransaction::getTransactionDate, endDate);
         }
-        if (category != null && !category.isEmpty()) {
-            wrapper.and(w -> w.eq(BillTransaction::getCategory, category)
-                .or().eq(BillTransaction::getParentCategory, category)
-                .or().eq(BillTransaction::getSubCategory, category));
-        } else if (category != null && category.isEmpty()) {
-            wrapper.and(w -> w.isNull(BillTransaction::getCategory).or().eq(BillTransaction::getCategory, ""));
+        if (category != null && !"__ALL__".equals(category)) {
+            if (category.isEmpty()) {
+                wrapper.and(w -> w.isNull(BillTransaction::getCategory).or().eq(BillTransaction::getCategory, ""));
+            } else {
+                wrapper.and(w -> w.eq(BillTransaction::getCategory, category)
+                    .or().eq(BillTransaction::getParentCategory, category)
+                    .or().eq(BillTransaction::getSubCategory, category));
+            }
+        }
+        if (parentCategory != null && !"__ALL__".equals(parentCategory)) {
+            if (parentCategory.isEmpty()) {
+                wrapper.and(w -> w.isNull(BillTransaction::getParentCategory).or().eq(BillTransaction::getParentCategory, ""));
+            } else {
+                wrapper.eq(BillTransaction::getParentCategory, parentCategory);
+            }
+        }
+        if (subCategory != null && !"__ALL__".equals(subCategory)) {
+            if (subCategory.isEmpty()) {
+                wrapper.and(w -> w.isNull(BillTransaction::getSubCategory).or().eq(BillTransaction::getSubCategory, ""));
+            } else {
+                wrapper.eq(BillTransaction::getSubCategory, subCategory);
+            }
         }
         if (paymentChannel != null && !paymentChannel.isEmpty()) {
             wrapper.eq(BillTransaction::getPaymentChannel, paymentChannel);
@@ -175,7 +209,8 @@ public class BillTransactionServiceImpl implements BillTransactionService {
     
     @Override
     public java.util.Map<String, Object> getSummary(LocalDate startDate, LocalDate endDate, 
-                                                     String category, String paymentChannel, String transactionType, 
+                                                     String category, String parentCategory, String subCategory,
+                                                     String paymentChannel, String transactionType, 
                                                      String keyword, String minAmount, String maxAmount, 
                                                      String incomeOrExpense, Boolean includeInStats, Boolean isRefund, Long firstImportId) {
         LambdaQueryWrapper<BillTransaction> wrapper = new LambdaQueryWrapper<>();
@@ -188,12 +223,28 @@ public class BillTransactionServiceImpl implements BillTransactionService {
         if (endDate != null) {
             wrapper.le(BillTransaction::getTransactionDate, endDate);
         }
-        if (category != null && !category.isEmpty()) {
-            wrapper.and(w -> w.eq(BillTransaction::getCategory, category)
-                .or().eq(BillTransaction::getParentCategory, category)
-                .or().eq(BillTransaction::getSubCategory, category));
-        } else if (category != null && category.isEmpty()) {
-            wrapper.and(w -> w.isNull(BillTransaction::getCategory).or().eq(BillTransaction::getCategory, ""));
+        if (category != null && !"__ALL__".equals(category)) {
+            if (category.isEmpty()) {
+                wrapper.and(w -> w.isNull(BillTransaction::getCategory).or().eq(BillTransaction::getCategory, ""));
+            } else {
+                wrapper.and(w -> w.eq(BillTransaction::getCategory, category)
+                    .or().eq(BillTransaction::getParentCategory, category)
+                    .or().eq(BillTransaction::getSubCategory, category));
+            }
+        }
+        if (parentCategory != null && !"__ALL__".equals(parentCategory)) {
+            if (parentCategory.isEmpty()) {
+                wrapper.and(w -> w.isNull(BillTransaction::getParentCategory).or().eq(BillTransaction::getParentCategory, ""));
+            } else {
+                wrapper.eq(BillTransaction::getParentCategory, parentCategory);
+            }
+        }
+        if (subCategory != null && !"__ALL__".equals(subCategory)) {
+            if (subCategory.isEmpty()) {
+                wrapper.and(w -> w.isNull(BillTransaction::getSubCategory).or().eq(BillTransaction::getSubCategory, ""));
+            } else {
+                wrapper.eq(BillTransaction::getSubCategory, subCategory);
+            }
         }
         if (paymentChannel != null && !paymentChannel.isEmpty()) {
             wrapper.eq(BillTransaction::getPaymentChannel, paymentChannel);
@@ -262,12 +313,14 @@ public class BillTransactionServiceImpl implements BillTransactionService {
         if (endDate != null) {
             wrapper.le(BillTransaction::getTransactionDate, endDate);
         }
-        if (category != null && !category.isEmpty()) {
-            wrapper.and(w -> w.eq(BillTransaction::getCategory, category)
-                .or().eq(BillTransaction::getParentCategory, category)
-                .or().eq(BillTransaction::getSubCategory, category));
-        } else if (category != null && category.isEmpty()) {
-            wrapper.and(w -> w.isNull(BillTransaction::getCategory).or().eq(BillTransaction::getCategory, ""));
+        if (category != null && !"__ALL__".equals(category)) {
+            if (category.isEmpty()) {
+                wrapper.and(w -> w.isNull(BillTransaction::getCategory).or().eq(BillTransaction::getCategory, ""));
+            } else {
+                wrapper.and(w -> w.eq(BillTransaction::getCategory, category)
+                    .or().eq(BillTransaction::getParentCategory, category)
+                    .or().eq(BillTransaction::getSubCategory, category));
+            }
         }
         if (paymentChannel != null && !paymentChannel.isEmpty()) {
             wrapper.eq(BillTransaction::getPaymentChannel, paymentChannel);
