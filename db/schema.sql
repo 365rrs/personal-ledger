@@ -38,7 +38,8 @@ CREATE TABLE IF NOT EXISTS `category` (
   PRIMARY KEY (`id`),
   KEY `idx_category_type` (`type`),
   KEY `idx_category_enabled` (`enabled`),
-  KEY `idx_parent_id` (`parent_id`)
+  KEY `idx_parent_id` (`parent_id`),
+  KEY `idx_level` (`level`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='分类表';
 
 -- 3. 支付渠道表
@@ -86,9 +87,11 @@ CREATE TABLE IF NOT EXISTS `bill_transaction` (
   `transaction_type` VARCHAR(100) DEFAULT NULL COMMENT '交易类型',
   `description` TEXT DEFAULT NULL COMMENT '交易描述',
   `payment_channel` VARCHAR(50) DEFAULT NULL COMMENT '支付渠道',
-  `category` VARCHAR(50) DEFAULT NULL COMMENT '分类',
+  `category` VARCHAR(50) DEFAULT NULL COMMENT '分类(保存一级分类)',
+  `parent_category` VARCHAR(100) DEFAULT NULL COMMENT '一级分类',
+  `sub_category` VARCHAR(100) DEFAULT NULL COMMENT '二级分类',
   `user_note` TEXT DEFAULT NULL COMMENT '用户备注',
-  `include_in_stats` TINYINT(1) DEFAULT 1 COMMENT '是否计入统计: 0-不计入, 1-计入',
+  `include_in_stats` TINYINT(1) DEFAULT 0 COMMENT '是否计入统计: 0-不计入, 1-计入',
   `is_refund` TINYINT(1) DEFAULT 0 COMMENT '是否退款: 0-否, 1-是',
   `is_manual_entry` TINYINT(1) DEFAULT 0 COMMENT '是否手工记账: 0-否, 1-是',
   `first_import_id` BIGINT DEFAULT NULL COMMENT '首次导入ID',
@@ -99,6 +102,8 @@ CREATE TABLE IF NOT EXISTS `bill_transaction` (
   PRIMARY KEY (`id`),
   KEY `idx_bill_transaction_date` (`transaction_date`),
   KEY `idx_bill_transaction_category` (`category`),
+  KEY `idx_parent_category` (`parent_category`),
+  KEY `idx_sub_category` (`sub_category`),
   KEY `idx_bill_transaction_first_import` (`first_import_id`),
   KEY `idx_bill_transaction_refund` (`is_refund`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='账单交易明细表';
