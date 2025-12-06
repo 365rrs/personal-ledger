@@ -34,7 +34,7 @@ public class BillTransactionController {
             com.gaoyan.personalledger.entity.TransactionQueryParams params) {
         
         Page<BillTransaction> page = billTransactionService.pageList(current, size, params.getStartDate(), params.getEndDate(), 
-                params.getCategory(), params.getParentCategory(), params.getSubCategory(),
+                params.getCategory(), params.getSubCategory(),
                 params.getPaymentChannel(), params.getTransactionType(), params.getKeyword(), 
                 params.getMinAmount(), params.getMaxAmount(), params.getIncomeOrExpense(), params.getIncludeInStats(), 
                 params.getIsRefund(), params.getSortField(), params.getSortOrder(), params.getFirstImportId());
@@ -105,7 +105,7 @@ public class BillTransactionController {
     public Map<String, Object> getTransactionSummary(com.gaoyan.personalledger.entity.TransactionQueryParams params) {
         
         Map<String, Object> summary = billTransactionService.getSummary(params.getStartDate(), params.getEndDate(), 
-                params.getCategory(), params.getParentCategory(), params.getSubCategory(),
+                params.getCategory(), params.getSubCategory(),
                 params.getPaymentChannel(), params.getTransactionType(), params.getKeyword(), 
                 params.getMinAmount(), params.getMaxAmount(), params.getIncomeOrExpense(), params.getIncludeInStats(), 
                 params.getIsRefund(), params.getFirstImportId());

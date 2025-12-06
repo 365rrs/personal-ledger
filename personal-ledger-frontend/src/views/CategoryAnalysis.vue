@@ -63,7 +63,6 @@
           <el-table-column prop="transactionType" label="交易类型" width="140" />
           <el-table-column prop="paymentChannel" label="支付渠道" width="120" />
           <el-table-column prop="category" label="分类" width="100" />
-          <el-table-column prop="parentCategory" label="一级分类" width="100" />
           <el-table-column prop="subCategory" label="二级分类" width="100" />
           <el-table-column prop="description" label="交易备注" min-width="180" show-overflow-tooltip />
           <el-table-column prop="userNote" label="用户备注" width="150" show-overflow-tooltip />

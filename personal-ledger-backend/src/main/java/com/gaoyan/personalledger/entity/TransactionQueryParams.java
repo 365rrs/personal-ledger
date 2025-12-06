@@ -19,8 +19,6 @@ public class TransactionQueryParams {
     
     private String category;
     
-    private String parentCategory;
-    
     private String subCategory;
     
     private String paymentChannel;

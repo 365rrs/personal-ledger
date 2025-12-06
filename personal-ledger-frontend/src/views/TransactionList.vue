@@ -65,14 +65,6 @@
         </el-row>
         <el-row :gutter="16">
           <el-col :span="6">
-            <el-form-item label="一级分类">
-              <el-select v-model="displayParentCategory" filterable placeholder="全部" clearable>
-                <el-option label="未分类" value="__UNCATEGORIZED__" />
-                <el-option v-for="cat in parentCategories" :key="cat.name" :label="cat.name" :value="cat.name" />
-              </el-select>
-            </el-form-item>
-          </el-col>
-          <el-col :span="6">
             <el-form-item label="二级分类">
               <el-select v-model="displaySubCategory" filterable placeholder="全部" clearable>
                 <el-option label="未分类" value="__UNCATEGORIZED__" />
@@ -164,7 +156,6 @@
         <el-table-column v-if="visibleColumns.transactionType" prop="transactionType" label="交易类型" width="120" show-overflow-tooltip resizable />
         <el-table-column v-if="visibleColumns.paymentChannel" prop="paymentChannel" label="支付渠道" width="100" resizable />
         <el-table-column v-if="visibleColumns.category" prop="category" label="分类" width="100" resizable />
-        <el-table-column v-if="visibleColumns.parentCategory" prop="parentCategory" label="一级分类" width="100" resizable />
         <el-table-column v-if="visibleColumns.subCategory" prop="subCategory" label="二级分类" width="100" resizable />
         <el-table-column v-if="visibleColumns.description" prop="description" label="交易备注" width="250" show-overflow-tooltip resizable />
         <el-table-column v-if="visibleColumns.userNote" prop="userNote" label="用户备注" width="150" show-overflow-tooltip resizable />
@@ -393,7 +384,6 @@ const filter = reactive({
   startDate: thisMonth.startDate,
   endDate: thisMonth.endDate,
   category: '__ALL__',
-  parentCategory: '__ALL__',
   subCategory: '__ALL__',
   transactionType: '', 
   paymentChannel: '',
@@ -473,11 +463,6 @@ const displayCategory = computed({
   set: (val) => { filter.category = val || '__ALL__' }
 })
 
-const displayParentCategory = computed({
-  get: () => filter.parentCategory === '__ALL__' ? null : filter.parentCategory,
-  set: (val) => { filter.parentCategory = val || '__ALL__' }
-})
-
 const displaySubCategory = computed({
   get: () => filter.subCategory === '__ALL__' ? null : filter.subCategory,
   set: (val) => { filter.subCategory = val || '__ALL__' }
@@ -503,7 +488,6 @@ const loadData = async () => {
     
     // 分类参数：__ALL__=不查询，__UNCATEGORIZED__=查未分类，其他=查具体分类
     params.category = filter.category === '__UNCATEGORIZED__' ? '' : filter.category
-    params.parentCategory = filter.parentCategory === '__UNCATEGORIZED__' ? '' : filter.parentCategory
     params.subCategory = filter.subCategory === '__UNCATEGORIZED__' ? '' : filter.subCategory
     
     // 收支类型参数
@@ -549,7 +533,6 @@ const loadSummary = async () => {
     
     // 分类参数：__ALL__=不查询，__UNCATEGORIZED__=查未分类，其他=查具体分类
     params.category = filter.category === '__UNCATEGORIZED__' ? '' : filter.category
-    params.parentCategory = filter.parentCategory === '__UNCATEGORIZED__' ? '' : filter.parentCategory
     params.subCategory = filter.subCategory === '__UNCATEGORIZED__' ? '' : filter.subCategory
     if (filter.transactionType) {
       params.incomeOrExpense = filter.transactionType
@@ -735,7 +718,6 @@ const resetFilter = () => {
   filter.startDate = ''
   filter.endDate = ''
   filter.category = '__ALL__'
-  filter.parentCategory = '__ALL__'
   filter.subCategory = '__ALL__'
   filter.transactionType = ''
   filter.paymentChannel = ''
@@ -816,9 +798,9 @@ const editRecord = (row) => {
     if (subCat) {
       currentRecord.value.category = subCat.id
     }
-  } else if (row.parentCategory) {
+  } else if (row.category) {
     // 只有一级分类，查找一级分类的ID
-    const parentCat = categories.value.find(c => c.name === row.parentCategory && (c.parentId === null || c.parentId === 0))
+    const parentCat = categories.value.find(c => c.name === row.category && (c.parentId === null || c.parentId === 0))
     if (parentCat) {
       currentRecord.value.category = parentCat.id
     }
@@ -895,13 +877,11 @@ const saveRecord = async () => {
       if (selectedCategory) {
         if (selectedCategory.parentId === null || selectedCategory.parentId === 0) {
           updateData.category = selectedCategory.name
-          updateData.parentCategory = selectedCategory.name
           updateData.subCategory = null
         } else {
           const parent = categories.value.find(c => c.id === selectedCategory.parentId)
           if (parent) {
             updateData.category = parent.name
-            updateData.parentCategory = parent.name
             updateData.subCategory = selectedCategory.name
           }
         }
@@ -960,7 +940,6 @@ const confirmBatchCategory = async () => {
       if (selectedCategory.parentId === null || selectedCategory.parentId === 0) {
         categoryUpdate = {
           category: selectedCategory.name,
-          parentCategory: selectedCategory.name,
           subCategory: null
         }
       } else {
@@ -968,7 +947,6 @@ const confirmBatchCategory = async () => {
         if (parent) {
           categoryUpdate = {
             category: parent.name,
-            parentCategory: parent.name,
             subCategory: selectedCategory.name
           }
         }
@@ -1106,7 +1084,6 @@ const columnOptions = [
   { key: 'transactionType', label: '交易类型' },
   { key: 'paymentChannel', label: '支付渠道' },
   { key: 'category', label: '分类' },
-  { key: 'parentCategory', label: '一级分类' },
   { key: 'subCategory', label: '二级分类' },
   { key: 'description', label: '交易备注' },
   { key: 'userNote', label: '用户备注' },
