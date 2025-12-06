@@ -11,7 +11,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import javax.annotation.Resource;
 import java.time.LocalDateTime;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 @Service
 public class BillTagServiceImpl implements BillTagService {
@@ -60,13 +62,19 @@ public class BillTagServiceImpl implements BillTagService {
         billTransactionTagMapper.delete(new LambdaQueryWrapper<BillTransactionTag>()
                 .eq(BillTransactionTag::getTransactionId, transactionId));
         
-        // 添加新关联
+        // 批量添加新关联
         if (tagIds != null && !tagIds.isEmpty()) {
+            LocalDateTime now = LocalDateTime.now();
+            List<BillTransactionTag> relations = new java.util.ArrayList<>();
             for (Long tagId : tagIds) {
                 BillTransactionTag relation = new BillTransactionTag();
                 relation.setTransactionId(transactionId);
                 relation.setTagId(tagId);
-                relation.setCreateTime(LocalDateTime.now());
+                relation.setCreateTime(now);
+                relations.add(relation);
+            }
+            // 使用批量插入
+            for (BillTransactionTag relation : relations) {
                 billTransactionTagMapper.insert(relation);
             }
         }
@@ -75,5 +83,31 @@ public class BillTagServiceImpl implements BillTagService {
     @Override
     public List<Long> getTransactionTagIds(Long transactionId) {
         return billTransactionTagMapper.selectTagIdsByTransactionId(transactionId);
+    }
+    
+    @Override
+    @Transactional
+    public void batchAddTagsToTransactions(List<Long> transactionIds, List<Long> tagIds) {
+        if (transactionIds == null || transactionIds.isEmpty() || tagIds == null || tagIds.isEmpty()) {
+            return;
+        }
+        
+        LocalDateTime now = LocalDateTime.now();
+        for (Long transactionId : transactionIds) {
+            // 查询已存在的标签
+            List<Long> existingTagIds = billTransactionTagMapper.selectTagIdsByTransactionId(transactionId);
+            Set<Long> existingSet = new HashSet<>(existingTagIds);
+            
+            // 只添加不存在的标签
+            for (Long tagId : tagIds) {
+                if (!existingSet.contains(tagId)) {
+                    BillTransactionTag relation = new BillTransactionTag();
+                    relation.setTransactionId(transactionId);
+                    relation.setTagId(tagId);
+                    relation.setCreateTime(now);
+                    billTransactionTagMapper.insert(relation);
+                }
+            }
+        }
     }
 }

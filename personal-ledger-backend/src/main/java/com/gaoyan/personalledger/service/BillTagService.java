@@ -12,4 +12,5 @@ public interface BillTagService {
     void delete(Long id);
     void bindTagsToTransaction(Long transactionId, List<Long> tagIds);
     List<Long> getTransactionTagIds(Long transactionId);
+    void batchAddTagsToTransactions(List<Long> transactionIds, List<Long> tagIds);
 }

@@ -1,5 +1,6 @@
 package com.gaoyan.personalledger.controller;
 
+import com.gaoyan.personalledger.dto.BatchAddTagRequest;
 import com.gaoyan.personalledger.dto.BindTagRequest;
 import com.gaoyan.personalledger.entity.BillTag;
 import com.gaoyan.personalledger.service.BillTagService;
@@ -44,5 +45,10 @@ public class BillTagController {
     @GetMapping("/transaction/{transactionId}")
     public List<Long> getTransactionTags(@PathVariable Long transactionId) {
         return billTagService.getTransactionTagIds(transactionId);
+    }
+    
+    @PostMapping("/batch/add")
+    public void batchAddTags(@RequestBody BatchAddTagRequest request) {
+        billTagService.batchAddTagsToTransactions(request.getTransactionIds(), request.getTagIds());
     }
 }

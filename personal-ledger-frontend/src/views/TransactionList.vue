@@ -1332,14 +1332,12 @@ const batchEditTags = () => {
 
 const confirmBatchTags = async () => {
   try {
-    const updatePromises = selectedRows.value.map(row => 
-      axios.post('http://localhost:8080/api/bill/tag/bind', {
-        transactionId: row.id,
-        tagIds: batchTagsValue.value
-      })
-    )
+    const transactionIds = selectedRows.value.map(row => row.id)
+    await axios.post('http://localhost:8080/api/bill/tag/batch/add', {
+      transactionIds,
+      tagIds: batchTagsValue.value
+    })
     
-    await Promise.all(updatePromises)
     ElMessage.success(`成功更新 ${selectedRows.value.length} 条记录的标签`)
     selectedRows.value = []
     batchTagsDialogVisible.value = false
@@ -1359,19 +1357,12 @@ const batchAddTags = () => {
 
 const confirmBatchAddTags = async () => {
   try {
-    const updatePromises = selectedRows.value.map(async (row) => {
-      // 获取现有标签
-      const existingTagIds = await axios.get(`http://localhost:8080/api/bill/tag/transaction/${row.id}`)
-      // 合并现有标签和新标签，去重
-      const mergedTagIds = [...new Set([...existingTagIds.data, ...batchAddTagsValue.value])]
-      // 更新标签
-      return axios.post('http://localhost:8080/api/bill/tag/bind', {
-        transactionId: row.id,
-        tagIds: mergedTagIds
-      })
+    const transactionIds = selectedRows.value.map(row => row.id)
+    await axios.post('http://localhost:8080/api/bill/tag/batch/add', {
+      transactionIds,
+      tagIds: batchAddTagsValue.value
     })
     
-    await Promise.all(updatePromises)
     ElMessage.success(`成功为 ${selectedRows.value.length} 条记录添加标签`)
     selectedRows.value = []
     batchAddTagsDialogVisible.value = false
