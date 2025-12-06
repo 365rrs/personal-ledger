@@ -12,9 +12,6 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDate;
 import java.util.List;
 
-/**
- * 账单交易明细Service实现
- */
 @Slf4j
 @Service
 public class BillTransactionServiceImpl implements BillTransactionService {
@@ -22,8 +19,12 @@ public class BillTransactionServiceImpl implements BillTransactionService {
     @Autowired
     private BillTransactionMapper billTransactionMapper;
     
+    @Autowired
+    private com.gaoyan.personalledger.mapper.CategoryMapper categoryMapper;
+    
     @Override
     public void save(BillTransaction transaction) {
+        splitCategory(transaction);
         billTransactionMapper.insert(transaction);
     }
     
@@ -32,8 +33,45 @@ public class BillTransactionServiceImpl implements BillTransactionService {
         transactions.forEach(this::save);
     }
     
+    private void splitCategory(BillTransaction transaction) {
+        if (transaction.getCategory() == null || transaction.getCategory().isEmpty()) {
+            transaction.setParentCategory(null);
+            transaction.setSubCategory(null);
+            return;
+        }
+        
+        com.baomidou.mybatisplus.core.conditions.query.QueryWrapper<com.gaoyan.personalledger.entity.Category> wrapper = 
+            new com.baomidou.mybatisplus.core.conditions.query.QueryWrapper<>();
+        wrapper.eq("name", transaction.getCategory());
+        com.gaoyan.personalledger.entity.Category category = categoryMapper.selectOne(wrapper);
+        
+        if (category == null) {
+            transaction.setParentCategory(null);
+            transaction.setSubCategory(null);
+            return;
+        }
+        
+        if (category.getParentId() == null || category.getParentId() == 0) {
+            transaction.setParentCategory(category.getName());
+            transaction.setSubCategory(null);
+            transaction.setCategory(category.getName());
+        } else {
+            com.gaoyan.personalledger.entity.Category parent = categoryMapper.selectById(category.getParentId());
+            if (parent != null) {
+                transaction.setParentCategory(parent.getName());
+                transaction.setSubCategory(category.getName());
+                transaction.setCategory(parent.getName());
+            } else {
+                transaction.setParentCategory(category.getName());
+                transaction.setSubCategory(null);
+                transaction.setCategory(category.getName());
+            }
+        }
+    }
+    
     @Override
     public void updateById(BillTransaction transaction) {
+        splitCategory(transaction);
         billTransactionMapper.updateById(transaction);
     }
     
@@ -58,7 +96,9 @@ public class BillTransactionServiceImpl implements BillTransactionService {
             wrapper.le(BillTransaction::getTransactionDate, endDate);
         }
         if (category != null && !category.isEmpty()) {
-            wrapper.eq(BillTransaction::getCategory, category);
+            wrapper.and(w -> w.eq(BillTransaction::getCategory, category)
+                .or().eq(BillTransaction::getParentCategory, category)
+                .or().eq(BillTransaction::getSubCategory, category));
         } else if (category != null && category.isEmpty()) {
             wrapper.and(w -> w.isNull(BillTransaction::getCategory).or().eq(BillTransaction::getCategory, ""));
         }
@@ -96,7 +136,6 @@ public class BillTransactionServiceImpl implements BillTransactionService {
             wrapper.eq(BillTransaction::getIsRefund, isRefund);
         }
         
-        // 排序
         if (sortField != null && !sortField.isEmpty() && sortOrder != null && !sortOrder.isEmpty()) {
             boolean isAsc = "asc".equals(sortOrder);
             switch (sortField) {
@@ -126,8 +165,6 @@ public class BillTransactionServiceImpl implements BillTransactionService {
     
     @Override
     public BillTransaction findByDeduplicateKey(String key) {
-        // 去重key格式：日期_时间_金额_描述
-        // 这里简化实现，实际应该解析key并查询
         return null;
     }
     
@@ -143,7 +180,6 @@ public class BillTransactionServiceImpl implements BillTransactionService {
                                                      String incomeOrExpense, Boolean includeInStats, Boolean isRefund, Long firstImportId) {
         LambdaQueryWrapper<BillTransaction> wrapper = new LambdaQueryWrapper<>();
         
-        // 汇总时只计算计入收支的数据
         wrapper.eq(BillTransaction::getIncludeInStats, true);
         
         if (startDate != null) {
@@ -153,7 +189,9 @@ public class BillTransactionServiceImpl implements BillTransactionService {
             wrapper.le(BillTransaction::getTransactionDate, endDate);
         }
         if (category != null && !category.isEmpty()) {
-            wrapper.eq(BillTransaction::getCategory, category);
+            wrapper.and(w -> w.eq(BillTransaction::getCategory, category)
+                .or().eq(BillTransaction::getParentCategory, category)
+                .or().eq(BillTransaction::getSubCategory, category));
         } else if (category != null && category.isEmpty()) {
             wrapper.and(w -> w.isNull(BillTransaction::getCategory).or().eq(BillTransaction::getCategory, ""));
         }
@@ -216,7 +254,6 @@ public class BillTransactionServiceImpl implements BillTransactionService {
                                                               String category, String paymentChannel) {
         LambdaQueryWrapper<BillTransaction> wrapper = new LambdaQueryWrapper<>();
         
-        // 只统计计入收支的数据
         wrapper.eq(BillTransaction::getIncludeInStats, true);
         
         if (startDate != null) {
@@ -226,7 +263,9 @@ public class BillTransactionServiceImpl implements BillTransactionService {
             wrapper.le(BillTransaction::getTransactionDate, endDate);
         }
         if (category != null && !category.isEmpty()) {
-            wrapper.eq(BillTransaction::getCategory, category);
+            wrapper.and(w -> w.eq(BillTransaction::getCategory, category)
+                .or().eq(BillTransaction::getParentCategory, category)
+                .or().eq(BillTransaction::getSubCategory, category));
         } else if (category != null && category.isEmpty()) {
             wrapper.and(w -> w.isNull(BillTransaction::getCategory).or().eq(BillTransaction::getCategory, ""));
         }
@@ -238,7 +277,6 @@ public class BillTransactionServiceImpl implements BillTransactionService {
         
         List<BillTransaction> list = billTransactionMapper.selectList(wrapper);
         
-        // 按日期分组统计
         java.util.Map<LocalDate, java.util.Map<String, Object>> dailyMap = new java.util.LinkedHashMap<>();
         
         for (BillTransaction t : list) {
@@ -280,7 +318,6 @@ public class BillTransactionServiceImpl implements BillTransactionService {
         com.baomidou.mybatisplus.core.conditions.query.QueryWrapper<BillTransaction> wrapper = 
             new com.baomidou.mybatisplus.core.conditions.query.QueryWrapper<>();
         
-        // 只统计计入收支的数据
         wrapper.eq("include_in_stats", true);
         
         if (startDate != null) {
@@ -305,7 +342,6 @@ public class BillTransactionServiceImpl implements BillTransactionService {
         
         java.util.List<java.util.Map<String, Object>> list = billTransactionMapper.selectMaps(wrapper);
         
-        // 计算总数用于百分比计算
         java.math.BigDecimal totalAmount = java.math.BigDecimal.ZERO;
         for (java.util.Map<String, Object> item : list) {
             Object amountObj = item.get("amount");
@@ -318,7 +354,6 @@ public class BillTransactionServiceImpl implements BillTransactionService {
             }
         }
         
-        // 计算每个分类的百分比
         for (java.util.Map<String, Object> item : list) {
             Object amountObj = item.get("amount");
             java.math.BigDecimal amount = java.math.BigDecimal.ZERO;
@@ -337,81 +372,6 @@ public class BillTransactionServiceImpl implements BillTransactionService {
             } else {
                 item.put("percent", java.math.BigDecimal.ZERO);
             }
-        }
-        
-        // 添加"未分类"统计
-        com.baomidou.mybatisplus.core.conditions.query.QueryWrapper<BillTransaction> unclassifiedWrapper = 
-            new com.baomidou.mybatisplus.core.conditions.query.QueryWrapper<>();
-        unclassifiedWrapper.eq("include_in_stats", true);
-        
-        if (startDate != null) {
-            unclassifiedWrapper.ge("transaction_date", startDate);
-        }
-        if (endDate != null) {
-            unclassifiedWrapper.le("transaction_date", endDate);
-        }
-        
-        if ("expense".equals(type)) {
-            unclassifiedWrapper.isNotNull("expense").gt("expense", java.math.BigDecimal.ZERO);
-        } else if ("income".equals(type)) {
-            unclassifiedWrapper.isNotNull("income").gt("income", java.math.BigDecimal.ZERO);
-        }
-        
-        unclassifiedWrapper.and(w -> w.isNull("category")
-                                     .or()
-                                     .eq("category", ""));
-        
-        Long unclassifiedCount = billTransactionMapper.selectCount(unclassifiedWrapper);
-        if (unclassifiedCount > 0) {
-            // 计算未分类的金额总和
-            com.baomidou.mybatisplus.core.conditions.query.QueryWrapper<BillTransaction> unclassifiedAmountWrapper = 
-                new com.baomidou.mybatisplus.core.conditions.query.QueryWrapper<>();
-            unclassifiedAmountWrapper.eq("include_in_stats", true);
-            
-            if (startDate != null) {
-                unclassifiedAmountWrapper.ge("transaction_date", startDate);
-            }
-            if (endDate != null) {
-                unclassifiedAmountWrapper.le("transaction_date", endDate);
-            }
-            
-            if ("expense".equals(type)) {
-                unclassifiedAmountWrapper.isNotNull("expense").gt("expense", java.math.BigDecimal.ZERO);
-            } else if ("income".equals(type)) {
-                unclassifiedAmountWrapper.isNotNull("income").gt("income", java.math.BigDecimal.ZERO);
-            }
-            
-            unclassifiedAmountWrapper.and(w -> w.isNull("category")
-                                         .or()
-                                         .eq("category", ""));
-            
-            List<BillTransaction> unclassifiedTransactions = billTransactionMapper.selectList(unclassifiedAmountWrapper);
-            java.math.BigDecimal unclassifiedAmount = java.math.BigDecimal.ZERO;
-            for (BillTransaction transaction : unclassifiedTransactions) {
-                if ("expense".equals(type) && transaction.getExpense() != null) {
-                    unclassifiedAmount = unclassifiedAmount.add(transaction.getExpense());
-                } else if ("income".equals(type) && transaction.getIncome() != null) {
-                    unclassifiedAmount = unclassifiedAmount.add(transaction.getIncome());
-                }
-            }
-            
-            java.util.Map<String, Object> unclassifiedItem = new java.util.HashMap<>();
-            unclassifiedItem.put("category", "未分类");
-            unclassifiedItem.put("count", unclassifiedCount);
-            unclassifiedItem.put("amount", unclassifiedAmount);
-            
-            // 将未分类金额加入总计中，以便正确计算百分比
-            totalAmount = totalAmount.add(unclassifiedAmount);
-            
-            if (totalAmount.compareTo(java.math.BigDecimal.ZERO) > 0) {
-                java.math.BigDecimal percent = unclassifiedAmount.multiply(java.math.BigDecimal.valueOf(100))
-                        .divide(totalAmount, 2, java.math.RoundingMode.HALF_UP);
-                unclassifiedItem.put("percent", percent);
-            } else {
-                unclassifiedItem.put("percent", java.math.BigDecimal.ZERO);
-            }
-            
-            list.add(unclassifiedItem);
         }
         
         return list;

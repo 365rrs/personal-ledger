@@ -1,11 +1,13 @@
 package com.gaoyan.personalledger.entity;
 
 import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 /**
  * 分类实体
@@ -38,6 +40,16 @@ public class Category {
     private Boolean enabled;
     
     /**
+     * 父分类ID
+     */
+    private Long parentId;
+    
+    /**
+     * 分类层级(1-一级 2-二级)
+     */
+    private Integer level;
+    
+    /**
      * 创建时间
      */
     private LocalDateTime createTime;
@@ -46,4 +58,10 @@ public class Category {
      * 更新时间
      */
     private LocalDateTime updateTime;
+    
+    /**
+     * 子分类列表
+     */
+    @TableField(exist = false)
+    private List<Category> children;
 }

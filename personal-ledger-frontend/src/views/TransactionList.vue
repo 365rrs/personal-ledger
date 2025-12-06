@@ -4,7 +4,6 @@
       <template #header>
         <div class="header">
           <span>交易记录</span>
-          <el-button type="primary" size="small" @click="loadData">刷新</el-button>
         </div>
       </template>
 
@@ -57,9 +56,22 @@
           </el-col>
           <el-col :span="6">
             <el-form-item label="分类">
-              <el-select v-model="filter.category" clearable filterable placeholder="全部">
-                <el-option label="未分类" value="__UNCATEGORIZED__" />
-                <el-option v-for="cat in categories" :key="cat.id" :label="cat.name" :value="cat.name" />
+              <el-cascader v-model="filter.categoryPath" :options="categoryTree" :props="{ value: 'name', label: 'name', children: 'children', checkStrictly: true, emitPath: false }" clearable filterable placeholder="全部" @change="handleCategoryChange" style="width: 100%" />
+            </el-form-item>
+          </el-col>
+        </el-row>
+        <el-row :gutter="16">
+          <el-col :span="6">
+            <el-form-item label="一级分类">
+              <el-select v-model="filter.parentCategory" clearable filterable placeholder="全部">
+                <el-option v-for="cat in parentCategories" :key="cat.name" :label="cat.name" :value="cat.name" />
+              </el-select>
+            </el-form-item>
+          </el-col>
+          <el-col :span="6">
+            <el-form-item label="二级分类">
+              <el-select v-model="filter.subCategory" clearable filterable placeholder="全部">
+                <el-option v-for="cat in subCategories" :key="cat.name" :label="cat.name" :value="cat.name" />
               </el-select>
             </el-form-item>
           </el-col>
@@ -145,6 +157,8 @@
         <el-table-column prop="transactionType" label="交易类型" width="120" show-overflow-tooltip resizable />
         <el-table-column prop="paymentChannel" label="支付渠道" width="100" resizable />
         <el-table-column prop="category" label="分类" width="100" resizable />
+        <el-table-column prop="parentCategory" label="一级分类" width="100" resizable />
+        <el-table-column prop="subCategory" label="二级分类" width="100" resizable />
         <el-table-column prop="description" label="交易备注" width="250" show-overflow-tooltip resizable />
         <el-table-column prop="userNote" label="用户备注" width="150" show-overflow-tooltip resizable />
         <el-table-column label="计入收支" width="100" align="center" resizable>
@@ -189,10 +203,7 @@
     <el-dialog v-model="batchCategoryDialogVisible" title="批量分类" width="400px">
       <el-form label-width="80px">
         <el-form-item label="选择分类">
-          <el-select v-model="batchCategoryValue" placeholder="请选择分类" filterable style="width: 100%">
-            <el-option label="未分类" value="" />
-            <el-option v-for="cat in categories" :key="cat.id" :label="cat.name" :value="cat.name" />
-          </el-select>
+          <el-cascader v-model="batchCategoryValue" :options="categoryTree" :props="{ value: 'name', label: 'name', children: 'children', checkStrictly: true, emitPath: false }" clearable filterable placeholder="请选择分类" style="width: 100%" />
         </el-form-item>
       </el-form>
       <template #footer>
@@ -222,10 +233,7 @@
           <el-input v-model="quickAddForm.note" type="textarea" :rows="3" :placeholder="quickAddForm.recordType === 'expense' ? '如：退票手续费' : '如：京东价保返现'" />
         </el-form-item>
         <el-form-item label="分类">
-          <el-select v-model="quickAddForm.category" filterable placeholder="选择分类">
-            <el-option label="未分类" value="" />
-            <el-option v-for="cat in categories.filter(c => c.type === (quickAddForm.recordType === 'expense' ? 'EXPENSE' : 'INCOME'))" :key="cat.id" :label="cat.name" :value="cat.name" />
-          </el-select>
+          <el-cascader v-model="quickAddForm.category" :options="categoryTree.filter(c => c.type === (quickAddForm.recordType === 'expense' ? 'EXPENSE' : 'INCOME'))" :props="{ value: 'name', label: 'name', children: 'children', checkStrictly: true, emitPath: false }" clearable filterable placeholder="选择分类" style="width: 100%" />
         </el-form-item>
       </el-form>
       <template #footer>
@@ -283,10 +291,7 @@
           <el-input v-model="currentRecord.description" type="textarea" :placeholder="drawerMode === 'manual' ? '交易描述' : ''" :readonly="drawerMode === 'view'" />
         </el-form-item>
         <el-form-item label="分类">
-          <el-select v-model="currentRecord.category" filterable :placeholder="drawerMode === 'manual' ? '请选择分类' : ''">
-            <el-option label="未分类" value="" />
-            <el-option v-for="cat in filteredCategories" :key="cat.id" :label="cat.name" :value="cat.name" />
-          </el-select>
+          <el-cascader v-model="currentRecord.category" :options="filteredCategoryTree" :props="{ value: 'name', label: 'name', children: 'children', checkStrictly: true, emitPath: false }" clearable filterable :placeholder="drawerMode === 'manual' ? '请选择分类' : ''" style="width: 100%" />
         </el-form-item>
         <el-form-item label="支付渠道">
           <el-select v-model="currentRecord.paymentChannel" filterable :placeholder="drawerMode === 'manual' ? '请选择支付渠道' : ''">
@@ -326,6 +331,9 @@ const exporting = ref(false)
 const transactions = ref([])
 const selectedRows = ref([])
 const categories = ref([])
+const categoryTree = ref([])
+const parentCategories = ref([])
+const subCategories = ref([])
 const channels = ref([])
 const getThisMonthDates = () => {
   const today = new Date()
@@ -348,7 +356,10 @@ const thisMonth = getThisMonthDates()
 const filter = reactive({ 
   startDate: thisMonth.startDate,
   endDate: thisMonth.endDate,
-  category: '', 
+  category: '',
+  categoryPath: [],
+  parentCategory: '',
+  subCategory: '',
   transactionType: '', 
   paymentChannel: '',
   tradeType: '',
@@ -413,6 +424,12 @@ const filteredCategories = computed(() => {
   if (drawerMode.value !== 'manual') return categories.value
   const typeMap = { income: 'INCOME', expense: 'EXPENSE' }
   return categories.value.filter(cat => cat.type === typeMap[currentRecord.value.type])
+})
+
+const filteredCategoryTree = computed(() => {
+  if (drawerMode.value !== 'manual') return categoryTree.value
+  const typeMap = { income: 'INCOME', expense: 'EXPENSE' }
+  return categoryTree.value.filter(cat => cat.type === typeMap[currentRecord.value.type])
 })
 
 const loadData = async () => {
@@ -666,6 +683,9 @@ const resetFilter = () => {
   filter.startDate = ''
   filter.endDate = ''
   filter.category = ''
+  filter.categoryPath = []
+  filter.parentCategory = ''
+  filter.subCategory = ''
   filter.transactionType = ''
   filter.paymentChannel = ''
   filter.tradeType = ''
@@ -683,7 +703,42 @@ const resetFilter = () => {
 
 const loadCategories = async () => {
   const res = await axios.get('http://localhost:8080/api/category/list')
-  categories.value = res.data
+  categoryTree.value = res.data
+  flattenCategories(res.data)
+  extractParentAndSubCategories(res.data)
+}
+
+const flattenCategories = (tree) => {
+  const result = []
+  const traverse = (nodes) => {
+    nodes.forEach(node => {
+      result.push(node)
+      if (node.children && node.children.length > 0) {
+        traverse(node.children)
+      }
+    })
+  }
+  traverse(tree)
+  categories.value = result
+}
+
+const extractParentAndSubCategories = (tree) => {
+  const parents = []
+  const subs = []
+  tree.forEach(node => {
+    parents.push({ name: node.name })
+    if (node.children && node.children.length > 0) {
+      node.children.forEach(child => {
+        subs.push({ name: child.name })
+      })
+    }
+  })
+  parentCategories.value = parents
+  subCategories.value = subs
+}
+
+const handleCategoryChange = (value) => {
+  filter.category = value || ''
 }
 
 const loadChannels = async () => {
@@ -938,7 +993,12 @@ onMounted(() => {
 
 <style scoped>
 .transaction-list {
-  padding: 20px;
+  padding: 0;
+}
+
+.transaction-list .el-card {
+  border-radius: 0;
+  border: none;
 }
 
 .header {

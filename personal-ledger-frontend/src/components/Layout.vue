@@ -1,15 +1,17 @@
 <template>
   <el-container class="layout-container">
     <!-- 左侧菜单 -->
-    <el-aside class="sidebar" width="250px">
+    <el-aside class="sidebar" :width="isCollapse ? '64px' : '250px'">
       <div class="logo">
-        <h2>个人账簿系统</h2>
+        <h2 v-if="!isCollapse">个人账簿系统</h2>
+        <h2 v-else class="logo-icon">账</h2>
       </div>
       <el-menu
         :default-active="$route.path"
         class="sidebar-menu"
         router
         unique-opened
+        :collapse="isCollapse"
         background-color="#304156"
         text-color="#bfcbd9"
         active-text-color="#409EFF"
@@ -105,6 +107,10 @@
     <el-container class="main-container">
       <el-header class="header">
         <div class="header-content">
+          <el-icon class="collapse-icon" @click="toggleCollapse">
+            <Fold v-if="!isCollapse" />
+            <Expand v-else />
+          </el-icon>
           <span class="page-title">{{ $route.meta.title || '个人账簿系统' }}</span>
         </div>
       </el-header>
@@ -116,7 +122,14 @@
 </template>
 
 <script setup>
-import { House, Upload, Grid, Lightning, DataAnalysis, Document, TrendCharts, PieChart, Setting, Collection, CreditCard, Tools, List, Edit } from '@element-plus/icons-vue'
+import { ref } from 'vue'
+import { House, Upload, Grid, Lightning, DataAnalysis, Document, TrendCharts, PieChart, Setting, Collection, CreditCard, Tools, List, Edit, Fold, Expand } from '@element-plus/icons-vue'
+
+const isCollapse = ref(false)
+
+const toggleCollapse = () => {
+  isCollapse.value = !isCollapse.value
+}
 </script>
 
 <style scoped>
@@ -127,6 +140,7 @@ import { House, Upload, Grid, Lightning, DataAnalysis, Document, TrendCharts, Pi
 .sidebar {
   background-color: #304156;
   overflow: hidden;
+  transition: width 0.3s;
 }
 
 .logo {
@@ -142,6 +156,10 @@ import { House, Upload, Grid, Lightning, DataAnalysis, Document, TrendCharts, Pi
   margin: 0;
   font-size: 18px;
   font-weight: 600;
+}
+
+.logo .logo-icon {
+  font-size: 24px;
 }
 
 .sidebar-menu {
@@ -161,6 +179,26 @@ import { House, Upload, Grid, Lightning, DataAnalysis, Document, TrendCharts, Pi
   align-items: center;
 }
 
+.header-content {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.collapse-icon {
+  font-size: 22px;
+  cursor: pointer;
+  color: #606266;
+  padding: 8px;
+  border-radius: 4px;
+  transition: all 0.3s;
+}
+
+.collapse-icon:hover {
+  color: #409EFF;
+  background-color: #f0f2f5;
+}
+
 .page-title {
   font-size: 18px;
   font-weight: 500;
@@ -168,7 +206,7 @@ import { House, Upload, Grid, Lightning, DataAnalysis, Document, TrendCharts, Pi
 }
 
 .main-content {
-  padding: 20px;
+  padding: 0;
   background-color: #f0f2f5;
   min-height: calc(100vh - 60px);
 }

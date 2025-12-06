@@ -14,7 +14,12 @@
         <el-radio-button :value="false">禁用</el-radio-button>
       </el-radio-group>
 
-      <el-table :data="filteredChannels" style="width: 100%; margin-top: 20px;">
+      <el-table :data="filteredChannels" style="width: 100%; margin-top: 20px;" row-key="id">
+        <el-table-column label="拖拽" width="60" align="center">
+          <template #default>
+            <el-icon class="drag-handle" style="cursor: move;"><Rank /></el-icon>
+          </template>
+        </el-table-column>
         <el-table-column prop="name" label="渠道名称" width="200" />
         <el-table-column prop="sortOrder" label="排序" width="100" />
         <el-table-column prop="enabled" label="状态" width="100">
@@ -54,9 +59,11 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, nextTick } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { Rank } from '@element-plus/icons-vue'
 import axios from 'axios'
+import Sortable from 'sortablejs'
 
 const channels = ref([])
 const statusFilter = ref('')
@@ -75,9 +82,53 @@ const loadChannels = async () => {
     const response = await axios.get('http://localhost:8080/api/payment-channel/list')
     channels.value = response.data
     filterChannels()
+    await nextTick()
+    initSortable()
   } catch (error) {
     ElMessage.error('加载支付渠道失败')
   }
+}
+
+let draggedData = null
+
+const initSortable = () => {
+  const tbody = document.querySelector('.el-table__body-wrapper tbody')
+  if (!tbody) return
+  
+  Sortable.create(tbody, {
+    animation: 150,
+    handle: '.drag-handle',
+    onStart: (evt) => {
+      const allRows = Array.from(tbody.children)
+      const rowIndex = allRows.indexOf(evt.item)
+      draggedData = filteredChannels.value[rowIndex]
+    },
+    onEnd: async (evt) => {
+      if (evt.oldIndex === evt.newIndex || !draggedData) return
+      
+      const oldIdx = filteredChannels.value.findIndex(c => c.id === draggedData.id)
+      if (oldIdx === -1) return
+      
+      const moved = filteredChannels.value[oldIdx]
+      filteredChannels.value.splice(oldIdx, 1)
+      filteredChannels.value.splice(evt.newIndex, 0, moved)
+      
+      const updates = filteredChannels.value.map((item, idx) => ({ ...item, sortOrder: idx + 1 }))
+      
+      try {
+        await Promise.all(updates.map(item => 
+          axios.put('http://localhost:8080/api/payment-channel/update', item)
+        ))
+        ElMessage.success('排序更新成功')
+        loadChannels()
+      } catch (error) {
+        ElMessage.error('排序失败')
+        loadChannels()
+      }
+      
+      draggedData = null
+    }
+  })
 }
 
 const filterChannels = () => {
@@ -154,5 +205,14 @@ onMounted(() => {
 
 .status-filter {
   margin-bottom: 20px;
+}
+
+.drag-handle {
+  cursor: move;
+  color: #909399;
+}
+
+.drag-handle:hover {
+  color: #409eff;
 }
 </style>

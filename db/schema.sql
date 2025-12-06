@@ -31,11 +31,14 @@ CREATE TABLE IF NOT EXISTS `category` (
   `type` VARCHAR(20) NOT NULL COMMENT '分类类型: INCOME-收入, EXPENSE-支出',
   `sort_order` INT DEFAULT 0 COMMENT '排序序号',
   `enabled` TINYINT(1) DEFAULT 1 COMMENT '是否启用: 0-禁用, 1-启用',
+  `parent_id` BIGINT DEFAULT NULL COMMENT '父分类ID',
+  `level` INT DEFAULT 1 COMMENT '分类层级(1-一级 2-二级)',
   `create_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `update_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   PRIMARY KEY (`id`),
   KEY `idx_category_type` (`type`),
-  KEY `idx_category_enabled` (`enabled`)
+  KEY `idx_category_enabled` (`enabled`),
+  KEY `idx_parent_id` (`parent_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='分类表';
 
 -- 3. 支付渠道表

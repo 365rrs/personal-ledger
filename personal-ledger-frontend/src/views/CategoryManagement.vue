@@ -17,8 +17,13 @@
         <el-radio-button value="INCOME">收入</el-radio-button>
       </el-radio-group>
 
-      <el-table :data="filteredCategories" style="width: 100%; margin-top: 20px;">
-        <el-table-column prop="name" label="分类名称" width="150" />
+      <el-table :data="filteredCategories" style="width: 100%; margin-top: 20px;" row-key="id" :tree-props="{ children: 'children' }">
+        <el-table-column label="拖拽" width="60" align="center">
+          <template #default>
+            <el-icon class="drag-handle" style="cursor: move;"><Rank /></el-icon>
+          </template>
+        </el-table-column>
+        <el-table-column prop="name" label="分类名称" width="200" />
         <el-table-column prop="type" label="类型" width="100">
           <template #default="{ row }">
             <el-tag :type="row.type === 'EXPENSE' ? 'danger' : 'success'">
@@ -34,9 +39,10 @@
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="200">
+        <el-table-column label="操作" width="280">
           <template #default="{ row }">
             <el-button size="small" @click="editCategory(row)">编辑</el-button>
+            <el-button size="small" type="primary" @click="addSubCategory(row)" v-if="!row.parentId">添加子分类</el-button>
             <el-button size="small" type="danger" @click="deleteCategory(row)">删除</el-button>
           </template>
         </el-table-column>
@@ -45,6 +51,12 @@
 
     <el-dialog v-model="dialogVisible" :title="dialogMode === 'add' ? '添加分类' : '编辑分类'" width="500px">
       <el-form :model="currentCategory" label-width="100px">
+        <el-form-item label="父分类">
+          <el-select v-model="currentCategory.parentId" placeholder="选择父分类(可选)" clearable>
+            <el-option label="无(一级分类)" :value="null" />
+            <el-option v-for="cat in parentCategories" :key="cat.id" :label="cat.name" :value="cat.id" />
+          </el-select>
+        </el-form-item>
         <el-form-item label="分类名称">
           <el-input v-model="currentCategory.name" placeholder="请输入分类名称" />
         </el-form-item>
@@ -70,31 +82,41 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, nextTick } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Collection, Plus, Edit, Delete } from '@element-plus/icons-vue'
+import { Collection, Plus, Edit, Delete, Rank } from '@element-plus/icons-vue'
 import axios from 'axios'
+import Sortable from 'sortablejs'
 
 const categories = ref([])
 const typeFilter = ref('')
 const filteredCategories = ref([])
+const parentCategories = ref([])
 const dialogVisible = ref(false)
 const dialogMode = ref('add')
 const currentCategory = ref({
   name: '',
   type: 'EXPENSE',
   sortOrder: 0,
-  enabled: true
+  enabled: true,
+  parentId: null
 })
 
 const loadCategories = async () => {
   try {
     const response = await axios.get('http://localhost:8080/api/category/list')
     categories.value = response.data
+    updateParentCategories()
     filterCategories()
+    await nextTick()
+    initSortable()
   } catch (error) {
     ElMessage.error('加载分类失败')
   }
+}
+
+const updateParentCategories = () => {
+  parentCategories.value = categories.value.filter(c => !c.parentId || c.parentId === 0)
 }
 
 const filterCategories = () => {
@@ -107,11 +129,13 @@ const filterCategories = () => {
 
 const showAddDialog = () => {
   dialogMode.value = 'add'
+  const maxSort = categories.value.length > 0 ? Math.max(...categories.value.map(c => c.sortOrder || 0)) : 0
   currentCategory.value = {
     name: '',
     type: 'EXPENSE',
-    sortOrder: 0,
-    enabled: true
+    sortOrder: maxSort + 1,
+    enabled: true,
+    parentId: null
   }
   dialogVisible.value = true
 }
@@ -119,6 +143,20 @@ const showAddDialog = () => {
 const editCategory = (category) => {
   dialogMode.value = 'edit'
   currentCategory.value = { ...category }
+  dialogVisible.value = true
+}
+
+const addSubCategory = (parentCategory) => {
+  dialogMode.value = 'add'
+  const siblings = parentCategory.children || []
+  const maxSort = siblings.length > 0 ? Math.max(...siblings.map(c => c.sortOrder || 0)) : 0
+  currentCategory.value = {
+    name: '',
+    type: parentCategory.type,
+    sortOrder: maxSort + 1,
+    enabled: true,
+    parentId: parentCategory.id
+  }
   dialogVisible.value = true
 }
 
@@ -158,6 +196,127 @@ const deleteCategory = async (category) => {
   }
 }
 
+let draggedRowData = null
+
+const initSortable = () => {
+  const tbody = document.querySelector('.el-table__body-wrapper tbody')
+  if (!tbody) return
+  
+  Sortable.create(tbody, {
+    animation: 150,
+    handle: '.drag-handle',
+    onStart: (evt) => {
+      const allRows = Array.from(tbody.children)
+      const rowIndex = allRows.indexOf(evt.item)
+      const isChild = evt.item.classList.contains('el-table__row--level-1')
+      
+      if (isChild) {
+        let parentIdx = rowIndex - 1
+        while (parentIdx >= 0 && allRows[parentIdx].classList.contains('el-table__row--level-1')) {
+          parentIdx--
+        }
+        if (parentIdx >= 0) {
+          const parentRowIdx = allRows.filter((r, i) => i <= parentIdx && !r.classList.contains('el-table__row--level-1')).length - 1
+          const parent = filteredCategories.value.filter(c => !c.parentId)[parentRowIdx]
+          if (parent && parent.children) {
+            const childIdx = rowIndex - parentIdx - 1
+            draggedRowData = { category: parent.children[childIdx], isChild: true, parent }
+          }
+        }
+      } else {
+        const parentIdx = allRows.filter((r, i) => i <= rowIndex && !r.classList.contains('el-table__row--level-1')).length - 1
+        const parents = filteredCategories.value.filter(c => !c.parentId)
+        draggedRowData = { category: parents[parentIdx], isChild: false }
+      }
+    },
+    onEnd: async (evt) => {
+      if (evt.oldIndex === evt.newIndex || !draggedRowData) return
+      
+      if (draggedRowData.isChild) {
+        await handleChildDrag(draggedRowData, evt.oldIndex, evt.newIndex)
+      } else {
+        await handleParentDrag(draggedRowData, evt.oldIndex, evt.newIndex)
+      }
+      
+      draggedRowData = null
+    }
+  })
+}
+
+const handleParentDrag = async (draggedData, oldDomIndex, newDomIndex) => {
+  const tbody = document.querySelector('.el-table__body-wrapper tbody')
+  const allRows = Array.from(tbody.children)
+  
+  const parentRows = allRows.filter(row => !row.classList.contains('el-table__row--level-1'))
+  const newIdx = parentRows.indexOf(allRows[newDomIndex])
+  
+  if (newIdx === -1) return
+  
+  const parents = filteredCategories.value.filter(c => !c.parentId)
+  const oldRealIdx = parents.findIndex(p => p.id === draggedData.category.id)
+  
+  if (oldRealIdx === -1) return
+  
+  const moved = parents[oldRealIdx]
+  parents.splice(oldRealIdx, 1)
+  parents.splice(newIdx, 0, moved)
+  
+  const updates = parents.map((item, idx) => ({ ...item, sortOrder: idx + 1 }))
+  await batchUpdateSort(updates)
+}
+
+const handleChildDrag = async (draggedData, oldDomIndex, newDomIndex) => {
+  const tbody = document.querySelector('.el-table__body-wrapper tbody')
+  const allRows = Array.from(tbody.children)
+  
+  let parentRow = null
+  for (let i = newDomIndex - 1; i >= 0; i--) {
+    if (!allRows[i].classList.contains('el-table__row--level-1')) {
+      parentRow = allRows[i]
+      break
+    }
+  }
+  
+  if (!parentRow) return
+  
+  const childRows = []
+  let idx = allRows.indexOf(parentRow) + 1
+  while (idx < allRows.length && allRows[idx].classList.contains('el-table__row--level-1')) {
+    childRows.push(allRows[idx])
+    idx++
+  }
+  
+  const newIdx = childRows.indexOf(allRows[newDomIndex])
+  
+  if (newIdx === -1) return
+  
+  const parent = draggedData.parent
+  if (!parent || !parent.children) return
+  
+  const oldRealIdx = parent.children.findIndex(c => c.id === draggedData.category.id)
+  if (oldRealIdx === -1) return
+  
+  const moved = parent.children[oldRealIdx]
+  parent.children.splice(oldRealIdx, 1)
+  parent.children.splice(newIdx, 0, moved)
+  
+  const updates = parent.children.map((item, idx) => ({ ...item, sortOrder: idx + 1 }))
+  await batchUpdateSort(updates)
+}
+
+const batchUpdateSort = async (updates) => {
+  try {
+    await Promise.all(updates.map(item => 
+      axios.put('http://localhost:8080/api/category/update', item)
+    ))
+    ElMessage.success('排序更新成功')
+    loadCategories()
+  } catch (error) {
+    ElMessage.error('排序失败')
+    loadCategories()
+  }
+}
+
 onMounted(() => {
   loadCategories()
 })
@@ -188,5 +347,14 @@ onMounted(() => {
 
 .type-filter {
   margin-bottom: 20px;
+}
+
+.drag-handle {
+  cursor: move;
+  color: #909399;
+}
+
+.drag-handle:hover {
+  color: #409eff;
 }
 </style>

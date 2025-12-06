@@ -24,16 +24,43 @@ public class CategoryServiceImpl implements CategoryService {
     
     @Override
     public List<Category> getAllCategories() {
-        return categoryMapper.selectList(new QueryWrapper<Category>()
+        List<Category> allCategories = categoryMapper.selectList(new QueryWrapper<Category>()
                 .orderByAsc("type", "sort_order"));
+        return buildTree(allCategories);
+    }
+    
+    private List<Category> buildTree(List<Category> categories) {
+        List<Category> tree = new java.util.ArrayList<>();
+        java.util.Map<Long, Category> map = new java.util.HashMap<>();
+        
+        for (Category category : categories) {
+            map.put(category.getId(), category);
+        }
+        
+        for (Category category : categories) {
+            if (category.getParentId() == null || category.getParentId() == 0) {
+                tree.add(category);
+            } else {
+                Category parent = map.get(category.getParentId());
+                if (parent != null) {
+                    if (parent.getChildren() == null) {
+                        parent.setChildren(new java.util.ArrayList<>());
+                    }
+                    parent.getChildren().add(category);
+                }
+            }
+        }
+        
+        return tree;
     }
     
     @Override
     public List<Category> getCategoriesByType(String type) {
-        return categoryMapper.selectList(new QueryWrapper<Category>()
+        List<Category> allCategories = categoryMapper.selectList(new QueryWrapper<Category>()
                 .eq("type", type)
                 .eq("enabled", true)
                 .orderByAsc("sort_order"));
+        return buildTree(allCategories);
     }
     
     @Override
@@ -45,6 +72,11 @@ public class CategoryServiceImpl implements CategoryService {
         }
         if (category.getSortOrder() == null) {
             category.setSortOrder(0);
+        }
+        if (category.getParentId() == null || category.getParentId() == 0) {
+            category.setLevel(1);
+        } else {
+            category.setLevel(2);
         }
         categoryMapper.insert(category);
         return category;

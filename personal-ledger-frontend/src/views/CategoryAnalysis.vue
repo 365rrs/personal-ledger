@@ -63,6 +63,8 @@
           <el-table-column prop="transactionType" label="交易类型" width="140" />
           <el-table-column prop="paymentChannel" label="支付渠道" width="120" />
           <el-table-column prop="category" label="分类" width="100" />
+          <el-table-column prop="parentCategory" label="一级分类" width="100" />
+          <el-table-column prop="subCategory" label="二级分类" width="100" />
           <el-table-column prop="description" label="交易备注" min-width="180" show-overflow-tooltip />
           <el-table-column prop="userNote" label="用户备注" width="150" show-overflow-tooltip />
           <el-table-column prop="includeInStats" label="计入收支" width="100" align="center">
@@ -108,9 +110,7 @@
           </el-select>
         </el-form-item>
         <el-form-item label="分类">
-          <el-select v-model="currentRecord.category" clearable filterable placeholder="请选择">
-            <el-option v-for="cat in categories" :key="cat" :label="cat" :value="cat" />
-          </el-select>
+          <el-cascader v-model="currentRecord.category" :options="categoryTree" :props="{ value: 'name', label: 'name', children: 'children', checkStrictly: true, emitPath: false }" clearable filterable placeholder="请选择" style="width: 100%" />
         </el-form-item>
         <el-form-item label="用户备注">
           <el-input v-model="currentRecord.userNote" type="textarea" :rows="3" placeholder="请输入备注" />
@@ -142,6 +142,7 @@ const categoryDetails = ref([])
 const drawerVisible = ref(false)
 const currentRecord = ref(null)
 const categories = ref([])
+const categoryTree = ref([])
 const channels = ref([])
 let chart = null
 
@@ -273,10 +274,25 @@ const saveRecord = async () => {
 const loadCategories = async () => {
   try {
     const res = await axios.get('http://localhost:8080/api/category/list')
-    categories.value = res.data.map(c => c.name)
+    categoryTree.value = res.data
+    flattenCategories(res.data)
   } catch (error) {
     console.error('加载分类失败', error)
   }
+}
+
+const flattenCategories = (tree) => {
+  const result = []
+  const traverse = (nodes) => {
+    nodes.forEach(node => {
+      result.push(node.name)
+      if (node.children && node.children.length > 0) {
+        traverse(node.children)
+      }
+    })
+  }
+  traverse(tree)
+  categories.value = result
 }
 
 const loadChannels = async () => {

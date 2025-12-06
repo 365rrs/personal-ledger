@@ -16,6 +16,7 @@
     "axios": "^1.12.2",
     "echarts": "^5.4.3",
     "element-plus": "^2.4.1",
+    "sortablejs": "^1.15.6",
     "vue": "^3.3.0",
     "vue-router": "^4.2.0"
   },

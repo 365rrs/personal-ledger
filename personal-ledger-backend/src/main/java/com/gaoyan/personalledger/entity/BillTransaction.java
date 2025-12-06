@@ -64,9 +64,19 @@ public class BillTransaction {
     private String paymentChannel;
     
     /**
-     * 交易分类
+     * 交易分类（兼容字段）
      */
     private String category;
+    
+    /**
+     * 一级分类
+     */
+    private String parentCategory;
+    
+    /**
+     * 二级分类
+     */
+    private String subCategory;
     
     /**
      * 用户备注
