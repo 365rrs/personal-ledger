@@ -95,6 +95,10 @@
             <el-icon><CreditCard /></el-icon>
             <span>支付渠道</span>
           </el-menu-item>
+          <el-menu-item index="/tag-management">
+            <el-icon><PriceTag /></el-icon>
+            <span>标签管理</span>
+          </el-menu-item>
           <el-menu-item index="/rule-management">
             <el-icon><Tools /></el-icon>
             <span>规则管理</span>
@@ -123,7 +127,7 @@
 
 <script setup>
 import { ref } from 'vue'
-import { House, Upload, Grid, Lightning, DataAnalysis, Document, TrendCharts, PieChart, Setting, Collection, CreditCard, Tools, List, Edit, Fold, Expand } from '@element-plus/icons-vue'
+import { House, Upload, Grid, Lightning, DataAnalysis, Document, TrendCharts, PieChart, Setting, Collection, CreditCard, PriceTag, Tools, List, Edit, Fold, Expand } from '@element-plus/icons-vue'
 
 const isCollapse = ref(false)
 

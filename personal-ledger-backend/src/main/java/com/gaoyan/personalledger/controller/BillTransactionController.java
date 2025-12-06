@@ -68,6 +68,7 @@ public class BillTransactionController {
         Map<String, Object> result = new HashMap<>();
         result.put("success", true);
         result.put("message", "创建成功");
+        result.put("data", transaction.getId());
         return result;
     }
     

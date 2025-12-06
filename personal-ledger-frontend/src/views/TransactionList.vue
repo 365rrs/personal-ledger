@@ -126,6 +126,7 @@
           <el-button type="primary" @click="batchEditCategory" :disabled="selectedRows.length === 0">批量分类 ({{ selectedRows.length }})</el-button>
           <el-button type="primary" @click="batchEditChannel" :disabled="selectedRows.length === 0">批量渠道 ({{ selectedRows.length }})</el-button>
           <el-button type="primary" @click="batchEditIncludeInStats" :disabled="selectedRows.length === 0">批量设置收支 ({{ selectedRows.length }})</el-button>
+          <el-button type="warning" @click="batchEditTags" :disabled="selectedRows.length === 0">批量标签 ({{ selectedRows.length }})</el-button>
           <el-button type="success" @click="batchQuickAddRelated" :disabled="selectedRows.length !== 1">快速补录 ({{ selectedRows.length }})</el-button>
           <el-button type="primary" @click="openManualEntry">手动记账</el-button>
         </el-space>
@@ -163,6 +164,13 @@
         <el-table-column v-if="visibleColumns.subCategory" prop="subCategory" label="二级分类" width="100" resizable />
         <el-table-column v-if="visibleColumns.description" prop="description" label="交易备注" width="250" show-overflow-tooltip resizable />
         <el-table-column v-if="visibleColumns.userNote" prop="userNote" label="用户备注" width="150" show-overflow-tooltip resizable />
+        <el-table-column v-if="visibleColumns.tags" label="标签" width="200" resizable>
+          <template #default="{ row }">
+            <el-tag v-for="tag in row.tags" :key="tag.id" :style="{ backgroundColor: tag.color, borderColor: tag.color, color: '#fff', marginRight: '4px' }" size="small">
+              {{ tag.name }}
+            </el-tag>
+          </template>
+        </el-table-column>
         <el-table-column v-if="visibleColumns.includeInStats" label="计入收支" width="100" align="center" resizable>
           <template #default="{ row }">
             <el-tag size="small" :type="row.includeInStats ? 'success' : 'info'">
@@ -272,6 +280,25 @@
       </template>
     </el-dialog>
 
+    <el-dialog v-model="batchTagsDialogVisible" title="批量设置标签" width="400px">
+      <el-form label-width="80px">
+        <el-form-item label="选择标签">
+          <el-select v-model="batchTagsValue" multiple filterable placeholder="请选择标签" style="width: 100%">
+            <el-option v-for="tag in allTags" :key="tag.id" :label="tag.name" :value="tag.id">
+              <span style="display: flex; align-items: center; gap: 8px;">
+                <span :style="{ width: '12px', height: '12px', borderRadius: '2px', backgroundColor: tag.color }"></span>
+                <span>{{ tag.name }}</span>
+              </span>
+            </el-option>
+          </el-select>
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="batchTagsDialogVisible = false">取消</el-button>
+        <el-button type="primary" @click="confirmBatchTags">确定</el-button>
+      </template>
+    </el-dialog>
+
     <el-dialog v-model="batchIncludeInStatsDialogVisible" title="批量设置收支" width="400px">
       <el-form label-width="100px">
         <el-form-item label="是否计入收支">
@@ -331,6 +358,16 @@
         <el-form-item label="用户备注">
           <el-input v-model="currentRecord.userNote" type="textarea" :rows="3" :placeholder="drawerMode === 'manual' ? '添加备注信息' : ''" />
         </el-form-item>
+        <el-form-item label="标签">
+          <el-select v-model="currentRecord.tagIds" multiple filterable placeholder="选择标签" style="width: 100%" :disabled="drawerMode === 'view'">
+            <el-option v-for="tag in allTags" :key="tag.id" :label="tag.name" :value="tag.id">
+              <span style="display: flex; align-items: center; gap: 8px;">
+                <span :style="{ width: '12px', height: '12px', borderRadius: '2px', backgroundColor: tag.color }"></span>
+                <span>{{ tag.name }}</span>
+              </span>
+            </el-option>
+          </el-select>
+        </el-form-item>
         <el-form-item label="计入收支">
           <el-switch v-model="currentRecord.includeInStats" active-text="是" inactive-text="否" />
         </el-form-item>
@@ -366,6 +403,7 @@ const parentCategories = ref([])
 const subCategories = ref([])
 const allCategoryNames = ref([])
 const channels = ref([])
+const allTags = ref([])
 const getThisMonthDates = () => {
   const today = new Date()
   const year = today.getFullYear()
@@ -548,6 +586,9 @@ const loadData = async () => {
     transactions.value = res.data.data.records
     page.total = res.data.data.total
     
+    // 加载每条记录的标签
+    await loadTransactionTags()
+    
     // 加载汇总数据
     loadSummary()
   } catch (error) {
@@ -555,6 +596,19 @@ const loadData = async () => {
   } finally {
     loading.value = false
   }
+}
+
+const loadTransactionTags = async () => {
+  const tagPromises = transactions.value.map(async (transaction) => {
+    try {
+      const tagIds = await axios.get(`http://localhost:8080/api/bill/tag/transaction/${transaction.id}`)
+      const tags = allTags.value.filter(tag => tagIds.data.includes(tag.id))
+      transaction.tags = tags
+    } catch (error) {
+      transaction.tags = []
+    }
+  })
+  await Promise.all(tagPromises)
 }
 
 const loadSummary = async () => {
@@ -820,13 +874,24 @@ const loadChannels = async () => {
   channels.value = res.data
 }
 
-const viewRecord = (row) => {
+const loadTags = async () => {
+  const res = await axios.get('http://localhost:8080/api/bill/tag/list')
+  allTags.value = res.data
+}
+
+const viewRecord = async (row) => {
   currentRecord.value = { ...row }
+  try {
+    const tagIds = await axios.get(`http://localhost:8080/api/bill/tag/transaction/${row.id}`)
+    currentRecord.value.tagIds = tagIds.data
+  } catch (error) {
+    currentRecord.value.tagIds = []
+  }
   drawerMode.value = 'view'
   drawerVisible.value = true
 }
 
-const editRecord = (row) => {
+const editRecord = async (row) => {
   currentRecord.value = { ...row }
   currentRecord.value.type = row.income && parseFloat(row.income) > 0 ? 'income' : 'expense'
   
@@ -843,6 +908,14 @@ const editRecord = (row) => {
     if (parentCat) {
       currentRecord.value.category = parentCat.id
     }
+  }
+  
+  // 加载标签
+  try {
+    const tagIds = await axios.get(`http://localhost:8080/api/bill/tag/transaction/${row.id}`)
+    currentRecord.value.tagIds = tagIds.data
+  } catch (error) {
+    currentRecord.value.tagIds = []
   }
   
   drawerMode.value = 'edit'
@@ -868,7 +941,8 @@ const openManualEntry = () => {
     description: '',
     userNote: '',
     includeInStats: true,
-    isRefund: false
+    isRefund: false,
+    tagIds: []
   }
   drawerMode.value = 'manual'
   drawerVisible.value = true
@@ -898,7 +972,16 @@ const saveRecord = async () => {
           isManualEntry: true
         }
         
-        await axios.post('http://localhost:8080/api/bill/transaction', data)
+        const result = await axios.post('http://localhost:8080/api/bill/transaction', data)
+        
+        // 保存标签
+        if (currentRecord.value.tagIds && currentRecord.value.tagIds.length > 0) {
+          await axios.post('http://localhost:8080/api/bill/tag/bind', {
+            transactionId: result.data.data,
+            tagIds: currentRecord.value.tagIds
+          })
+        }
+        
         ElMessage.success('记账成功')
         drawerVisible.value = false
         loadData()
@@ -927,6 +1010,13 @@ const saveRecord = async () => {
       }
       
       await axios.put(`http://localhost:8080/api/bill/transaction/${currentRecord.value.id}`, updateData)
+      
+      // 更新标签
+      await axios.post('http://localhost:8080/api/bill/tag/bind', {
+        transactionId: currentRecord.value.id,
+        tagIds: currentRecord.value.tagIds || []
+      })
+      
       ElMessage.success('保存成功')
       drawerVisible.value = false
       loadData()
@@ -1150,6 +1240,7 @@ const columnOptions = [
   { key: 'subCategory', label: '二级分类' },
   { key: 'description', label: '交易备注' },
   { key: 'userNote', label: '用户备注' },
+  { key: 'tags', label: '标签' },
   { key: 'includeInStats', label: '计入收支' },
   { key: 'isRefund', label: '退款' },
   { key: 'isManualEntry', label: '手工记账' }
@@ -1210,10 +1301,38 @@ const confirmBatchIncludeInStats = async () => {
   }
 }
 
+const batchTagsDialogVisible = ref(false)
+const batchTagsValue = ref([])
+
+const batchEditTags = () => {
+  batchTagsValue.value = []
+  batchTagsDialogVisible.value = true
+}
+
+const confirmBatchTags = async () => {
+  try {
+    const updatePromises = selectedRows.value.map(row => 
+      axios.post('http://localhost:8080/api/bill/tag/bind', {
+        transactionId: row.id,
+        tagIds: batchTagsValue.value
+      })
+    )
+    
+    await Promise.all(updatePromises)
+    ElMessage.success(`成功更新 ${selectedRows.value.length} 条记录的标签`)
+    selectedRows.value = []
+    batchTagsDialogVisible.value = false
+    loadData()
+  } catch (error) {
+    ElMessage.error('批量设置标签失败: ' + error.message)
+  }
+}
+
 onMounted(() => {
   loadData()
   loadCategories()
   loadChannels()
+  loadTags()
   loadColumnSettings()
 })
 </script>

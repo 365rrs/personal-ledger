@@ -8,6 +8,7 @@ import Dashboard from '../views/Dashboard.vue'
 import RuleManagement from '../views/RuleManagement.vue'
 import CategoryManagement from '../views/CategoryManagement.vue'
 import PaymentChannelManagement from '../views/PaymentChannelManagement.vue'
+import TagManagement from '../views/TagManagement.vue'
 import TransactionList from '../views/TransactionList.vue'
 
 import MonthlyBalance from '../views/MonthlyBalance.vue'
@@ -63,6 +64,12 @@ const routes = [
     name: 'PaymentChannelManagement',
     component: PaymentChannelManagement,
     meta: { title: '支付渠道管理' }
+  },
+  {
+    path: '/tag-management',
+    name: 'TagManagement',
+    component: TagManagement,
+    meta: { title: '标签管理' }
   },
 
   {
