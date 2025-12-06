@@ -14,6 +14,7 @@ public class BillTag {
     private Long id;
     private String name;
     private String color;
+    private Integer sortOrder;
     private LocalDateTime createTime;
     private LocalDateTime updateTime;
 }

@@ -8,11 +8,17 @@
         </div>
       </template>
 
-      <el-table :data="tags" style="width: 100%">
+      <el-table :data="tags" style="width: 100%" row-key="id">
+        <el-table-column label="拖拽" width="60" align="center">
+          <template #default>
+            <el-icon class="drag-handle" style="cursor: move;"><Rank /></el-icon>
+          </template>
+        </el-table-column>
         <el-table-column prop="name" label="标签名称" width="200" />
+        <el-table-column prop="sortOrder" label="排序" width="100" />
         <el-table-column prop="color" label="颜色" width="150">
           <template #default="{ row }">
-            <el-tag :color="row.color" :style="{ backgroundColor: row.color, borderColor: row.color }">
+            <el-tag :style="{ backgroundColor: row.color, borderColor: row.color, color: '#fff' }">
               {{ row.name }}
             </el-tag>
           </template>
@@ -31,6 +37,9 @@
       <el-form :model="currentTag" label-width="80px">
         <el-form-item label="标签名称">
           <el-input v-model="currentTag.name" placeholder="请输入标签名称" />
+        </el-form-item>
+        <el-form-item label="排序">
+          <el-input-number v-model="currentTag.sortOrder" :min="0" :max="9999" />
         </el-form-item>
         <el-form-item label="标签颜色">
           <div class="color-picker">
@@ -54,14 +63,16 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, nextTick } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { Rank } from '@element-plus/icons-vue'
 import axios from 'axios'
+import Sortable from 'sortablejs'
 
 const tags = ref([])
 const dialogVisible = ref(false)
 const dialogMode = ref('add')
-const currentTag = ref({ name: '', color: '#409eff' })
+const currentTag = ref({ name: '', color: '#a0cfff', sortOrder: 0 })
 
 const presetColors = [
   '#409eff', '#67c23a', '#e6a23c', '#f56c6c',
@@ -74,14 +85,17 @@ const loadTags = async () => {
   try {
     const res = await axios.get('http://localhost:8080/api/bill/tag/list')
     tags.value = res.data
+    return Promise.resolve()
   } catch (error) {
     ElMessage.error('加载标签失败')
+    return Promise.reject(error)
   }
 }
 
 const showAddDialog = () => {
   dialogMode.value = 'add'
-  currentTag.value = { name: '', color: '#409eff' }
+  const maxOrder = tags.value.length > 0 ? Math.max(...tags.value.map(t => t.sortOrder || 0)) : 0
+  currentTag.value = { name: '', color: '#a0cfff', sortOrder: maxOrder + 1 }
   dialogVisible.value = true
 }
 
@@ -125,8 +139,38 @@ const deleteTag = async (tag) => {
   }
 }
 
+const initSortable = () => {
+  nextTick(() => {
+    const table = document.querySelector('.el-table__body-wrapper tbody')
+    if (!table) return
+    Sortable.create(table, {
+      handle: '.drag-handle',
+      animation: 150,
+      onEnd: async ({ oldIndex, newIndex }) => {
+        if (oldIndex === newIndex) return
+        const movedTag = tags.value.splice(oldIndex, 1)[0]
+        tags.value.splice(newIndex, 0, movedTag)
+        
+        // 更新所有标签的sortOrder
+        const updates = tags.value.map((tag, index) => {
+          tag.sortOrder = index
+          return axios.put('http://localhost:8080/api/bill/tag/update', tag)
+        })
+        
+        try {
+          await Promise.all(updates)
+          ElMessage.success('排序更新成功')
+        } catch (error) {
+          ElMessage.error('排序更新失败')
+          loadTags()
+        }
+      }
+    })
+  })
+}
+
 onMounted(() => {
-  loadTags()
+  loadTags().then(() => initSortable())
 })
 </script>
 

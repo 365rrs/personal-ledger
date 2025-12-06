@@ -3,6 +3,9 @@ package com.gaoyan.personalledger.mapper;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.gaoyan.personalledger.entity.BillTransaction;
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
+
+import java.util.List;
 
 /**
  * 账单交易明细Mapper
@@ -10,5 +13,5 @@ import org.apache.ibatis.annotations.Mapper;
 @Mapper
 public interface BillTransactionMapper extends BaseMapper<BillTransaction> {
     
-    java.util.List<Long> selectTransactionIdsByTagIds(@org.apache.ibatis.annotations.Param("tagIds") java.util.List<String> tagIds);
+    List<Long> selectTransactionIdsByTagIds(@Param("tagIds") List<String> tagIds);
 }

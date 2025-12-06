@@ -24,7 +24,7 @@ public class BillTagServiceImpl implements BillTagService {
     
     @Override
     public List<BillTag> list() {
-        return billTagMapper.selectList(null);
+        return billTagMapper.selectList(new LambdaQueryWrapper<BillTag>().orderByAsc(BillTag::getSortOrder));
     }
     
     @Override

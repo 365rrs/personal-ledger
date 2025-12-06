@@ -1,6 +1,7 @@
 package com.gaoyan.personalledger.controller;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.gaoyan.personalledger.dto.CleanResult;
 import com.gaoyan.personalledger.entity.BillImportHistory;
 import com.gaoyan.personalledger.entity.CmbBillRecordReal;
 import com.gaoyan.personalledger.service.BillImportProcessorService;
@@ -153,39 +154,6 @@ public class BillImportController {
         } catch (Exception e) {
             log.error("导出账单数据失败", e);
             throw new RuntimeException("导出账单数据失败: " + e.getMessage());
-        }
-    }
-    
-    /**
-     * 清洗结果
-     */
-    public static class CleanResult {
-        private int totalCount;
-        private int updatedCount;
-        private List<CmbBillRecordReal> records;
-
-        public int getTotalCount() {
-            return totalCount;
-        }
-
-        public void setTotalCount(int totalCount) {
-            this.totalCount = totalCount;
-        }
-
-        public int getUpdatedCount() {
-            return updatedCount;
-        }
-
-        public void setUpdatedCount(int updatedCount) {
-            this.updatedCount = updatedCount;
-        }
-
-        public List<CmbBillRecordReal> getRecords() {
-            return records;
-        }
-
-        public void setRecords(List<CmbBillRecordReal> records) {
-            this.records = records;
         }
     }
 }
