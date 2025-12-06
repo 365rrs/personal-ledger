@@ -74,22 +74,22 @@ public class BillTransactionServiceImpl implements BillTransactionService {
     
     @Override
     public void updateById(BillTransaction transaction) {
-        UpdateWrapper<BillTransaction> updateWrapper = new UpdateWrapper<>();
-        updateWrapper.eq("id", transaction.getId())
+        UpdateWrapper<BillTransaction> wrapper = new UpdateWrapper<>();
+        wrapper.eq("id", transaction.getId())
                 .set("transaction_date", transaction.getTransactionDate())
                 .set("transaction_time", transaction.getTransactionTime())
                 .set("income", transaction.getIncome())
                 .set("expense", transaction.getExpense())
                 .set("category", transaction.getCategory())
                 .set("parent_category", transaction.getParentCategory())
-                .setSql("sub_category = " + (transaction.getSubCategory() == null ? "NULL" : "'" + transaction.getSubCategory() + "'"))
+                .set("sub_category", transaction.getSubCategory())
                 .set("payment_channel", transaction.getPaymentChannel())
                 .set("transaction_type", transaction.getTransactionType())
                 .set("description", transaction.getDescription())
                 .set("user_note", transaction.getUserNote())
                 .set("include_in_stats", transaction.getIncludeInStats())
                 .set("is_refund", transaction.getIsRefund());
-        billTransactionMapper.update(null, updateWrapper);
+        billTransactionMapper.update(null, wrapper);
     }
     
     @Override

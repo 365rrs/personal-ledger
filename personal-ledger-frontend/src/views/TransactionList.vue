@@ -128,6 +128,7 @@
           <el-button type="danger" @click="batchDelete" :disabled="selectedRows.length === 0">批量删除 ({{ selectedRows.length }})</el-button>
           <el-button type="primary" @click="batchEditNote" :disabled="selectedRows.length === 0">批量编辑备注 ({{ selectedRows.length }})</el-button>
           <el-button type="primary" @click="batchEditCategory" :disabled="selectedRows.length === 0">批量分类 ({{ selectedRows.length }})</el-button>
+          <el-button type="primary" @click="batchEditChannel" :disabled="selectedRows.length === 0">批量渠道 ({{ selectedRows.length }})</el-button>
           <el-button type="primary" @click="batchEditIncludeInStats" :disabled="selectedRows.length === 0">批量设置收支 ({{ selectedRows.length }})</el-button>
           <el-button type="success" @click="batchQuickAddRelated" :disabled="selectedRows.length !== 1">快速补录 ({{ selectedRows.length }})</el-button>
           <el-button type="primary" @click="openManualEntry">手动记账</el-button>
@@ -209,7 +210,7 @@
     <el-dialog v-model="batchCategoryDialogVisible" title="批量分类" width="400px">
       <el-form label-width="80px">
         <el-form-item label="选择分类">
-          <el-cascader v-model="batchCategoryValue" :options="categoryTree" :props="{ value: 'name', label: 'name', children: 'children', checkStrictly: true, emitPath: false }" clearable filterable placeholder="请选择分类" style="width: 100%" />
+          <el-cascader v-model="batchCategoryValue" :options="categoryTree" :props="{ value: 'id', label: 'name', children: 'children', checkStrictly: true, emitPath: false }" clearable filterable placeholder="请选择分类" style="width: 100%" />
         </el-form-item>
       </el-form>
       <template #footer>
@@ -239,7 +240,7 @@
           <el-input v-model="quickAddForm.note" type="textarea" :rows="3" :placeholder="quickAddForm.recordType === 'expense' ? '如：退票手续费' : '如：京东价保返现'" />
         </el-form-item>
         <el-form-item label="分类">
-          <el-cascader v-model="quickAddForm.category" :options="categoryTree.filter(c => c.type === (quickAddForm.recordType === 'expense' ? 'EXPENSE' : 'INCOME'))" :props="{ value: 'name', label: 'name', children: 'children', checkStrictly: true, emitPath: false }" clearable filterable placeholder="选择分类" style="width: 100%" />
+          <el-cascader v-model="quickAddForm.category" :options="categoryTree.filter(c => c.type === (quickAddForm.recordType === 'expense' ? 'EXPENSE' : 'INCOME'))" :props="{ value: 'id', label: 'name', children: 'children', checkStrictly: true, emitPath: false }" clearable filterable placeholder="选择分类" style="width: 100%" />
         </el-form-item>
       </el-form>
       <template #footer>
@@ -259,6 +260,20 @@
       <template #footer>
         <el-button @click="resetColumns">恢复默认</el-button>
         <el-button type="primary" @click="saveColumnSettings">确定</el-button>
+      </template>
+    </el-dialog>
+
+    <el-dialog v-model="batchChannelDialogVisible" title="批量设置渠道" width="400px">
+      <el-form label-width="80px">
+        <el-form-item label="支付渠道">
+          <el-select v-model="batchChannelValue" filterable placeholder="请选择支付渠道" style="width: 100%">
+            <el-option v-for="ch in channels" :key="ch.id" :label="ch.name" :value="ch.name" />
+          </el-select>
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="batchChannelDialogVisible = false">取消</el-button>
+        <el-button type="primary" @click="confirmBatchChannel">确定</el-button>
       </template>
     </el-dialog>
 
@@ -311,7 +326,7 @@
           <el-input v-model="currentRecord.description" type="textarea" :placeholder="drawerMode === 'manual' ? '交易描述' : ''" :readonly="drawerMode === 'view'" />
         </el-form-item>
         <el-form-item label="分类">
-          <el-cascader v-model="currentRecord.category" :options="filteredCategoryTree" :props="{ value: 'name', label: 'name', children: 'children', checkStrictly: true, emitPath: false }" clearable filterable :placeholder="drawerMode === 'manual' ? '请选择分类' : ''" style="width: 100%" :disabled="drawerMode === 'view'" />
+          <el-cascader v-model="currentRecord.category" :options="filteredCategoryTree" :props="{ value: 'id', label: 'name', children: 'children', checkStrictly: true, emitPath: false }" clearable filterable :placeholder="drawerMode === 'manual' ? '请选择分类' : ''" style="width: 100%" :disabled="drawerMode === 'view'" />
         </el-form-item>
         <el-form-item label="支付渠道">
           <el-select v-model="currentRecord.paymentChannel" filterable :placeholder="drawerMode === 'manual' ? '请选择支付渠道' : ''">
@@ -793,6 +808,22 @@ const viewRecord = (row) => {
 const editRecord = (row) => {
   currentRecord.value = { ...row }
   currentRecord.value.type = row.income && parseFloat(row.income) > 0 ? 'income' : 'expense'
+  
+  // 根据原数据匹配分类ID
+  if (row.subCategory) {
+    // 有二级分类，查找二级分类的ID
+    const subCat = categories.value.find(c => c.name === row.subCategory && c.parentId)
+    if (subCat) {
+      currentRecord.value.category = subCat.id
+    }
+  } else if (row.parentCategory) {
+    // 只有一级分类，查找一级分类的ID
+    const parentCat = categories.value.find(c => c.name === row.parentCategory && (c.parentId === null || c.parentId === 0))
+    if (parentCat) {
+      currentRecord.value.category = parentCat.id
+    }
+  }
+  
   drawerMode.value = 'edit'
   drawerVisible.value = true
 }
@@ -858,42 +889,25 @@ const saveRecord = async () => {
     })
   } else {
     try {
-      const selectedCategory = categories.value.find(c => c.name === currentRecord.value.category)
-      let categoryData = { category: null, parentCategory: null, subCategory: null }
+      const selectedCategory = categories.value.find(c => c.id === currentRecord.value.category)
+      const updateData = { ...currentRecord.value }
       
       if (selectedCategory) {
         if (selectedCategory.parentId === null || selectedCategory.parentId === 0) {
-          categoryData = {
-            category: selectedCategory.name,
-            parentCategory: selectedCategory.name,
-            subCategory: null
-          }
+          updateData.category = selectedCategory.name
+          updateData.parentCategory = selectedCategory.name
+          updateData.subCategory = null
         } else {
           const parent = categories.value.find(c => c.id === selectedCategory.parentId)
           if (parent) {
-            categoryData = {
-              category: parent.name,
-              parentCategory: parent.name,
-              subCategory: selectedCategory.name
-            }
+            updateData.category = parent.name
+            updateData.parentCategory = parent.name
+            updateData.subCategory = selectedCategory.name
           }
         }
       }
       
-      const data = {
-        transactionDate: currentRecord.value.transactionDate,
-        transactionTime: currentRecord.value.transactionTime,
-        income: currentRecord.value.income,
-        expense: currentRecord.value.expense,
-        ...categoryData,
-        paymentChannel: currentRecord.value.paymentChannel,
-        transactionType: currentRecord.value.transactionType,
-        description: currentRecord.value.description,
-        userNote: currentRecord.value.userNote,
-        includeInStats: currentRecord.value.includeInStats,
-        isRefund: currentRecord.value.isRefund
-      }
-      await axios.put(`http://localhost:8080/api/bill/transaction/${currentRecord.value.id}`, data)
+      await axios.put(`http://localhost:8080/api/bill/transaction/${currentRecord.value.id}`, updateData)
       ElMessage.success('保存成功')
       drawerVisible.value = false
       loadData()
@@ -939,12 +953,12 @@ const batchEditCategory = () => {
 
 const confirmBatchCategory = async () => {
   try {
-    const selectedCategory = categories.value.find(c => c.name === batchCategoryValue.value)
-    let categoryData = { category: null, parentCategory: null, subCategory: null }
+    const selectedCategory = categories.value.find(c => c.id === batchCategoryValue.value)
+    let categoryUpdate = {}
     
     if (selectedCategory) {
       if (selectedCategory.parentId === null || selectedCategory.parentId === 0) {
-        categoryData = {
+        categoryUpdate = {
           category: selectedCategory.name,
           parentCategory: selectedCategory.name,
           subCategory: null
@@ -952,7 +966,7 @@ const confirmBatchCategory = async () => {
       } else {
         const parent = categories.value.find(c => c.id === selectedCategory.parentId)
         if (parent) {
-          categoryData = {
+          categoryUpdate = {
             category: parent.name,
             parentCategory: parent.name,
             subCategory: selectedCategory.name
@@ -964,7 +978,7 @@ const confirmBatchCategory = async () => {
     const updatePromises = selectedRows.value.map(row => 
       axios.put(`http://localhost:8080/api/bill/transaction/${row.id}`, {
         ...row,
-        ...categoryData
+        ...categoryUpdate
       })
     )
     
@@ -1050,6 +1064,33 @@ const confirmQuickAdd = async () => {
     loadData()
   } catch (error) {
     ElMessage.error('补录失败: ' + error.message)
+  }
+}
+
+const batchChannelDialogVisible = ref(false)
+const batchChannelValue = ref('')
+
+const batchEditChannel = () => {
+  batchChannelValue.value = ''
+  batchChannelDialogVisible.value = true
+}
+
+const confirmBatchChannel = async () => {
+  try {
+    const updatePromises = selectedRows.value.map(row => 
+      axios.put(`http://localhost:8080/api/bill/transaction/${row.id}`, {
+        ...row,
+        paymentChannel: batchChannelValue.value
+      })
+    )
+    
+    await Promise.all(updatePromises)
+    ElMessage.success(`成功更新 ${selectedRows.value.length} 条记录`)
+    selectedRows.value = []
+    batchChannelDialogVisible.value = false
+    loadData()
+  } catch (error) {
+    ElMessage.error('批量设置渠道失败: ' + error.message)
   }
 }
 
