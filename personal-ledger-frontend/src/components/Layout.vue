@@ -53,6 +53,18 @@
             <el-icon><DataAnalysis /></el-icon>
             <span>消费分析</span>
           </template>
+          <el-menu-item index="/data-analysis">
+            <el-icon><TrendCharts /></el-icon>
+            <span>按天统计</span>
+          </el-menu-item>
+          <el-menu-item index="/category-analysis">
+            <el-icon><PieChart /></el-icon>
+            <span>按分类统计</span>
+          </el-menu-item>
+          <el-menu-item index="/consumption-habits">
+            <el-icon><PieChart /></el-icon>
+            <span>消费习惯</span>
+          </el-menu-item>
           <el-menu-item index="/monthly-balance">
             <el-icon><TrendCharts /></el-icon>
             <span>月度结余</span>
@@ -68,18 +80,6 @@
           <el-menu-item index="/frequent-transaction-analysis">
             <el-icon><DataAnalysis /></el-icon>
             <span>高频交易分析</span>
-          </el-menu-item>
-          <el-menu-item index="/consumption-habits">
-            <el-icon><PieChart /></el-icon>
-            <span>消费习惯</span>
-          </el-menu-item>
-          <el-menu-item index="/data-analysis">
-            <el-icon><TrendCharts /></el-icon>
-            <span>按天统计</span>
-          </el-menu-item>
-          <el-menu-item index="/category-analysis">
-            <el-icon><PieChart /></el-icon>
-            <span>按分类统计</span>
           </el-menu-item>
         </el-sub-menu>
         <el-sub-menu index="/settings">
@@ -98,6 +98,10 @@
           <el-menu-item index="/tag-management">
             <el-icon><PriceTag /></el-icon>
             <span>标签管理</span>
+          </el-menu-item>
+          <el-menu-item index="/menu-management">
+            <el-icon><Menu /></el-icon>
+            <span>菜单管理</span>
           </el-menu-item>
           <el-menu-item index="/rule-management">
             <el-icon><Tools /></el-icon>
@@ -127,7 +131,7 @@
 
 <script setup>
 import { ref } from 'vue'
-import { House, Upload, Grid, Lightning, DataAnalysis, Document, TrendCharts, PieChart, Setting, Collection, CreditCard, PriceTag, Tools, List, Edit, Fold, Expand } from '@element-plus/icons-vue'
+import { House, Upload, Grid, Lightning, DataAnalysis, Document, TrendCharts, PieChart, Setting, Collection, CreditCard, PriceTag, Menu, Tools, List, Edit, Fold, Expand } from '@element-plus/icons-vue'
 
 const isCollapse = ref(false)
 
