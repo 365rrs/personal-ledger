@@ -37,7 +37,7 @@ public class BillTransactionController {
                 params.getCategory(), params.getSubCategory(),
                 params.getPaymentChannel(), params.getTransactionType(), params.getKeyword(), 
                 params.getMinAmount(), params.getMaxAmount(), params.getIncomeOrExpense(), params.getIncludeInStats(), 
-                params.getIsRefund(), params.getSortField(), params.getSortOrder(), params.getFirstImportId());
+                params.getIsRefund(), params.getSortField(), params.getSortOrder(), params.getFirstImportId(), params.getTagIds());
         
         Map<String, Object> result = new HashMap<>();
         result.put("success", true);

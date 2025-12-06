@@ -39,7 +39,7 @@ public interface BillTransactionService {
                                    String paymentChannel, String transactionType, 
                                    String keyword, String minAmount, String maxAmount, 
                                    String incomeOrExpense, Boolean includeInStats, Boolean isRefund, 
-                                   String sortField, String sortOrder, Long firstImportId);
+                                   String sortField, String sortOrder, Long firstImportId, String tagIds);
     
     /**
      * 根据去重key查询交易

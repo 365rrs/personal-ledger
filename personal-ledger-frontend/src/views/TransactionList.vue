@@ -86,9 +86,21 @@
           </el-col>
         </el-row>
         <el-row :gutter="12">
-          <el-col :span="6">
+          <el-col :span="5">
             <el-form-item label="关键词">
               <el-input v-model="filter.keyword" placeholder="搜索备注" clearable />
+            </el-form-item>
+          </el-col>
+          <el-col :span="5">
+            <el-form-item label="标签">
+              <el-select v-model="filter.tagIds" multiple filterable placeholder="选择标签" clearable style="width: 100%">
+                <el-option v-for="tag in allTags" :key="tag.id" :label="tag.name" :value="tag.id">
+                  <span style="display: flex; align-items: center; gap: 8px;">
+                    <span :style="{ width: '12px', height: '12px', borderRadius: '2px', backgroundColor: tag.color }"></span>
+                    <span>{{ tag.name }}</span>
+                  </span>
+                </el-option>
+              </el-select>
             </el-form-item>
           </el-col>
           <el-col :span="8">
@@ -434,7 +446,8 @@ const filter = reactive({
   maxAmount: '',
   keyword: '',
   includeInStats: '',
-  isRefund: ''
+  isRefund: '',
+  tagIds: []
 })
 const dateRange = ref([thisMonth.startDate, thisMonth.endDate])
 const quickYear = ref(new Date().getFullYear().toString())
@@ -580,6 +593,9 @@ const loadData = async () => {
     // 退款参数
     if (filter.isRefund !== '') {
       params.isRefund = filter.isRefund
+    }
+    if (filter.tagIds && filter.tagIds.length > 0) {
+      params.tagIds = filter.tagIds.join(',')
     }
     
     const res = await axios.get('http://localhost:8080/api/bill/transaction/list', { params })
@@ -820,6 +836,7 @@ const resetFilter = () => {
   filter.keyword = ''
   filter.includeInStats = ''
   filter.isRefund = ''
+  filter.tagIds = []
   dateRange.value = []
   quickYear.value = ''
   quickMonth.value = ''

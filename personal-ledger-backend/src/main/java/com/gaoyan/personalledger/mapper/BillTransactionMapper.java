@@ -9,4 +9,6 @@ import org.apache.ibatis.annotations.Mapper;
  */
 @Mapper
 public interface BillTransactionMapper extends BaseMapper<BillTransaction> {
+    
+    java.util.List<Long> selectTransactionIdsByTagIds(@org.apache.ibatis.annotations.Param("tagIds") java.util.List<String> tagIds);
 }

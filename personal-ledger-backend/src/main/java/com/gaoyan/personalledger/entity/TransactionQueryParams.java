@@ -42,4 +42,6 @@ public class TransactionQueryParams {
     private String sortOrder;
     
     private Long firstImportId;
+    
+    private String tagIds;
 }
