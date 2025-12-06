@@ -966,7 +966,31 @@ const batchCategoryDialogVisible = ref(false)
 const batchCategoryValue = ref('')
 
 const batchEditCategory = () => {
-  batchCategoryValue.value = ''
+  // 如果选中的记录有分类，自动匹配
+  if (selectedRows.value.length > 0) {
+    const firstRow = selectedRows.value[0]
+    if (firstRow.subCategory) {
+      // 有二级分类，查找二级分类ID
+      const subCat = categories.value.find(c => c.name === firstRow.subCategory && c.parentId)
+      if (subCat) {
+        batchCategoryValue.value = subCat.id
+      } else {
+        batchCategoryValue.value = ''
+      }
+    } else if (firstRow.category) {
+      // 只有一级分类，查找一级分类ID
+      const parentCat = categories.value.find(c => c.name === firstRow.category && (c.parentId === null || c.parentId === 0))
+      if (parentCat) {
+        batchCategoryValue.value = parentCat.id
+      } else {
+        batchCategoryValue.value = ''
+      }
+    } else {
+      batchCategoryValue.value = ''
+    }
+  } else {
+    batchCategoryValue.value = ''
+  }
   batchCategoryDialogVisible.value = true
 }
 
@@ -1212,7 +1236,6 @@ onMounted(() => {
 
 .filter-form {
   padding: 16px;
-  background: #f5f7fa;
   border-radius: 4px;
   margin-bottom: 16px;
 }

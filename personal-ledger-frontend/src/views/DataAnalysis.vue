@@ -67,7 +67,7 @@
         </div>
         <el-table :data="dayDetails" max-height="400" @sort-change="handleSortChange">
           <el-table-column prop="transactionDate" label="交易日期" width="110" sortable="custom" />
-          <el-table-column prop="transactionTime" label="交易时间" width="110" sortable="custom" />
+          <el-table-column prop="transactionTime" label="交易时间" width="120" sortable="custom" />
           <el-table-column prop="income" label="收入" width="100" sortable="custom">
             <template #default="{ row }">
               <span style="color: #67c23a;">{{ row.income || '-' }}</span>
@@ -81,6 +81,7 @@
           <el-table-column prop="transactionType" label="交易类型" width="140" />
           <el-table-column prop="paymentChannel" label="支付渠道" width="120" />
           <el-table-column prop="category" label="分类" width="100" />
+          <el-table-column prop="subCategory" label="二级分类" width="100" />
           <el-table-column prop="description" label="交易备注" min-width="180" show-overflow-tooltip />
           <el-table-column prop="userNote" label="用户备注" width="150" show-overflow-tooltip />
           <el-table-column prop="includeInStats" label="计入收支" width="100" align="center">
