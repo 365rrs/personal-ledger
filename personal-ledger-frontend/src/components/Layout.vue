@@ -99,10 +99,6 @@
             <el-icon><PriceTag /></el-icon>
             <span>标签管理</span>
           </el-menu-item>
-          <el-menu-item index="/menu-management">
-            <el-icon><Menu /></el-icon>
-            <span>菜单管理</span>
-          </el-menu-item>
           <el-menu-item index="/rule-management">
             <el-icon><Tools /></el-icon>
             <span>规则管理</span>
