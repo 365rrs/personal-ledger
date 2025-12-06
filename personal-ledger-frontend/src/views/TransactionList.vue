@@ -139,6 +139,7 @@
           <el-button type="primary" @click="batchEditChannel" :disabled="selectedRows.length === 0">批量渠道 ({{ selectedRows.length }})</el-button>
           <el-button type="primary" @click="batchEditIncludeInStats" :disabled="selectedRows.length === 0">批量设置收支 ({{ selectedRows.length }})</el-button>
           <el-button type="warning" @click="batchEditTags" :disabled="selectedRows.length === 0">批量标签 ({{ selectedRows.length }})</el-button>
+          <el-button type="warning" @click="batchAddTags" :disabled="selectedRows.length === 0">批量添加标签 ({{ selectedRows.length }})</el-button>
           <el-button type="success" @click="batchQuickAddRelated" :disabled="selectedRows.length !== 1">快速补录 ({{ selectedRows.length }})</el-button>
           <el-button type="primary" @click="openManualEntry">手动记账</el-button>
         </el-space>
@@ -289,6 +290,25 @@
       <template #footer>
         <el-button @click="batchChannelDialogVisible = false">取消</el-button>
         <el-button type="primary" @click="confirmBatchChannel">确定</el-button>
+      </template>
+    </el-dialog>
+
+    <el-dialog v-model="batchAddTagsDialogVisible" title="批量添加标签" width="400px">
+      <el-form label-width="80px">
+        <el-form-item label="选择标签">
+          <el-select v-model="batchAddTagsValue" multiple filterable placeholder="请选择标签" style="width: 100%">
+            <el-option v-for="tag in allTags" :key="tag.id" :label="tag.name" :value="tag.id">
+              <span style="display: flex; align-items: center; gap: 8px;">
+                <span :style="{ width: '12px', height: '12px', borderRadius: '2px', backgroundColor: tag.color }"></span>
+                <span>{{ tag.name }}</span>
+              </span>
+            </el-option>
+          </el-select>
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="batchAddTagsDialogVisible = false">取消</el-button>
+        <el-button type="primary" @click="confirmBatchAddTags">确定</el-button>
       </template>
     </el-dialog>
 
@@ -1326,6 +1346,38 @@ const confirmBatchTags = async () => {
     loadData()
   } catch (error) {
     ElMessage.error('批量设置标签失败: ' + error.message)
+  }
+}
+
+const batchAddTagsDialogVisible = ref(false)
+const batchAddTagsValue = ref([])
+
+const batchAddTags = () => {
+  batchAddTagsValue.value = []
+  batchAddTagsDialogVisible.value = true
+}
+
+const confirmBatchAddTags = async () => {
+  try {
+    const updatePromises = selectedRows.value.map(async (row) => {
+      // 获取现有标签
+      const existingTagIds = await axios.get(`http://localhost:8080/api/bill/tag/transaction/${row.id}`)
+      // 合并现有标签和新标签，去重
+      const mergedTagIds = [...new Set([...existingTagIds.data, ...batchAddTagsValue.value])]
+      // 更新标签
+      return axios.post('http://localhost:8080/api/bill/tag/bind', {
+        transactionId: row.id,
+        tagIds: mergedTagIds
+      })
+    })
+    
+    await Promise.all(updatePromises)
+    ElMessage.success(`成功为 ${selectedRows.value.length} 条记录添加标签`)
+    selectedRows.value = []
+    batchAddTagsDialogVisible.value = false
+    loadData()
+  } catch (error) {
+    ElMessage.error('批量添加标签失败: ' + error.message)
   }
 }
 
