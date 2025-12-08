@@ -61,10 +61,7 @@
             <el-icon><PieChart /></el-icon>
             <span>按分类统计</span>
           </el-menu-item>
-          <el-menu-item index="/consumption-habits">
-            <el-icon><PieChart /></el-icon>
-            <span>消费习惯</span>
-          </el-menu-item>
+
           <el-menu-item index="/monthly-balance">
             <el-icon><TrendCharts /></el-icon>
             <span>月度结余</span>

@@ -15,7 +15,7 @@ import MonthlyBalance from '../views/MonthlyBalance.vue'
 import CumulativeBalance from '../views/CumulativeBalance.vue'
 import LargeTransactionAnalysis from '../views/LargeTransactionAnalysis.vue'
 import FrequentTransactionAnalysis from '../views/FrequentTransactionAnalysis.vue'
-import ConsumptionHabits from '../views/ConsumptionHabits.vue'
+
 
 const routes = [
   {
@@ -116,12 +116,7 @@ const routes = [
     component: FrequentTransactionAnalysis,
     meta: { title: '高频交易分析' }
   },
-  {
-    path: '/consumption-habits',
-    name: 'ConsumptionHabits',
-    component: ConsumptionHabits,
-    meta: { title: '消费习惯' }
-  }
+
 ]
 
 const router = createRouter({
