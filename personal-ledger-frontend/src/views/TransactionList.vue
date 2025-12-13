@@ -138,7 +138,6 @@
           <el-button type="primary" @click="batchEditCategory" :disabled="selectedRows.length === 0">批量分类 ({{ selectedRows.length }})</el-button>
           <el-button type="primary" @click="batchEditChannel" :disabled="selectedRows.length === 0">批量渠道 ({{ selectedRows.length }})</el-button>
           <el-button type="primary" @click="batchEditIncludeInStats" :disabled="selectedRows.length === 0">批量设置收支 ({{ selectedRows.length }})</el-button>
-          <el-button type="warning" @click="batchEditTags" :disabled="selectedRows.length === 0">批量标签 ({{ selectedRows.length }})</el-button>
           <el-button type="warning" @click="batchAddTags" :disabled="selectedRows.length === 0">批量添加标签 ({{ selectedRows.length }})</el-button>
           <el-button type="success" @click="batchQuickAddRelated" :disabled="selectedRows.length !== 1">快速补录 ({{ selectedRows.length }})</el-button>
           <el-button type="primary" @click="openManualEntry">手动记账</el-button>
@@ -309,25 +308,6 @@
       <template #footer>
         <el-button @click="batchAddTagsDialogVisible = false">取消</el-button>
         <el-button type="primary" @click="confirmBatchAddTags">确定</el-button>
-      </template>
-    </el-dialog>
-
-    <el-dialog v-model="batchTagsDialogVisible" title="批量设置标签" width="400px">
-      <el-form label-width="80px">
-        <el-form-item label="选择标签">
-          <el-select v-model="batchTagsValue" multiple filterable placeholder="请选择标签" style="width: 100%">
-            <el-option v-for="tag in allTags" :key="tag.id" :label="tag.name" :value="tag.id">
-              <span style="display: flex; align-items: center; gap: 8px;">
-                <span :style="{ width: '12px', height: '12px', borderRadius: '2px', backgroundColor: tag.color }"></span>
-                <span>{{ tag.name }}</span>
-              </span>
-            </el-option>
-          </el-select>
-        </el-form-item>
-      </el-form>
-      <template #footer>
-        <el-button @click="batchTagsDialogVisible = false">取消</el-button>
-        <el-button type="primary" @click="confirmBatchTags">确定</el-button>
       </template>
     </el-dialog>
 
@@ -1322,31 +1302,6 @@ const confirmBatchIncludeInStats = async () => {
     loadData()
   } catch (error) {
     ElMessage.error('批量设置失败: ' + error.message)
-  }
-}
-
-const batchTagsDialogVisible = ref(false)
-const batchTagsValue = ref([])
-
-const batchEditTags = () => {
-  batchTagsValue.value = []
-  batchTagsDialogVisible.value = true
-}
-
-const confirmBatchTags = async () => {
-  try {
-    const transactionIds = selectedRows.value.map(row => row.id)
-    await axios.post('http://localhost:8080/api/bill/tag/batch/add', {
-      transactionIds,
-      tagIds: batchTagsValue.value
-    })
-    
-    ElMessage.success(`成功更新 ${selectedRows.value.length} 条记录的标签`)
-    selectedRows.value = []
-    batchTagsDialogVisible.value = false
-    loadData()
-  } catch (error) {
-    ElMessage.error('批量设置标签失败: ' + error.message)
   }
 }
 
