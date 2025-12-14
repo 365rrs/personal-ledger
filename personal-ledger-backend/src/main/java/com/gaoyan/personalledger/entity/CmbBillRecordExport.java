@@ -81,10 +81,34 @@ public class CmbBillRecordExport {
     private String category;
     
     /**
+     * 二级分类
+     */
+    @ExcelProperty("二级分类")
+    private String subCategory;
+    
+    /**
      * 用户备注
      */
     @ExcelProperty("用户备注")
     private String userNote;
+    
+    /**
+     * 标签
+     */
+    @ExcelProperty("标签")
+    private String tags;
+    
+    /**
+     * 是否退款
+     */
+    @ExcelProperty("退款")
+    private String isRefundText;
+    
+    /**
+     * 是否手工记账
+     */
+    @ExcelProperty("手工记账")
+    private String isManualEntryText;
     
     /**
      * 将真实格式记录转换为导出格式记录
@@ -100,6 +124,7 @@ public class CmbBillRecordExport {
         export.setDescription(real.getDescription());
         export.setPaymentChannel(real.getPaymentChannel());
         export.setCategory(real.getCategory());
+        export.setSubCategory(real.getSubCategory());
         export.setUserNote(real.getUserNote());
         
         // 设置收支类型
@@ -116,6 +141,20 @@ public class CmbBillRecordExport {
             export.setIncludeInStatsText("是");
         } else {
             export.setIncludeInStatsText("否");
+        }
+        
+        // 转换退款标识为可读文本
+        if (real.getIsRefund() != null && real.getIsRefund()) {
+            export.setIsRefundText("退款");
+        } else {
+            export.setIsRefundText("");
+        }
+        
+        // 转换手工记账标识为可读文本
+        if (real.getIsManualEntry() != null && real.getIsManualEntry()) {
+            export.setIsManualEntryText("手工");
+        } else {
+            export.setIsManualEntryText("");
         }
         
         return export;

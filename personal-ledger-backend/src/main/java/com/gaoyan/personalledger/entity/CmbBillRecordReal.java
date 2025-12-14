@@ -77,9 +77,24 @@ public class CmbBillRecordReal {
     private String category;
     
     /**
+     * 二级分类
+     */
+    private String subCategory;
+    
+    /**
      * 用户备注
      */
     private String userNote;
+    
+    /**
+     * 是否退款
+     */
+    private Boolean isRefund;
+    
+    /**
+     * 是否手工记账
+     */
+    private Boolean isManualEntry;
     
     /**
      * 格式化后的交易日期 (yyyy-MM-dd)

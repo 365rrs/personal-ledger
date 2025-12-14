@@ -6,6 +6,7 @@ import com.alibaba.excel.EasyExcel;
 import com.alibaba.excel.support.ExcelTypeEnum;
 import com.gaoyan.personalledger.entity.*;
 import com.gaoyan.personalledger.exception.BusinessException;
+import com.gaoyan.personalledger.service.BillTagService;
 import com.gaoyan.personalledger.service.CmbBillService;
 import com.gaoyan.personalledger.service.DataCleaningService;
 import com.gaoyan.personalledger.util.EasyExcelExportUtil;
@@ -41,6 +42,9 @@ public class CmbBillServiceImpl implements CmbBillService {
     
     @Autowired
     private com.gaoyan.personalledger.mapper.BillTransactionMapper billTransactionMapper;
+    
+    @Autowired
+    private BillTagService billTagService;
 
     /**
      * 解析招商银行真实格式的账单CSV文件（完整信息）
@@ -460,14 +464,44 @@ public class CmbBillServiceImpl implements CmbBillService {
             applySorting(wrapper, params);
             
             List<com.gaoyan.personalledger.entity.BillTransaction> transactions = billTransactionMapper.selectList(wrapper);
+            log.info("查询到{}条交易记录", transactions.size());
             
             List<CmbBillRecordReal> records = transactions.stream()
                 .map(this::convertTransactionToRecord)
                 .collect(Collectors.toList());
+            log.info("转换为{}条CmbBillRecordReal记录", records.size());
             
-            List<CmbBillRecordExport> exportRecords = records.stream()
-                    .map(CmbBillRecordExport::fromCmbBillRecordReal)
-                    .collect(Collectors.toList());
+            List<CmbBillRecordExport> exportRecords = new ArrayList<>();
+            for (CmbBillRecordReal record : records) {
+                CmbBillRecordExport exportRecord = CmbBillRecordExport.fromCmbBillRecordReal(record);
+                
+                // 初始化标签为空字符串
+                exportRecord.setTags("");
+                
+                // 获取并设置标签
+                if (record.getId() != null) {
+                    try {
+                        List<Long> tagIds = billTagService.getTransactionTagIds(record.getId());
+                        if (tagIds != null && !tagIds.isEmpty()) {
+                            List<com.gaoyan.personalledger.entity.BillTag> tags = tagIds.stream()
+                                .map(billTagService::getById)
+                                .filter(tag -> tag != null)
+                                .collect(Collectors.toList());
+                            if (!tags.isEmpty()) {
+                                String tagNames = tags.stream()
+                                    .map(com.gaoyan.personalledger.entity.BillTag::getName)
+                                    .collect(Collectors.joining(","));
+                                exportRecord.setTags(tagNames);
+                            }
+                        }
+                    } catch (Exception e) {
+                        log.warn("获取交易{}的标签失败", record.getId(), e);
+                    }
+                }
+                
+                exportRecords.add(exportRecord);
+            }
+            log.info("生成{}条导出记录", exportRecords.size());
             
             writeExcelFile(outputStream, exportRecords);
             
@@ -489,8 +523,21 @@ public class CmbBillServiceImpl implements CmbBillService {
         if (params.getEndDate() != null) {
             wrapper.le(com.gaoyan.personalledger.entity.BillTransaction::getTransactionDate, params.getEndDate());
         }
-        if (params.getCategory() != null && !params.getCategory().isEmpty()) {
-            wrapper.eq(com.gaoyan.personalledger.entity.BillTransaction::getCategory, params.getCategory());
+        if (params.getCategory() != null && !"__ALL__".equals(params.getCategory())) {
+            if (params.getCategory().isEmpty()) {
+                wrapper.and(w -> w.isNull(com.gaoyan.personalledger.entity.BillTransaction::getCategory)
+                                 .or().eq(com.gaoyan.personalledger.entity.BillTransaction::getCategory, ""));
+            } else {
+                wrapper.eq(com.gaoyan.personalledger.entity.BillTransaction::getCategory, params.getCategory());
+            }
+        }
+        if (params.getSubCategory() != null && !"__ALL__".equals(params.getSubCategory())) {
+            if (params.getSubCategory().isEmpty()) {
+                wrapper.and(w -> w.isNull(com.gaoyan.personalledger.entity.BillTransaction::getSubCategory)
+                                 .or().eq(com.gaoyan.personalledger.entity.BillTransaction::getSubCategory, ""));
+            } else {
+                wrapper.eq(com.gaoyan.personalledger.entity.BillTransaction::getSubCategory, params.getSubCategory());
+            }
         }
         if (params.getPaymentChannel() != null && !params.getPaymentChannel().isEmpty()) {
             wrapper.eq(com.gaoyan.personalledger.entity.BillTransaction::getPaymentChannel, params.getPaymentChannel());
@@ -502,11 +549,29 @@ public class CmbBillServiceImpl implements CmbBillService {
             wrapper.and(w -> w.like(com.gaoyan.personalledger.entity.BillTransaction::getDescription, params.getKeyword())
                              .or().like(com.gaoyan.personalledger.entity.BillTransaction::getUserNote, params.getKeyword()));
         }
+        if (params.getMinAmount() != null && !params.getMinAmount().isEmpty()) {
+            BigDecimal min = new BigDecimal(params.getMinAmount());
+            wrapper.and(w -> w.ge(com.gaoyan.personalledger.entity.BillTransaction::getIncome, min)
+                             .or().ge(com.gaoyan.personalledger.entity.BillTransaction::getExpense, min));
+        }
+        if (params.getMaxAmount() != null && !params.getMaxAmount().isEmpty()) {
+            BigDecimal max = new BigDecimal(params.getMaxAmount());
+            wrapper.and(w -> w.le(com.gaoyan.personalledger.entity.BillTransaction::getIncome, max)
+                             .or().le(com.gaoyan.personalledger.entity.BillTransaction::getExpense, max));
+        }
         
         applyIncomeExpenseFilter(wrapper, params.getIncomeOrExpense());
         
         if (params.getIncludeInStats() != null) {
             wrapper.eq(com.gaoyan.personalledger.entity.BillTransaction::getIncludeInStats, params.getIncludeInStats());
+        }
+        if (params.getIsRefund() != null) {
+            wrapper.eq(com.gaoyan.personalledger.entity.BillTransaction::getIsRefund, params.getIsRefund());
+        }
+        if (params.getTagIds() != null && !params.getTagIds().isEmpty()) {
+            String[] tagIdArray = params.getTagIds().split(",");
+            wrapper.in(com.gaoyan.personalledger.entity.BillTransaction::getId, 
+                billTransactionMapper.selectTransactionIdsByTagIds(java.util.Arrays.asList(tagIdArray)));
         }
     }
     
@@ -584,6 +649,7 @@ public class CmbBillServiceImpl implements CmbBillService {
     
     private CmbBillRecordReal convertTransactionToRecord(com.gaoyan.personalledger.entity.BillTransaction transaction) {
         CmbBillRecordReal record = new CmbBillRecordReal();
+        record.setId(transaction.getId());
         record.setTransactionDate(transaction.getTransactionDate());
         record.setTransactionTime(transaction.getTransactionTime());
         record.setIncome(transaction.getIncome());
@@ -593,8 +659,11 @@ public class CmbBillServiceImpl implements CmbBillService {
         record.setDescription(transaction.getDescription());
         record.setPaymentChannel(transaction.getPaymentChannel());
         record.setCategory(transaction.getCategory());
+        record.setSubCategory(transaction.getSubCategory());
         record.setUserNote(transaction.getUserNote());
         record.setIncludeInStats(transaction.getIncludeInStats());
+        record.setIsRefund(transaction.getIsRefund());
+        record.setIsManualEntry(transaction.getIsManualEntry());
         return record;
     }
     
