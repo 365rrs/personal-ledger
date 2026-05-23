@@ -79,7 +79,7 @@ const form = ref({
 
 const loadChannels = async () => {
   try {
-    const response = await axios.get('http://localhost:8080/api/payment-channel/list')
+    const response = await axios.get('/api/payment-channel/list')
     channels.value = response.data
     filterChannels()
     await nextTick()
@@ -117,7 +117,7 @@ const initSortable = () => {
       
       try {
         await Promise.all(updates.map(item => 
-          axios.put('http://localhost:8080/api/payment-channel/update', item)
+          axios.put('/api/payment-channel/update', item)
         ))
         ElMessage.success('排序更新成功')
         loadChannels()
@@ -159,10 +159,10 @@ const handleSubmit = async () => {
 
   try {
     if (form.value.id) {
-      await axios.put('http://localhost:8080/api/payment-channel/update', form.value)
+      await axios.put('/api/payment-channel/update', form.value)
       ElMessage.success('更新成功')
     } else {
-      await axios.post('http://localhost:8080/api/payment-channel/add', form.value)
+      await axios.post('/api/payment-channel/add', form.value)
       ElMessage.success('添加成功')
     }
     dialogVisible.value = false
@@ -177,7 +177,7 @@ const handleDelete = async (row) => {
     await ElMessageBox.confirm('确定要删除该支付渠道吗？', '提示', {
       type: 'warning'
     })
-    await axios.delete(`http://localhost:8080/api/payment-channel/delete/${row.id}`)
+    await axios.delete(`/api/payment-channel/delete/${row.id}`)
     ElMessage.success('删除成功')
     loadChannels()
   } catch (error) {

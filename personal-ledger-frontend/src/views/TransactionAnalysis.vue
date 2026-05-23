@@ -102,7 +102,7 @@ const loadData = async () => {
     const start = startDate.value || ''
     const end = endDate.value || ''
     
-    const res = await axios.get('http://localhost:8080/api/bill/transaction/list', {
+    const res = await axios.get('/api/bill/transaction/list', {
       params: {
         current: 1,
         size: 10000,

@@ -72,7 +72,7 @@ const page = reactive({ current: 1, size: 10, total: 0 })
 const loadData = async () => {
   loading.value = true
   try {
-    const res = await axios.get('http://localhost:8080/api/bill/import/list', {
+    const res = await axios.get('/api/bill/import/list', {
       params: {
         current: page.current,
         size: page.size
@@ -97,7 +97,7 @@ const deleteHistory = async (row) => {
       type: 'warning'
     })
     
-    await axios.delete(`http://localhost:8080/api/bill/import/${row.id}`)
+    await axios.delete(`/api/bill/import/${row.id}`)
     ElMessage.success('删除成功')
     loadData()
   } catch (error) {

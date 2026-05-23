@@ -83,7 +83,7 @@ const presetColors = [
 
 const loadTags = async () => {
   try {
-    const res = await axios.get('http://localhost:8080/api/bill/tag/list')
+    const res = await axios.get('/api/bill/tag/list')
     tags.value = res.data
     return Promise.resolve()
   } catch (error) {
@@ -113,10 +113,10 @@ const saveTag = async () => {
 
   try {
     if (dialogMode.value === 'add') {
-      await axios.post('http://localhost:8080/api/bill/tag/add', currentTag.value)
+      await axios.post('/api/bill/tag/add', currentTag.value)
       ElMessage.success('添加成功')
     } else {
-      await axios.put('http://localhost:8080/api/bill/tag/update', currentTag.value)
+      await axios.put('/api/bill/tag/update', currentTag.value)
       ElMessage.success('更新成功')
     }
     dialogVisible.value = false
@@ -129,7 +129,7 @@ const saveTag = async () => {
 const deleteTag = async (tag) => {
   try {
     await ElMessageBox.confirm('确定要删除该标签吗？', '提示', { type: 'warning' })
-    await axios.delete(`http://localhost:8080/api/bill/tag/delete/${tag.id}`)
+    await axios.delete(`/api/bill/tag/delete/${tag.id}`)
     ElMessage.success('删除成功')
     loadTags()
   } catch (error) {
@@ -154,7 +154,7 @@ const initSortable = () => {
         // 更新所有标签的sortOrder
         const updates = tags.value.map((tag, index) => {
           tag.sortOrder = index
-          return axios.put('http://localhost:8080/api/bill/tag/update', tag)
+          return axios.put('/api/bill/tag/update', tag)
         })
         
         try {

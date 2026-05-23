@@ -33,7 +33,7 @@ const loadData = async () => {
     const startDate = `${year.value}-01-01`
     const endDate = `${year.value}-12-31`
     
-    const res = await axios.get('http://localhost:8080/api/bill/transaction/daily-stats', {
+    const res = await axios.get('/api/bill/transaction/daily-stats', {
       params: { startDate, endDate }
     })
     

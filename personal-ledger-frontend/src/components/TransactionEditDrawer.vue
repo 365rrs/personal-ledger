@@ -142,9 +142,9 @@ const handleSave = async () => {
           isRefund: formData.value.isRefund,
           isManualEntry: true
         }
-        const result = await axios.post('http://localhost:8080/api/bill/transaction', data)
+        const result = await axios.post('/api/bill/transaction', data)
         if (formData.value.tagIds && formData.value.tagIds.length > 0) {
-          await axios.post('http://localhost:8080/api/bill/tag/bind', {
+          await axios.post('/api/bill/tag/bind', {
             transactionId: result.data.data,
             tagIds: formData.value.tagIds
           })
@@ -174,8 +174,8 @@ const handleSave = async () => {
           }
         }
       }
-      await axios.put(`http://localhost:8080/api/bill/transaction/${formData.value.id}`, updateData)
-      await axios.post('http://localhost:8080/api/bill/tag/bind', {
+      await axios.put(`/api/bill/transaction/${formData.value.id}`, updateData)
+      await axios.post('/api/bill/tag/bind', {
         transactionId: formData.value.id,
         tagIds: formData.value.tagIds || []
       })
@@ -201,7 +201,7 @@ watch(() => props.record, async (newRecord) => {
         if (parentCat) formData.value.category = parentCat.id
       }
       try {
-        const tagIds = await axios.get(`http://localhost:8080/api/bill/tag/transaction/${newRecord.id}`)
+        const tagIds = await axios.get(`/api/bill/tag/transaction/${newRecord.id}`)
         formData.value.tagIds = tagIds.data
       } catch (error) {
         formData.value.tagIds = []

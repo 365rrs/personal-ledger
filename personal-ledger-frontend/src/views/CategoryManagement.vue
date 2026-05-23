@@ -104,7 +104,7 @@ const currentCategory = ref({
 
 const loadCategories = async () => {
   try {
-    const response = await axios.get('http://localhost:8080/api/category/list')
+    const response = await axios.get('/api/category/list')
     categories.value = response.data
     updateParentCategories()
     filterCategories()
@@ -168,10 +168,10 @@ const saveCategory = async () => {
 
   try {
     if (dialogMode.value === 'add') {
-      await axios.post('http://localhost:8080/api/category/add', currentCategory.value)
+      await axios.post('/api/category/add', currentCategory.value)
       ElMessage.success('添加成功')
     } else {
-      await axios.put('http://localhost:8080/api/category/update', currentCategory.value)
+      await axios.put('/api/category/update', currentCategory.value)
       ElMessage.success('更新成功')
     }
     dialogVisible.value = false
@@ -186,7 +186,7 @@ const deleteCategory = async (category) => {
     await ElMessageBox.confirm('确定要删除该分类吗？', '提示', {
       type: 'warning'
     })
-    await axios.delete(`http://localhost:8080/api/category/delete/${category.id}`)
+    await axios.delete(`/api/category/delete/${category.id}`)
     ElMessage.success('删除成功')
     loadCategories()
   } catch (error) {
@@ -307,7 +307,7 @@ const handleChildDrag = async (draggedData, oldDomIndex, newDomIndex) => {
 const batchUpdateSort = async (updates) => {
   try {
     await Promise.all(updates.map(item => 
-      axios.put('http://localhost:8080/api/category/update', item)
+      axios.put('/api/category/update', item)
     ))
     ElMessage.success('排序更新成功')
     loadCategories()

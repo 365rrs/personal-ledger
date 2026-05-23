@@ -74,7 +74,7 @@ const setThisYear = () => {
 const loadData = async () => {
   loading.value = true
   try {
-    const res = await axios.get('http://localhost:8080/api/bill/transaction/list', {
+    const res = await axios.get('/api/bill/transaction/list', {
       params: {
         current: 1,
         size: 10000,

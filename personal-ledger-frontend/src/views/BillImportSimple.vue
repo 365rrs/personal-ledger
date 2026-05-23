@@ -165,7 +165,7 @@ const importHistory = ref([])
 // 从API加载导入历史
 const loadImportHistory = async () => {
   try {
-    const res = await axios.get('http://localhost:8080/api/bill/import/list?size=10')
+    const res = await axios.get('/api/bill/import/list?size=10')
     if (res.data.success) {
       importHistory.value = res.data.data.records.map(item => ({
         id: item.id,

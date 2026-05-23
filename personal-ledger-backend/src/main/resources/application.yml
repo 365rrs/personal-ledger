@@ -1,6 +1,7 @@
 # 应用服务 WEB 访问端口
 server:
   port: 8080
+  address: 0.0.0.0  # 允许局域网访问
 
 spring:
   profiles:

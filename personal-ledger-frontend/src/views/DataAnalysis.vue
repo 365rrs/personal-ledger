@@ -221,7 +221,7 @@ const loadData = async () => {
       params.paymentChannel = filter.value.paymentChannel
     }
     
-    const res = await axios.get('http://localhost:8080/api/bill/transaction/daily-stats', { params })
+    const res = await axios.get('/api/bill/transaction/daily-stats', { params })
     const stats = res.data.data || []
     
     renderChart(stats)
@@ -330,7 +330,7 @@ const loadDayDetails = async (date) => {
       params.paymentChannel = filter.value.paymentChannel
     }
     
-    const res = await axios.get('http://localhost:8080/api/bill/transaction/list', { params })
+    const res = await axios.get('/api/bill/transaction/list', { params })
     dayDetails.value = res.data.data?.records || []
   } catch (error) {
     ElMessage.error('加载明细失败')
@@ -359,7 +359,7 @@ const handleSaved = () => {
 
 const loadCategories = async () => {
   try {
-    const res = await axios.get('http://localhost:8080/api/category/list')
+    const res = await axios.get('/api/category/list')
     categories.value = res.data.map(c => c.name)
     categoryTree.value = res.data
   } catch (error) {
@@ -369,7 +369,7 @@ const loadCategories = async () => {
 
 const loadChannels = async () => {
   try {
-    const res = await axios.get('http://localhost:8080/api/payment-channel/list')
+    const res = await axios.get('/api/payment-channel/list')
     channels.value = res.data.map(c => c.name)
     channelList.value = res.data
   } catch (error) {
@@ -379,7 +379,7 @@ const loadChannels = async () => {
 
 const loadTags = async () => {
   try {
-    const res = await axios.get('http://localhost:8080/api/bill/tag/list')
+    const res = await axios.get('/api/bill/tag/list')
     allTags.value = res.data
   } catch (error) {
     console.error('加载标签失败', error)

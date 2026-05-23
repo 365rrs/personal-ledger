@@ -136,7 +136,7 @@ const loadData = async () => {
       includeInStats: true
     }
     
-    const res = await axios.get('http://localhost:8080/api/bill/transaction/list', { params })
+    const res = await axios.get('/api/bill/transaction/list', { params })
     const transactions = res.data.data?.records || []
     
     // 按分类聚合数据
@@ -205,7 +205,7 @@ const loadCategoryDetails = async (row) => {
       sortOrder: sortOrder.value
     }
     
-    const res = await axios.get('http://localhost:8080/api/bill/transaction/list', { params })
+    const res = await axios.get('/api/bill/transaction/list', { params })
     categoryDetails.value = res.data.data?.records || []
   } catch (error) {
     ElMessage.error('加载明细失败')
@@ -235,7 +235,7 @@ const handleSaved = () => {
 
 const loadCategories = async () => {
   try {
-    const res = await axios.get('http://localhost:8080/api/category/list')
+    const res = await axios.get('/api/category/list')
     categoryTree.value = res.data
     flattenCategories(res.data)
   } catch (error) {
@@ -259,7 +259,7 @@ const flattenCategories = (tree) => {
 
 const loadChannels = async () => {
   try {
-    const res = await axios.get('http://localhost:8080/api/payment-channel/list')
+    const res = await axios.get('/api/payment-channel/list')
     channels.value = res.data.map(c => c.name)
     channelList.value = res.data
   } catch (error) {
@@ -269,7 +269,7 @@ const loadChannels = async () => {
 
 const loadTags = async () => {
   try {
-    const res = await axios.get('http://localhost:8080/api/bill/tag/list')
+    const res = await axios.get('/api/bill/tag/list')
     allTags.value = res.data
   } catch (error) {
     console.error('加载标签失败', error)

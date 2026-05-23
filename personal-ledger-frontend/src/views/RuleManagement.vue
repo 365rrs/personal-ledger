@@ -183,7 +183,7 @@ const paymentChannelOptions = ref([])
 
 const loadCategories = async () => {
   try {
-    const response = await axios.get('http://localhost:8080/api/category/list')
+    const response = await axios.get('/api/category/list')
     categoryOptions.value = response.data.map(c => c.name)
   } catch (error) {
     console.error('加载分类失败', error)
@@ -192,7 +192,7 @@ const loadCategories = async () => {
 
 const loadPaymentChannels = async () => {
   try {
-    const response = await axios.get('http://localhost:8080/api/payment-channel/list')
+    const response = await axios.get('/api/payment-channel/list')
     paymentChannelOptions.value = response.data.map(c => c.name)
   } catch (error) {
     console.error('加载支付渠道失败', error)

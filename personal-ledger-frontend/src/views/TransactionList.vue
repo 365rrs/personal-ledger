@@ -598,7 +598,7 @@ const loadData = async () => {
       params.tagIds = filter.tagIds.join(',')
     }
     
-    const res = await axios.get('http://localhost:8080/api/bill/transaction/list', { params })
+    const res = await axios.get('/api/bill/transaction/list', { params })
     transactions.value = res.data.data.records
     page.total = res.data.data.total
     
@@ -640,7 +640,7 @@ const loadSummary = async () => {
       params.tagIds = filter.tagIds.join(',')
     }
     
-    const res = await axios.get('http://localhost:8080/api/bill/transaction/summary', { params })
+    const res = await axios.get('/api/bill/transaction/summary', { params })
     summary.value = res.data.data
   } catch (error) {
     console.error('加载汇总失败', error)
@@ -727,7 +727,7 @@ const cleanData = async () => {
   
   cleaning.value = true
   try {
-    const res = await axios.post('http://localhost:8080/api/bill/import/clean-records', convertedData)
+    const res = await axios.post('/api/bill/import/clean-records', convertedData)
     const result = res.data
     ElMessage.success(`数据清洗完成：总记录 ${result.totalCount} 条，更新 ${result.updatedCount} 条`)
     loadData()
@@ -757,7 +757,7 @@ const exportData = async () => {
       firstImportId: route.query.importId
     }
     
-    const res = await axios.post('http://localhost:8080/api/bill/import/export', params, {
+    const res = await axios.post('/api/bill/import/export', params, {
       responseType: 'blob'
     })
     
@@ -796,7 +796,7 @@ const batchDelete = async () => {
     })
     
     const deletePromises = selectedRows.value.map(row => 
-      axios.delete(`http://localhost:8080/api/bill/transaction/${row.id}`)
+      axios.delete(`/api/bill/transaction/${row.id}`)
     )
     
     await Promise.all(deletePromises)
@@ -832,7 +832,7 @@ const resetFilter = () => {
 }
 
 const loadCategories = async () => {
-  const res = await axios.get('http://localhost:8080/api/category/list')
+  const res = await axios.get('/api/category/list')
   categoryTree.value = res.data
   flattenCategories(res.data)
   extractParentAndSubCategories(res.data)
@@ -874,19 +874,19 @@ const extractParentAndSubCategories = (tree) => {
 
 
 const loadChannels = async () => {
-  const res = await axios.get('http://localhost:8080/api/payment-channel/list')
+  const res = await axios.get('/api/payment-channel/list')
   channels.value = res.data
 }
 
 const loadTags = async () => {
-  const res = await axios.get('http://localhost:8080/api/bill/tag/list')
+  const res = await axios.get('/api/bill/tag/list')
   allTags.value = res.data
 }
 
 const viewRecord = async (row) => {
   currentRecord.value = { ...row }
   try {
-    const tagIds = await axios.get(`http://localhost:8080/api/bill/tag/transaction/${row.id}`)
+    const tagIds = await axios.get(`/api/bill/tag/transaction/${row.id}`)
     currentRecord.value.tagIds = tagIds.data
   } catch (error) {
     currentRecord.value.tagIds = []
@@ -916,7 +916,7 @@ const editRecord = async (row) => {
   
   // 加载标签
   try {
-    const tagIds = await axios.get(`http://localhost:8080/api/bill/tag/transaction/${row.id}`)
+    const tagIds = await axios.get(`/api/bill/tag/transaction/${row.id}`)
     currentRecord.value.tagIds = tagIds.data
   } catch (error) {
     currentRecord.value.tagIds = []
@@ -976,11 +976,11 @@ const saveRecord = async () => {
           isManualEntry: true
         }
         
-        const result = await axios.post('http://localhost:8080/api/bill/transaction', data)
+        const result = await axios.post('/api/bill/transaction', data)
         
         // 保存标签
         if (currentRecord.value.tagIds && currentRecord.value.tagIds.length > 0) {
-          await axios.post('http://localhost:8080/api/bill/tag/bind', {
+          await axios.post('/api/bill/tag/bind', {
             transactionId: result.data.data,
             tagIds: currentRecord.value.tagIds
           })
@@ -1013,10 +1013,10 @@ const saveRecord = async () => {
         }
       }
       
-      await axios.put(`http://localhost:8080/api/bill/transaction/${currentRecord.value.id}`, updateData)
+      await axios.put(`/api/bill/transaction/${currentRecord.value.id}`, updateData)
       
       // 更新标签
-      await axios.post('http://localhost:8080/api/bill/tag/bind', {
+      await axios.post('/api/bill/tag/bind', {
         transactionId: currentRecord.value.id,
         tagIds: currentRecord.value.tagIds || []
       })
@@ -1039,7 +1039,7 @@ const batchEditNote = async () => {
     })
     
     const updatePromises = selectedRows.value.map(row => 
-      axios.put(`http://localhost:8080/api/bill/transaction/${row.id}`, {
+      axios.put(`/api/bill/transaction/${row.id}`, {
         ...row,
         userNote: note
       })
@@ -1111,7 +1111,7 @@ const confirmBatchCategory = async () => {
     }
     
     const updatePromises = selectedRows.value.map(row => 
-      axios.put(`http://localhost:8080/api/bill/transaction/${row.id}`, {
+      axios.put(`/api/bill/transaction/${row.id}`, {
         ...row,
         ...categoryUpdate
       })
@@ -1193,7 +1193,7 @@ const confirmQuickAdd = async () => {
       isManualEntry: true
     }
     
-    await axios.post('http://localhost:8080/api/bill/transaction', newRecord)
+    await axios.post('/api/bill/transaction', newRecord)
     ElMessage.success('补录成功')
     quickAddDialogVisible.value = false
     loadData()
@@ -1213,7 +1213,7 @@ const batchEditChannel = () => {
 const confirmBatchChannel = async () => {
   try {
     const updatePromises = selectedRows.value.map(row => 
-      axios.put(`http://localhost:8080/api/bill/transaction/${row.id}`, {
+      axios.put(`/api/bill/transaction/${row.id}`, {
         ...row,
         paymentChannel: batchChannelValue.value
       })
@@ -1289,7 +1289,7 @@ const batchEditIncludeInStats = () => {
 const confirmBatchIncludeInStats = async () => {
   try {
     const updatePromises = selectedRows.value.map(row => 
-      axios.put(`http://localhost:8080/api/bill/transaction/${row.id}`, {
+      axios.put(`/api/bill/transaction/${row.id}`, {
         ...row,
         includeInStats: batchIncludeInStatsValue.value
       })
@@ -1316,7 +1316,7 @@ const batchAddTags = () => {
 const confirmBatchAddTags = async () => {
   try {
     const transactionIds = selectedRows.value.map(row => row.id)
-    await axios.post('http://localhost:8080/api/bill/tag/batch/add', {
+    await axios.post('/api/bill/tag/batch/add', {
       transactionIds,
       tagIds: batchAddTagsValue.value
     })
